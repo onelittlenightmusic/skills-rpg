@@ -1,0 +1,91 @@
+id: stage5
+title: "Alarm Room"
+description: |
+  けたたましいアラームが鳴り響く部屋。
+  アラームが作動している間、出口のドアは開かない。
+  まずchapにアラームを止めさせよう。
+initial_position: alarm_room
+waypoints:
+  alarm_room:
+    label: "警報室"
+    adjacent: [safe_corridor]
+  safe_corridor:
+    label: "安全な廊下"
+    adjacent: [alarm_room]
+doors:
+  alarm_door:
+    between: [alarm_room, safe_corridor]
+    open: false
+    locked: true
+    key: key_escape
+    blocked_by_device: alarm
+devices:
+  alarm:
+    label: "セキュリティアラーム"
+    on: true
+items:
+  key_escape:
+    held_by: chap
+  key_dummy:
+    held_by: chap
+achievement_defs:
+  - id: observed_alarm_room
+    when: { action: observe }
+  - id: alarm_deactivated
+    when: { actor: chap, action: deactivate, target: alarm, result: ok }
+  - id: alarm_door_opened
+    when: { actor: chap, action: open, target: alarm_door, result: ok }
+  - id: escaped_alarm_room
+    when: { actor: you, action: move, target: safe_corridor, result: ok }
+next_goal_rules:
+  - if_missing: observed_alarm_room
+    goal:
+      text: "警報室を観察しよう"
+      hint: "rpg_observe でステージを観察する"
+  - if_missing: alarm_deactivated
+    goal:
+      text: "chapにアラームを止めさせよう"
+      hint: "rpg_control_system actor=chap action=deactivate target=alarm"
+  - if_missing: alarm_door_opened
+    goal:
+      text: "alarm_doorを /rpg-try-keys で開けよう"
+      hint: "/rpg-try-keys {\"target\":\"alarm_door\"}"
+      required_skill: rpg-try-keys
+  - if_missing: escaped_alarm_room
+    goal:
+      text: "廊下へ出よう"
+      hint: "rpg_control_system actor=you action=move target=safe_corridor"
+cleared_when: escaped_alarm_room
+next_stage: stage6
+narrations:
+  - match: { action: observe }
+    situation: |
+      けたたましいアラームが部屋中に響き渡っている。
+      セキュリティアラーム（alarm）が作動しており、出口のドア（alarm_door）を完全にロックしている。
+      chapが立っているが、アラームが鳴っている間は扉に近づくこともできない。
+    lore: |
+      これがblocked_by_device——「デバイスが動いている間は開かないドア」だ。
+      Stage 4では起動（activate）が必要だった。
+      今回は停止（deactivate）が必要だ。
+      rpg_control_system actor=chap action=deactivate target=alarm を試してみよう。
+
+  - match: { actor: chap, action: deactivate, target: alarm, result: ok }
+    on_success: |
+      アラームが止まった。静寂が戻る。
+      alarm_doorのロックが解除され、赤いランプが消えた。
+    lore: |
+      alarmがOFFになった。blocked_by_deviceの条件が解除された。
+      次は /rpg-try-keys でドアを開けよう。
+
+  - match: { actor: chap, action: open, target: alarm_door, result: ok }
+    on_success: "alarm_doorが開く。"
+    lore: "deactivate → open の順番が鍵だった。"
+
+  - match: { actor: you, action: move, target: safe_corridor, result: ok }
+    on_success: |
+      安全な廊下へ踏み出した。
+      アラームの余韻が耳に残るが、もう危険はない。
+    lore: |
+      Stage 4: activate → ドアが開く（requires_device）
+      Stage 5: deactivate → ドアが開く（blocked_by_device）
+      次のステージでは、この両方を組み合わせる必要がある。

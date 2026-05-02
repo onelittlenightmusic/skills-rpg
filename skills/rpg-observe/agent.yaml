@@ -1,0 +1,13 @@
+agent:
+  metadata:
+    name: rpg_observe_agent
+    capability: rpg_observe
+    type: monitor
+  script:
+    path: ./main.py
+    timeout_seconds: 30
+  state_updates:
+    - { name: value,                 type: object, label: current, persistent: true, onFetchData: "value" }
+    - { name: target,                type: string, label: current, persistent: true, onFetchData: "target" }
+    - { name: achievements_unlocked, type: object, label: current, persistent: true, onFetchData: "achievements_unlocked" }
+    - { name: next_goal,             type: object, label: current, persistent: true, onFetchData: "next_goal" }

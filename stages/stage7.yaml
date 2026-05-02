@@ -1,0 +1,162 @@
+id: stage7
+title: "The Want Factory"
+description: |
+  研究室の先に10枚の扉が並ぶ長い廊下がある。
+  2枚は手動でスキルを使い、残りはwantとして定義してデプロイすれば自動で開く。
+initial_position: lab_room
+waypoints:
+  lab_room:
+    label: "研究室（出発点）"
+    adjacent: [corridor]
+  corridor:
+    label: "長い廊下"
+    adjacent: [lab_room, exit_room]
+  exit_room:
+    label: "出口"
+    adjacent: [corridor]
+doors:
+  hall_door_01:
+    between: [corridor, exit_room]
+    open: false
+    locked: true
+    key: key_azure
+  hall_door_02:
+    between: [corridor, exit_room]
+    open: false
+    locked: true
+    key: key_amber
+  hall_door_03:
+    between: [corridor, exit_room]
+    open: false
+    locked: true
+    key: key_jade
+  hall_door_04:
+    between: [corridor, exit_room]
+    open: false
+    locked: true
+    key: key_crimson
+  hall_door_05:
+    between: [corridor, exit_room]
+    open: false
+    locked: true
+    key: key_indigo
+  hall_door_06:
+    between: [corridor, exit_room]
+    open: false
+    locked: true
+    key: key_sienna
+  hall_door_07:
+    between: [corridor, exit_room]
+    open: false
+    locked: true
+    key: key_violet
+  hall_door_08:
+    between: [corridor, exit_room]
+    open: false
+    locked: true
+    key: key_ochre
+  hall_door_09:
+    between: [corridor, exit_room]
+    open: false
+    locked: true
+    key: key_ebony
+  hall_door_10:
+    between: [corridor, exit_room]
+    open: false
+    locked: true
+    key: key_vermilion
+items:
+  key_azure:
+    held_by: chap
+  key_amber:
+    held_by: chap
+  key_jade:
+    held_by: chap
+  key_crimson:
+    held_by: chap
+  key_indigo:
+    held_by: chap
+  key_sienna:
+    held_by: chap
+  key_violet:
+    held_by: chap
+  key_ochre:
+    held_by: chap
+  key_ebony:
+    held_by: chap
+  key_vermilion:
+    held_by: chap
+achievement_defs:
+  - id: observed_corridor
+    when: { action: observe }
+  - id: opened_door_01
+    when: { actor: chap, action: open, target: hall_door_01, result: ok }
+  - id: opened_door_02
+    when: { actor: chap, action: open, target: hall_door_02, result: ok }
+  - id: all_doors_opened
+    when: { actor: chap, action: open, target: hall_door_10, result: ok }
+  - id: escaped_corridor
+    when: { actor: you, action: move, target: exit_room, result: ok }
+next_goal_rules:
+  - if_missing: observed_corridor
+    goal:
+      text: "廊下を観察しよう"
+      hint: "rpg_observe でステージを観察する"
+  - if_missing: opened_door_01
+    goal:
+      text: "hall_door_01 を /rpg-try-keys で開けよう"
+      hint: "/rpg-try-keys {\"target\":\"hall_door_01\"}"
+      required_skill: rpg-try-keys
+  - if_missing: opened_door_02
+    goal:
+      text: "hall_door_02 も /rpg-try-keys で開けよう"
+      hint: "/rpg-try-keys {\"target\":\"hall_door_02\"}"
+      required_skill: rpg-try-keys
+  - if_missing: all_doors_opened
+    goal:
+      text: "残り8枚をwantとしてデプロイして自動化しよう"
+      hint: "mywant apply examples/stage7-open-all.yaml"
+      required_skill: rpg-try-keys
+  - if_missing: escaped_corridor
+    goal:
+      text: "全ての扉が開いた。出口へ向かおう"
+      hint: "rpg_control_system actor=you action=move target=exit_room"
+cleared_when: escaped_corridor
+next_stage: stage8
+narrations:
+  - match: { action: observe }
+    situation: |
+      研究室の扉を抜けると、長い廊下が目の前に広がる。
+      石畳の床が遠くまで伸び、出口の手前に10枚の扉が壁のように連なっている。
+      それぞれの錠前が、暗がりの中で鈍く光っている。
+    lore: |
+      chapの手には10本の鍵。前のステージで /rpg-try-keys の使い方は覚えた。
+      しかし10回繰り返すのか？
+      繰り返すパターンは「want」として定義できる——一度定義すれば、あとは自動だ。
+
+  - match: { actor: chap, action: open, target: hall_door_01, result: ok }
+    on_success: "hall_door_01 が開く。スキルが正しい鍵を見つけた。"
+    lore: "1枚目。同じ操作をあと9回やるか、wantに任せるか。"
+
+  - match: { actor: chap, action: open, target: hall_door_02, result: ok }
+    on_success: "hall_door_02 が開く。"
+    lore: |
+      2枚目。ここで止まって考えよう。
+      「/rpg-try-keys を target を変えて繰り返す」——このパターンをwantとして記録できる。
+      examples/stage7-open-all.yaml を mywant apply すれば、
+      残り8枚をwantが自動で開けてくれる。
+
+  - match: { actor: chap, action: open, target: hall_door_10, result: ok }
+    on_success: |
+      hall_door_10 が開く。廊下の全ての扉が一列に開け放たれた。
+      出口から光が差し込んでくる。
+    lore: |
+      wantがスキルを8回呼んだ。あなたは何もしていない。
+      スキルは道具、wantはその道具を使う「意図の定義」だ。
+      意図を定義すれば、繰り返しはスケールする。
+
+  - match: { actor: you, action: move, target: exit_room, result: ok }
+    on_success: |
+      廊下を抜け、出口へ踏み出した。
+      振り返ると10枚の扉が全て開いて、石畳が向こうまで見通せる。
+    lore: "次は chapのMCPが使えないステージだ。wantだけで世界に介入することになる。"

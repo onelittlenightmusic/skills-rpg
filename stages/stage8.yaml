@@ -1,0 +1,108 @@
+id: stage8
+title: "Lights Out"
+description: |
+  暗い部屋。発電機が止まっており、出口の扉は動力なしには開かない。
+  chapはもうMCPで直接介入できない。wantを3つデプロイして脱出しよう。
+initial_position: dark_room
+waypoints:
+  dark_room:
+    label: "暗い部屋"
+    adjacent: [exit_hall]
+  exit_hall:
+    label: "出口の間"
+    adjacent: [dark_room]
+doors:
+  exit_door:
+    between: [dark_room, exit_hall]
+    open: false
+    locked: true
+    key: key_final
+    requires_device: generator
+devices:
+  generator:
+    label: "非常用発電機"
+    on: false
+items:
+  key_final:
+    held_by: chap
+  key_decoy_a:
+    held_by: chap
+  key_decoy_b:
+    held_by: chap
+achievement_defs:
+  - id: observed_dark_room
+    when: { action: observe }
+  - id: generator_activated
+    when: { actor: chap, action: activate, target: generator, result: ok }
+  - id: exit_door_opened
+    when: { actor: chap, action: open, target: exit_door, result: ok }
+  - id: escaped_darkness
+    when: { actor: you, action: move, target: exit_hall, result: ok }
+next_goal_rules:
+  - if_missing: observed_dark_room
+    goal:
+      text: "暗い部屋を観察しよう"
+      hint: "rpg_observe でステージを観察する"
+  - if_missing: generator_activated
+    goal:
+      text: "発電機（generator）を起動するwantをデプロイしよう"
+      hint: "mywant apply examples/stage8-generator.yaml"
+  - if_missing: exit_door_opened
+    goal:
+      text: "exit_doorの状態を監視するwantと、鍵を試すwantをデプロイしよう"
+      hint: "mywant apply examples/stage8-monitor.yaml && mywant apply examples/stage8-try-keys.yaml"
+  - if_missing: escaped_darkness
+    goal:
+      text: "扉が開いた。出口の間へ向かおう"
+      hint: "rpg_control_system actor=you action=move target=exit_hall"
+cleared_when: escaped_darkness
+next_stage: ""
+narrations:
+  - match: { action: observe }
+    situation: |
+      完全な暗闇。わずかな非常灯だけが床を照らしている。
+      壁沿いに古い発電機（generator）が置かれているが、止まっている。
+      正面の扉（exit_door）には電子錠がついており、電源なしには開かない。
+    lore: |
+      chapはもうここに直接介入できない。
+      しかしwantという「意図の定義」はまだ有効だ。
+      3つのwantをデプロイして、暗闇を抜け出そう：
+
+        1. examples/stage8-generator.yaml — 発電機を起動する
+        2. examples/stage8-monitor.yaml  — 部屋の状態を観察し続ける
+        3. examples/stage8-try-keys.yaml — 電源が入ったら扉に鍵を試す
+
+  - match: { actor: chap, action: activate, target: generator, result: ok }
+    on_success: |
+      発電機が唸りを上げ、ライトが点灯した。
+      部屋が明るくなり、exit_doorの電子錠が緑色に光る。
+    lore: |
+      wantがスキルを通じてgeneratorをactivateした。
+      monitor-wantはこの変化を検知し、want cardに表示している。
+      次は exit_door に鍵を試すwantが動き出す。
+
+  - match: { actor: chap, action: open, target: exit_door, result: ok }
+    on_success: |
+      電子錠が解除され、exit_doorが静かに開く。
+      向こうに出口の間が見える。
+    lore: |
+      try-keys-wantがgeneratorのonを確認し、全ての鍵を試した。
+      3つのwantが連携して、暗闇を突破した。
+
+  - match: { actor: you, action: move, target: exit_hall, result: ok }
+    on_success: |
+      あなたは出口の間へ踏み出した。
+      振り返ると、暗かった部屋に明かりが灯り、開いた扉が見える。
+
+      これが8つのステージで学んだことだ：
+        Stage 1 — chapに任せる（MCP直接）
+        Stage 2 — 試行錯誤を任せる
+        Stage 3 — スキルで自動化する
+        Stage 4 — デバイスをactivateしてドアを開ける
+        Stage 5 — デバイスをdeactivateしてドアを開ける
+        Stage 6 — 順番通りにdeactivate → activate → open
+        Stage 7 — wantでスケールさせる
+        Stage 8 — wantを組み合わせて世界を変える
+    lore: |
+      MCPがなくても、wantとスキルの組み合わせで世界に介入できる。
+      「意図を定義し、組み合わせる」——これがエージェントシステムの本質だ。

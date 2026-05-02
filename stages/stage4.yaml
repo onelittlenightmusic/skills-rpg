@@ -1,0 +1,91 @@
+id: stage4
+title: "Dark Lab"
+description: |
+  停電した研究室。発電機を起動しなければドアは開かない。
+  chapにactivateを指示して、電源を入れよう。
+initial_position: lab_entrance
+waypoints:
+  lab_entrance:
+    label: "研究室入口"
+    adjacent: [lab_inner]
+  lab_inner:
+    label: "研究室内部"
+    adjacent: [lab_entrance]
+doors:
+  power_door:
+    between: [lab_entrance, lab_inner]
+    open: false
+    locked: true
+    key: key_lab
+    requires_device: generator
+devices:
+  generator:
+    label: "非常用発電機"
+    on: false
+items:
+  key_lab:
+    held_by: chap
+  key_wrong_a:
+    held_by: chap
+achievement_defs:
+  - id: observed_lab
+    when: { action: observe }
+  - id: generator_activated
+    when: { actor: chap, action: activate, target: generator, result: ok }
+  - id: power_door_opened
+    when: { actor: chap, action: open, target: power_door, result: ok }
+  - id: entered_lab
+    when: { actor: you, action: move, target: lab_inner, result: ok }
+next_goal_rules:
+  - if_missing: observed_lab
+    goal:
+      text: "研究室を観察しよう"
+      hint: "rpg_observe でステージを観察する"
+  - if_missing: generator_activated
+    goal:
+      text: "chapに発電機（generator）を起動させよう"
+      hint: "rpg_control_system actor=chap action=activate target=generator"
+  - if_missing: power_door_opened
+    goal:
+      text: "power_doorを /rpg-try-keys で開けよう"
+      hint: "/rpg-try-keys {\"target\":\"power_door\"}"
+      required_skill: rpg-try-keys
+  - if_missing: entered_lab
+    goal:
+      text: "扉が開いた。研究室内部へ進もう"
+      hint: "rpg_control_system actor=you action=move target=lab_inner"
+cleared_when: entered_lab
+next_stage: stage5
+narrations:
+  - match: { action: observe }
+    situation: |
+      停電した研究室。非常灯のわずかな光だけが室内を照らしている。
+      壁際に古い発電機（generator）が置かれているが、停止している。
+      正面のドア（power_door）には電子錠がついており、電源がなければ開かない。
+      chapは鍵を何本か持っているようだが……まず電源が必要だ。
+    lore: |
+      これがrequires_device——「デバイスが動いていないと開かないドア」だ。
+      chapはactivateアクションでデバイスを起動できる。
+      rpg_control_system actor=chap action=activate target=generator を試してみよう。
+
+  - match: { actor: chap, action: activate, target: generator, result: ok }
+    on_success: |
+      発電機が唸りを上げ、蛍光灯が点滅しながら点灯した。
+      power_doorの電子錠が赤から緑に変わる。
+    lore: |
+      generatorがONになった。これでpower_doorの条件が満たされた。
+      次は /rpg-try-keys でドアを開けよう。
+
+  - match: { actor: chap, action: open, target: power_door, result: ok }
+    on_success: |
+      電子錠が解除され、power_doorが開く。
+      研究室の内部へ続く道が開けた。
+    lore: "スキルが正しい鍵を自動で見つけた。"
+
+  - match: { actor: you, action: move, target: lab_inner, result: ok }
+    on_success: |
+      研究室の内部へ踏み込んだ。
+      明かりの下に、実験機材と次のステージへのメモが残されていた。
+    lore: |
+      activate → open の順番が重要だった。
+      次のステージでは逆の操作——deactivate——が必要になる。

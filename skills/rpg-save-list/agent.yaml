@@ -1,0 +1,10 @@
+agent:
+  metadata:
+    name: rpg_save_list_agent
+    capability: rpg_save_list
+    type: monitor
+  script:
+    path: ./main.py
+    timeout_seconds: 15
+  state_updates:
+    - { name: slots, type: object, label: current, persistent: true, onFetchData: "slots" }

@@ -1,0 +1,9 @@
+# Stage 5: 発電機を起動するwant。
+# chapがactivateアクションでgeneratorをonにする。
+wants:
+  - metadata:
+      name: activate-generator
+      type: rpg_activate
+    spec:
+      params:
+        target: generator

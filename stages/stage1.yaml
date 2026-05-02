@@ -1,0 +1,127 @@
+id: stage1
+title: "The Locked Room"
+description: |
+  気がつくと部屋に閉じ込められている。
+  自分（you）はドアを開ける力を持たない。chap に頼んで脱出しよう。
+initial_position: room1
+waypoints:
+  room1:
+    label: "出発の部屋"
+    adjacent: [room2]
+  room2:
+    label: "廊下"
+    adjacent: [room1]
+doors:
+  door1:
+    between: [room1, room2]
+    open: false
+    locked: true
+achievement_defs:
+  - id: look_around
+    when: { action: observe }
+  - id: attempted_self_unlock
+    when: { actor: you, action: open, result: rejected }
+  - id: chap_unlocked_door1
+    when: { actor: chap, action: open, target: door1, result: ok }
+  - id: escaped_room1
+    when: { actor: you, action: move, target: room2, result: ok }
+next_goal_rules:
+  - if_missing: look_around
+    goal:
+      text: "まずは部屋を見回そう"
+      hint: "rpg-observe target=stages.stage1 を試そう（または rpg-control-system observe target=room1）"
+      required_skill: rpg-observe
+  - if_missing: attempted_self_unlock
+    goal:
+      text: "ドアを自分で開けてみよう"
+      hint: "rpg-control-system action=open target=door1 を試そう（you では拒否されるはず）"
+  - if_missing: chap_unlocked_door1
+    goal:
+      text: "you ではドアを開けられない。chap に頼もう"
+      hint: |
+        Skill 経路:  Claude Code で /rpg-control action=open target=door1
+        Want 経路:   examples/ask-chap-unlock.yaml を mywant にロード
+      required_skill: rpg-control
+  - if_missing: escaped_room1
+    goal:
+      text: "ドアが開いた。部屋を出よう"
+      hint: "rpg-control-system action=move target=room2"
+cleared_when: escaped_room1
+next_stage: stage2
+narrations:
+  # --- observe: 周囲の描写 ---
+  - match: { actor: you, action: observe, target_prefix: "stages.stage1" }
+    situation: |
+      狭く薄暗い石造りの部屋。冷たい空気が頬を撫でる。
+      正面にはひと際大きく重そうな扉（door1）。
+      取っ手の上に古い真鍮の錠が鈍く光っている。
+    lore: |
+      壁の隅に擦れた貼り紙が残されている：
+        「open は you には扱えない。chap を呼べ。」
+      おそらく以前ここを訪れた者が残した手がかりだ。
+  - match: { actor: you, action: observe, target: "you" }
+    situation: |
+      あなた（you）は無装備、無傷。ただし手は素手で、特殊な技も持っていない。
+      この世界では、錠を解いたり機構を動かしたりするような「介入」は
+      あなた自身の手では出来ないらしい。
+    who_is_chap: |
+      しかし傍らには相棒 chap がいる。chap は AI のエージェントで、
+      Skill や mywant の want という回路を介して、あなたの代わりに世界へ干渉する。
+
+  # --- you の open 拒否（核となる学習ポイント） ---
+  - match: { actor: you, action: open, result: rejected }
+    situation: |
+      あなたは扉に手をかけ、思い切り押し引きしてみた。
+      錠は重く、ビクともしない。鍵穴に指を突っ込んでも何も起きない。
+    why_rejected: |
+      あなた（you）はこの世界に対して『観察』と『移動』はできるが、
+      鍵や機構を直接『操作』することはできない。これは仕様であり、
+      あなたの腕力や知識の問題ではなく、世界のルールだ。
+    who_is_chap: |
+      あなたには相棒 chap がいる。chap は AI のエージェントで、
+      あなたが言葉でお願いすれば、Skill や want という回路を通して
+      代わりに世界へ介入してくれる。
+      『rpg_control_system でできなかったことは、chap に頼めば出来る』
+      これが基本ルール。
+    how_to_proceed:
+      - title: MCP 経路 — chap が MCP ツールで直接操作する
+        body: |
+          チャットで chap（Claude）に頼む:
+            「rpg_control_system で door1 を開けて」
+          chap が mcp__rpg__rpg_control_system を呼び出し、actor=chap で
+          rpg-server に届く。スキルなしで最もシンプルな介入方法。
+      - title: Skill 経路 — Claude Code から /rpg-control を呼ぶ
+        body: |
+          Claude Code で:
+            /rpg-control {"action":"open","target":"door1"}
+          内部で skills/rpg-control/main.py が起動し、actor=chap で
+          rpg-server に届く。チャットからその場で発火できる最短ルート。
+      - title: Want 経路 — mywant に want をデプロイ
+        body: |
+          examples/ask-chap-unlock.yaml を mywant にロードする:
+            mywant apply examples/ask-chap-unlock.yaml
+          rpg_control という want type が、agent.yaml 経由で
+          同じ skill を発火する。永続的・宣言的に表現したいときはこちら。
+
+  # --- chap の open 成功 ---
+  - match: { actor: chap, action: open, result: ok, target: door1 }
+    on_success: |
+      chap が扉に手をかざすと、錠の内部でカチリと小さな音がした。
+      古い金属の擦れる音と共に、扉がゆっくりと内側へ開く。
+      向こうには薄明かりに照らされた廊下が伸びている。
+    lore: |
+      chap が扉を開けたのは「鍵を持っていたから」ではない。
+      chap には『open』という capability があり、世界がそれを許している。
+      Skill / want / agent.yaml は、その capability を呼び出すための回路だ。
+
+  # --- you の脱出 ---
+  - match: { actor: you, action: move, result: ok, target: room2 }
+    on_success: |
+      あなたは開いた扉をくぐり、廊下へ踏み出した。
+      振り返ると先ほどまで閉じ込められていた部屋が小さく見える。
+      これがこのゲームの最初のサイクルだ：
+        観測 → 自分でやってみる → 拒否される → chap に頼む → 進む。
+    lore: |
+      この同じ流れを、Skill 経由でも Want 経路でも体験できる。
+      3経路はすべて rpg-server の /api/v1/control に収束し、結果は同一。
+      これが「mywant と Agent Skills に慣れる」という本作の目的そのもの。

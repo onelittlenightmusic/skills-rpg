@@ -1,0 +1,58 @@
+wantType:
+  metadata:
+    name: rpg_switch
+    title: RPG Device Switch
+    description: |
+      mywant の switch カードでデバイスをトグル操作する。
+      ON にすると chap が activate、OFF にすると deactivate を rpg-server に送る。
+    version: '1.0'
+    category: rpg
+    pattern: independent
+    labels:
+      user-control: "true"
+      child-role: doer
+
+  finalResultField: summary
+
+  parameters:
+    - name: target
+      description: 操作するデバイスの ID（例: generator, alarm）
+      type: string
+      required: true
+    - name: label
+      description: スイッチカードに表示するラベル
+      type: string
+      required: false
+      default: Device
+
+  state:
+    - { name: on,                    description: Current switch state, type: boolean, label: current, persistent: true, initialValue: false }
+    - { name: label,                 description: Switch label, type: string, label: current, persistent: true, initialValue: Device }
+    - { name: target,                description: target device (mirror), type: string, label: current, persistent: true, initialValue: "" }
+    - { name: error,                 description: error message, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: summary,               description: last action summary, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: webhook_payload,       description: webhook payload, type: object, label: current }
+    - { name: webhook_received_at,   description: webhook timestamp, type: string, label: current }
+
+  finalizeWhen:
+    achieved:
+      field: error
+      operator: "=="
+      value: ""
+    failed:
+      field: error
+      operator: "!="
+      value: ""
+
+  requires:
+    - rpg_control
+
+  examples:
+    - name: generator switch
+      description: 発電機をスイッチカードで制御する
+      want:
+        metadata: { name: generator-switch, type: rpg_switch }
+        spec:
+          params:
+            target: generator
+            label: "発電機"

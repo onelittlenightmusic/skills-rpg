@@ -1,0 +1,23 @@
+# mywant 既存の button want を押すと chap が door1 を開ける。
+# button.state.current.pressed_count が増えると、それを参照する
+# rpg_control want が走り、rpg-server に open を要求する。
+#
+# button の押下は次の webhook で行う:
+#   curl -X POST http://localhost:8080/api/v1/webhooks/door1-button
+wants:
+  - metadata:
+      name: door1-button
+      type: button
+    spec:
+      params:
+        label: "Ask chap to open door1"
+
+  - metadata:
+      name: open-door1-on-press
+      type: rpg_control
+    spec:
+      params:
+        action: open
+        target: door1
+      using:
+        - { name: door1-button }

@@ -1,0 +1,58 @@
+# Stage 4: hall_door_03〜10 を rpg_try_keys want で自動開放する。
+# hall_door_01・02 はプレイヤーが手動で /rpg-try-keys を使って開けた後にこれをデプロイする。
+wants:
+  - metadata:
+      name: open-hall-door-03
+      type: rpg_try_keys
+    spec:
+      params:
+        target: hall_door_03
+
+  - metadata:
+      name: open-hall-door-04
+      type: rpg_try_keys
+    spec:
+      params:
+        target: hall_door_04
+
+  - metadata:
+      name: open-hall-door-05
+      type: rpg_try_keys
+    spec:
+      params:
+        target: hall_door_05
+
+  - metadata:
+      name: open-hall-door-06
+      type: rpg_try_keys
+    spec:
+      params:
+        target: hall_door_06
+
+  - metadata:
+      name: open-hall-door-07
+      type: rpg_try_keys
+    spec:
+      params:
+        target: hall_door_07
+
+  - metadata:
+      name: open-hall-door-08
+      type: rpg_try_keys
+    spec:
+      params:
+        target: hall_door_08
+
+  - metadata:
+      name: open-hall-door-09
+      type: rpg_try_keys
+    spec:
+      params:
+        target: hall_door_09
+
+  - metadata:
+      name: open-hall-door-10
+      type: rpg_try_keys
+    spec:
+      params:
+        target: hall_door_10

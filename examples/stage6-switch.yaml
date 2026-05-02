@@ -1,0 +1,18 @@
+# Stage 6: alarm_system と main_generator の切り替えスイッチ。
+# alarm_system を OFF にしてから main_generator を ON にする。
+wants:
+  - metadata:
+      name: switch-alarm-system
+      type: rpg_switch
+    spec:
+      params:
+        target: alarm_system
+        on: false
+
+  - metadata:
+      name: switch-main-generator
+      type: rpg_switch
+    spec:
+      params:
+        target: main_generator
+        on: true

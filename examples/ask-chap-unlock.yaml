@@ -1,0 +1,13 @@
+# Want 経路で chap に door1 を開けてもらう最小例。
+# 前提:
+#   - rpg-server が localhost:7100 で動作している
+#   - skills/ と generated-want-types/ が ~/.mywant/custom-types/ にインストール済み
+#     (mywant-rpg/ で `make install-skills`)
+wants:
+  - metadata:
+      name: ask-chap-open-door1
+      type: rpg_control
+    spec:
+      params:
+        action: open
+        target: door1

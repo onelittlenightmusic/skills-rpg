@@ -1,0 +1,10 @@
+# door1 が開く瞬間まで監視する want。
+# rpg_observe は monitor 型なので周期的に rpg-server をサンプルし、
+# state.current.value にサブツリー（{open, locked, between}）を保持する。
+wants:
+  - metadata:
+      name: watch-door1
+      type: rpg_observe
+    spec:
+      params:
+        target: stages.stage1.doors.door1

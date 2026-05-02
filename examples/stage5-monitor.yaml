@@ -1,0 +1,16 @@
+# Stage 5: 部屋の状態を観察し続けるwant。
+# want cardにgeneratorのon/offとexit_doorの状態が表示される。
+wants:
+  - metadata:
+      name: monitor-generator
+      type: rpg_observe
+    spec:
+      params:
+        target: stages.stage5.devices.generator
+
+  - metadata:
+      name: monitor-exit-door
+      type: rpg_observe
+    spec:
+      params:
+        target: stages.stage5.doors.exit_door
