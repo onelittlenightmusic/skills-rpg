@@ -230,7 +230,11 @@ func doOpen(state *GameState, stage *Stage, in ControlInput) (map[string]any, er
 		return nil, fmt.Errorf("door %q not in stage", id)
 	}
 	if door.Open {
-		return nil, fmt.Errorf("door %q is already open", id)
+		// Idempotent: door already in desired state — treat as success so achievements fire.
+		return map[string]any{
+			"doors." + id + ".open":   true,
+			"doors." + id + ".locked": false,
+		}, nil
 	}
 	if door.Key != "" {
 		if in.Actor == ActorChap {

@@ -1,0 +1,7 @@
+wants:
+  - metadata:
+      name: open-door-03
+      type: rpg_try_keys
+    spec:
+      params:
+        target: hall_door_03

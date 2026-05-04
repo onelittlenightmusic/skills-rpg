@@ -1,11 +1,3 @@
 {
-  "mcpServers": {
-    "rpg": {
-      "command": "/Users/hiroyukiosaki/work/skill-rpg/bin/rpg-mcp",
-      "args": [],
-      "env": {
-        "RPG_SERVER_URL": "http://localhost:7100"
-      }
-    }
-  }
+  "mcpServers": {}
 }

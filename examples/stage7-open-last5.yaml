@@ -5,7 +5,7 @@
 # 5枚のドアを一度に開けるため、5つの rpg_try_keys want が同時に起動される。
 wants:
   - metadata:
-      name: open-all-hall-doors
+      name: open-last-hall-doors
       type: parallelize
       labels:
         recipe: Parallelize

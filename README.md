@@ -27,6 +27,71 @@ curl localhost:7100/api/v1/next-goal
 
 See `docs/playthrough-stage1.md` for the intended first run.
 
+## Prerequisites: mywant-skills
+
+Stage 7 and 8 use `mywant` wants to automate door-opening. The `/mywant-deploy`
+skill (from [mywant-skills](https://github.com/onelittlenightmusic/mywant)) is
+required. Install it first:
+
+```sh
+# See ~/.mywant/custom-types/mywant-skills/README.md for details
+```
+
+Once mywant-skills is installed at `~/.mywant/custom-types/mywant-skills/`,
+`make install-claude` (below) will automatically link them into `~/.claude/skills/`.
+
+## Installing Skills into Claude Code
+
+The `skills/` directory contains Agent Skills (e.g. `rpg-try-keys`). To make them
+available as `/skill-name` slash commands in Claude Code, register the `skills/`
+directory as a project:
+
+```sh
+python3 - <<'EOF'
+import json, pathlib
+
+claude_json = pathlib.Path.home() / ".claude.json"
+skills_dir  = str(pathlib.Path(__file__).resolve().parent / "skills")  # adjust if needed
+
+with open(claude_json) as f:
+    d = json.load(f)
+
+if skills_dir not in d.get("projects", {}):
+    d.setdefault("projects", {})[skills_dir] = {}
+    with open(claude_json, "w") as f:
+        json.dump(d, f, indent=2)
+    print("registered:", skills_dir)
+else:
+    print("already registered")
+EOF
+```
+
+Or run the one-liner directly (replace the path if your clone is elsewhere):
+
+```sh
+python3 -c "
+import json, pathlib
+p = pathlib.Path.home() / '.claude.json'
+d = json.load(open(p))
+s = '$PWD/skills'
+d.setdefault('projects', {})[s] = {}
+json.dump(d, open(p,'w'), indent=2)
+print('registered', s)
+"
+```
+
+After registration the following skills become available in any Claude Code session:
+
+| Skill | Description |
+|---|---|
+| `/rpg-try-keys` | Try all of chap's keys on a door and unlock it |
+| `/rpg-control` | Send a control action as chap |
+| `/rpg-observe` | Observe a subtree of game state |
+| `/rpg-next-goal` | Show the next suggested goal |
+| `/rpg-save` / `/rpg-load` | Save-slot management |
+
+> **Note:** No restart is required — skills are re-read on each invocation.
+
 ## Connecting Claude Code to the rpg MCP server
 
 `bin/rpg-mcp` is a stdio MCP server that wraps `rpg-server`. The project already
