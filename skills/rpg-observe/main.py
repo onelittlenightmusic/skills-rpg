@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""rpg-observe: read a subtree of rpg-server state."""
+"""rpg-observe: read rpg-server state (observe response includes scene descriptor)."""
 import json
 import os
 import sys
@@ -39,6 +39,14 @@ def main() -> None:
     except urllib.error.URLError as e:
         error_out(f"cannot reach rpg-server: {e}")
         return
+
+    # Always surface scene at top level so final_result.scene is accessible in the card plugin.
+    # If value is a dict, also embed there for backward compat.
+    if data.get("scene"):
+        if isinstance(data.get("value"), dict):
+            data["value"]["scene"] = data["scene"]
+        else:
+            data["value"] = {"scene": data["scene"]}
 
     report_progress(100, "done")
     print(json.dumps(data, ensure_ascii=False), flush=True)

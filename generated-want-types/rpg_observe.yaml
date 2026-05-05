@@ -20,9 +20,9 @@ wantType:
     - { name: error,                description: error, type: string, label: current, persistent: true, initialValue: "" }
     - { name: summary,              description: summary, type: string, label: current, persistent: true, initialValue: "" }
     - { name: achieving_percentage, description: 0-100, type: int, label: current, persistent: false, initialValue: 0 }
+    - { name: scene,               description: scene descriptor JSON for card rendering, type: object, label: current, persistent: true, initialValue: null }
 
   finalizeWhen:
-    achieved: { field: mrs_raw_output, operator: "!=", value: null }
     failed:   { field: error, operator: "!=", value: "" }
 
   onInitialize:
