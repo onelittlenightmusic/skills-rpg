@@ -37,6 +37,7 @@ type Scene struct {
 	Devices      []SceneDevice `json:"devices"`
 	NextGoal     string        `json:"next_goal"`
 	EventHistory []Event       `json:"event_history,omitempty"`
+	ChapItems    []string      `json:"chap_items,omitempty"`
 }
 
 // BuildScene computes a Scene from the current game state.
@@ -95,6 +96,13 @@ func (s *Server) BuildScene() Scene {
 		})
 	}
 
+	var chapItems []string
+	for id, item := range stage.Items {
+		if item.HeldBy == ActorChap {
+			chapItems = append(chapItems, id)
+		}
+	}
+
 	return Scene{
 		StageID:      stageID,
 		Title:        stage.Title,
@@ -103,6 +111,7 @@ func (s *Server) BuildScene() Scene {
 		Devices:      devices,
 		NextGoal:     gs.NextGoal.Text,
 		EventHistory: gs.EventHistory,
+		ChapItems:    chapItems,
 	}
 }
 

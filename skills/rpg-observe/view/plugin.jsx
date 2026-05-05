@@ -21,8 +21,21 @@ function You({ cx, cy }) {
   );
 }
 
+// ── Key icon ──────────────────────────────────────────────────────────────────
+function KeyIcon({ x, y, label, used }) {
+  const color = used ? '#6e7681' : '#e3b341';
+  const short = label.replace(/^key_/, '').slice(0, 6);
+  return React.createElement('g', null,
+    React.createElement('rect', { x, y, width: 28, height: 11, rx: 2,
+      fill: used ? '#161b22' : '#2d1f00',
+      stroke: color, strokeWidth: 0.8,
+    }),
+    React.createElement('text', { x: x + 14, y: y + 8, textAnchor: 'middle', fontSize: 6.5, fill: color }, short),
+  );
+}
+
 // ── Chap corner ───────────────────────────────────────────────────────────────
-function ChapCorner() {
+function ChapCorner({ chapItems, usedKeys }) {
   const cx = 12, cy = 12, r = 5.25;
   return React.createElement('g', null,
     React.createElement('path', {
@@ -31,6 +44,15 @@ function ChapCorner() {
     }),
     React.createElement('circle', { cx, cy, r, fill: '#132d1a', stroke: '#3fb950', strokeWidth: 1.5 }),
     React.createElement('text', { x: cx, y: cy + r + 7, textAnchor: 'middle', fontSize: 6.5, fill: '#3fb950' }, 'chap'),
+    ...(chapItems || []).map((key, i) =>
+      React.createElement(KeyIcon, {
+        key,
+        x: QRAD + 6 + i * 32,
+        y: 4,
+        label: key,
+        used: (usedKeys || []).includes(key),
+      })
+    ),
   );
 }
 
@@ -62,7 +84,7 @@ function RpgObserveSection({ want, isChild, isControl, isFocused }) {
     }, '観測中…');
   }
 
-  const { stage_id, title, nodes, edges, devices, next_goal, event_history } = scene;
+  const { stage_id, title, nodes, edges, devices, next_goal, event_history, chap_items } = scene;
 
   const boxCX = (i) => PAD + i * (BW + BG) + BW / 2;
   const SW    = Math.max(120, nodes.length * (BW + BG) - BG + PAD * 2);
@@ -149,8 +171,13 @@ function RpgObserveSection({ want, isChild, isControl, isFocused }) {
         );
       }),
 
-      // chap corner
-      React.createElement(ChapCorner),
+      // chap corner + key inventory
+      React.createElement(ChapCorner, {
+        chapItems: chap_items,
+        usedKeys: (event_history || [])
+          .filter(ev => ev.action === 'open' && ev.actor === 'chap' && ev.result === 'rejected' && ev.args?.key)
+          .map(ev => ev.args.key),
+      }),
     ),
 
     // event history
