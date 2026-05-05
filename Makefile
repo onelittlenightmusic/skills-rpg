@@ -23,14 +23,17 @@ install-skills:
 	@mkdir -p $(SKILL_DST)
 	@for d in skills/*/; do \
 	  name=$$(basename $$d); \
-	  echo "installing $$name -> $(SKILL_DST)/$$name"; \
+	  src=$$(cd "$$d" && pwd); \
+	  echo "linking $$name -> $(SKILL_DST)/$$name"; \
 	  rm -rf "$(SKILL_DST)/$$name"; \
-	  cp -R "$$d" "$(SKILL_DST)/$$name"; \
+	  ln -s "$$src" "$(SKILL_DST)/$$name"; \
 	done
 	@for f in generated-want-types/*.yaml; do \
 	  [ -e "$$f" ] || continue; \
-	  echo "installing $$(basename $$f)"; \
-	  cp "$$f" "$(SKILL_DST)/"; \
+	  src=$$(cd "$$(dirname "$$f")" && pwd)/$$(basename "$$f"); \
+	  echo "linking $$(basename $$f)"; \
+	  rm -f "$(SKILL_DST)/$$(basename $$f)"; \
+	  ln -s "$$src" "$(SKILL_DST)/$$(basename $$f)"; \
 	done
 
 uninstall-skills:
