@@ -10,6 +10,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/state", s.handleState)
 	mux.HandleFunc("/api/v1/observe", s.handleObserve)
+	mux.HandleFunc("/api/v1/scene", s.handleScene)
 	mux.HandleFunc("/api/v1/next-goal", s.handleNextGoal)
 	mux.HandleFunc("/api/v1/control", s.handleControl)
 	mux.HandleFunc("/api/v1/reset", s.handleReset)
@@ -30,6 +31,14 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 
 func writeErr(w http.ResponseWriter, code int, msg string) {
 	writeJSON(w, code, map[string]any{"error": msg, "ok": false})
+}
+
+func (s *Server) handleScene(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, 405, "method not allowed")
+		return
+	}
+	writeJSON(w, 200, s.BuildScene())
 }
 
 func (s *Server) handleState(w http.ResponseWriter, r *http.Request) {
@@ -58,6 +67,7 @@ func (s *Server) handleObserve(w http.ResponseWriter, r *http.Request) {
 		"value":                 subtree,
 		"achievements_unlocked": res.AchievementsUnlocked,
 		"next_goal":             res.NextGoal,
+		"scene":                 s.BuildScene(),
 	})
 }
 

@@ -1,0 +1,9 @@
+# Stage 8: 観測室をリアルタイムで観察するwant。
+# デプロイするだけでwant cardに部屋の状態が継続表示される。
+wants:
+  - metadata:
+      name: watch-sensor-room
+      type: rpg_observe
+    spec:
+      params:
+        target: stages.stage8

@@ -1,0 +1,9 @@
+# Stage 8: exit_doorに全ての鍵を試すwant。
+# generatorがonになった後にこのwantが exit_door を開ける。
+wants:
+  - metadata:
+      name: try-keys-exit-door
+      type: rpg_try_keys
+    spec:
+      params:
+        target: exit_door

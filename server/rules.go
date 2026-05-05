@@ -7,12 +7,13 @@ import (
 
 // Action names recognised by /control.
 const (
-	ActionObserve  = "observe"
-	ActionMove     = "move"
-	ActionPickup   = "pickup"
-	ActionOpen     = "open"     // unlock+open folded into one
+	ActionObserve    = "observe"
+	ActionMove       = "move"
+	ActionPickup     = "pickup"
+	ActionOpen       = "open"       // unlock+open folded into one
 	ActionActivate   = "activate"   // chap activates a device
 	ActionDeactivate = "deactivate" // chap deactivates a device
+	ActionAdvance    = "advance"    // you advances to the next stage after clearing
 )
 
 const (
@@ -27,7 +28,7 @@ func actorAllowed(actor, action string) bool {
 	switch actor {
 	case ActorYou:
 		switch action {
-		case ActionObserve, ActionMove, ActionPickup:
+		case ActionObserve, ActionMove, ActionPickup, ActionAdvance:
 			return true
 		}
 	case ActorChap:
@@ -89,6 +90,8 @@ func applyControl(state *GameState, in ControlInput) (Event, ControlResult) {
 		changes, err = doActivate(state, stage, in)
 	case ActionDeactivate:
 		changes, err = doDeactivate(state, stage, in)
+	case ActionAdvance:
+		changes, err = doAdvance(state, stage)
 	default:
 		err = fmt.Errorf("unknown action %q", in.Action)
 	}
@@ -314,6 +317,23 @@ func doDeactivate(state *GameState, stage *Stage, in ControlInput) (map[string]a
 }
 
 // blockedByAnyDoor returns an error if any closed door exists between a and b.
+func doAdvance(state *GameState, stage *Stage) (map[string]any, error) {
+	if stage.ClearedWhen == "" || !has(state.Achievements, stage.ClearedWhen) {
+		return nil, fmt.Errorf("current stage is not cleared yet")
+	}
+	nextID := stage.NextStage
+	next, ok := state.Stages[nextID]
+	if !ok || next == nil {
+		return nil, fmt.Errorf("no next stage to advance to")
+	}
+	state.CurrentStage = nextID
+	state.EventHistory = nil
+	if next.InitialPosition != "" {
+		state.You.Position = next.InitialPosition
+	}
+	return map[string]any{"current_stage": nextID}, nil
+}
+
 func blockedByAnyDoor(stage *Stage, a, b string) error {
 	for id, d := range stage.Doors {
 		if (d.Between[0] == a && d.Between[1] == b) || (d.Between[0] == b && d.Between[1] == a) {

@@ -11,6 +11,7 @@ type GameState struct {
 	Achievements  []string          `yaml:"achievements" json:"achievements"`
 	NextGoal      Goal              `yaml:"next_goal" json:"next_goal"`
 	PlaytimeSec   int               `yaml:"playtime_seconds" json:"playtime_seconds"`
+	EventHistory  []Event           `yaml:"event_history,omitempty" json:"event_history,omitempty"`
 }
 
 type Player struct {

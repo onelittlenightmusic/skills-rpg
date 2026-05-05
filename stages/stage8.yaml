@@ -1,124 +1,41 @@
 id: stage8
-title: "Lights Out"
+title: "The Watcher"
 description: |
-  暗い部屋。発電機が止まっており、出口の扉は動力なしには開かない。
-  chapとのMCP接続ケーブルが遮断され、直接指示が届かない。
-  しかしスキルはバックドア経路として生きており、
-  過去にデプロイしたwantの意図はそのまま再利用できる。
-  3つのwantをデプロイして脱出しよう。
-initial_position: dark_room
+  観測室。センサーと機器が並ぶ静かな部屋。
+  ここで何が起きているかを知るには、観測し続けるwantをデプロイする必要がある。
+  rpg_observe wantをデプロイして、部屋の状態をリアルタイムで観察しよう。
+initial_position: sensor_room
 waypoints:
-  dark_room:
-    label: "暗い部屋"
-    adjacent: [exit_hall]
-  exit_hall:
-    label: "出口の間"
-    adjacent: [dark_room]
-doors:
-  exit_door:
-    between: [dark_room, exit_hall]
-    open: false
-    locked: true
-    key: key_final
-    requires_device: generator
+  sensor_room:
+    label: "観測室"
+    adjacent: []
 devices:
-  generator:
-    label: "非常用発電機"
+  sensor_a:
+    label: "温度センサー"
+    on: true
+  sensor_b:
+    label: "動体センサー"
     on: false
-items:
-  key_final:
-    held_by: chap
-  key_decoy_a:
-    held_by: chap
-  key_decoy_b:
-    held_by: chap
 achievement_defs:
-  - id: observed_dark_room
+  - id: observe_want_deployed
     when: { action: observe }
-  - id: generator_activated
-    when: { actor: chap, action: activate, target: generator, result: ok }
-  - id: exit_door_opened
-    when: { actor: chap, action: open, target: exit_door, result: ok }
-  - id: escaped_darkness
-    when: { actor: you, action: move, target: exit_hall, result: ok }
 next_goal_rules:
-  - if_missing: observed_dark_room
+  - if_missing: observe_want_deployed
     goal:
-      text: "暗い部屋を観察しよう"
-      hint: "rpg_observe でステージを観察する"
-  - if_missing: generator_activated
-    goal:
-      text: "発電機（generator）を起動するwantをデプロイしよう"
-      hint: "mywant apply examples/stage8-generator.yaml"
-  - if_missing: exit_door_opened
-    goal:
-      text: "exit_doorの状態を監視するwantと、鍵を試すwantをデプロイしよう"
-      hint: "mywant apply examples/stage8-monitor.yaml && mywant apply examples/stage8-try-keys.yaml"
-  - if_missing: escaped_darkness
-    goal:
-      text: "扉が開いた。出口の間へ向かおう"
-      hint: "rpg_control_system actor=you action=move target=exit_hall"
-cleared_when: escaped_darkness
-next_stage: ""
+      text: "rpg_observe wantをデプロイして観測室の状態を観察しよう"
+      hint: "mywant apply examples/stage8-observe.yaml"
+cleared_when: observe_want_deployed
+next_stage: stage9
 narrations:
   - match: { action: observe }
     situation: |
-      完全な暗闇。わずかな非常灯だけが床を照らしている。
-      壁沿いに古い発電機（generator）が置かれているが、止まっている。
-      正面の扉（exit_door）には電子錠がついており、電源なしには開かない。
-
-      ——そしてもうひとつ。chapへの通信ケーブルが壁の途中で切断されている。
-      直接「やれ」と命令する経路は、ここでは機能しない。
+      観測室。壁一面に計器が並んでいる。
+      温度センサー（sensor_a）は稼働中、動体センサー（sensor_b）は停止している。
+      この部屋で何が起きているか、wantが継続的に報告してくれる。
     lore: |
-      chapとのMCP接続ケーブルがこの部屋に入る手前で切断されている。
-      rpg_control_system は届かない。
+      rpg_observe は一度デプロイすると、定期的にステージの状態を取得し続ける。
+      スキルやコントロールは「一回の命令」だが、
+      wantは「こうあり続けてほしい」という継続的な意図——
+      want cardがリアルタイムで部屋の様子を映し出すのはそのためだ。
 
-      しかしスキルはバックドア経路として残っている——
-      スキルはMCPとは別の回路で動くため、この遮断の影響を受けない。
-
-      さらに、過去にデプロイしたwantの「意図の記録」もそのまま有効だ。
-      wantはchapへの命令ではなく、「こうあるべき」という定義だから、
-      接続が切れていても実行し続ける。
-
-      3つのwantをデプロイして、暗闇を抜け出そう：
-
-        1. examples/stage8-generator.yaml — 発電機を起動する
-        2. examples/stage8-monitor.yaml  — 部屋の状態を観察し続ける
-        3. examples/stage8-try-keys.yaml — 電源が入ったら扉に鍵を試す
-
-  - match: { actor: chap, action: activate, target: generator, result: ok }
-    on_success: |
-      発電機が唸りを上げ、ライトが点灯した。
-      部屋が明るくなり、exit_doorの電子錠が緑色に光る。
-    lore: |
-      wantがスキルを通じてgeneratorをactivateした。
-      monitor-wantはこの変化を検知し、want cardに表示している。
-      次は exit_door に鍵を試すwantが動き出す。
-
-  - match: { actor: chap, action: open, target: exit_door, result: ok }
-    on_success: |
-      電子錠が解除され、exit_doorが静かに開く。
-      向こうに出口の間が見える。
-    lore: |
-      try-keys-wantがgeneratorのonを確認し、全ての鍵を試した。
-      3つのwantが連携して、暗闇を突破した。
-
-  - match: { actor: you, action: move, target: exit_hall, result: ok }
-    on_success: |
-      あなたは出口の間へ踏み出した。
-      振り返ると、暗かった部屋に明かりが灯り、開いた扉が見える。
-
-      これが8つのステージで学んだことだ：
-        Stage 1 — chapに任せる（MCP直接）
-        Stage 2 — 試行錯誤を任せる
-        Stage 3 — スキルで自動化する
-        Stage 4 — デバイスをactivateしてドアを開ける
-        Stage 5 — デバイスをdeactivateしてドアを開ける
-        Stage 6 — 順番通りにdeactivate → activate → open
-        Stage 7 — wantでスケールさせる
-        Stage 8 — wantを組み合わせて世界を変える
-    lore: |
-      MCP接続ケーブルが切断されていても、wantとスキルの組み合わせで世界に介入できた。
-      スキルはバックドア、wantは意図の永続化——
-      この2つが揃えば、直接命令のない場所でもエージェントは動き続ける。
-      「意図を定義し、組み合わせる」——これがエージェントシステムの本質だ。
+      観測室の次には、wantを組み合わせてより複雑な問題を解く部屋が待っている。

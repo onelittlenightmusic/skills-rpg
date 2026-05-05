@@ -1,4 +1,4 @@
-.PHONY: all build build-server build-mcp install-skills uninstall-skills install-claude uninstall-claude clean run-server stop-server restart-server smoke
+.PHONY: all build build-server build-mcp install-skills uninstall-skills install-claude uninstall-claude clean run-server stop-server restart-server smoke reload-go rebuild-frontend
 
 BIN_DIR := bin
 SKILL_DST ?= $(HOME)/.mywant/custom-types
@@ -94,3 +94,26 @@ restart-server: stop-server
 
 smoke:
 	bash docs/smoke.sh
+
+# Rebuild frontend and restart mywant server to pick up the new bundle.
+# Faster than restart-all because it skips the Go server rebuild.
+MYWANT_DIR ?= $(HOME)/work/mywant
+rebuild-frontend:
+	@echo "building frontend..."
+	@cd $(MYWANT_DIR)/web && npm run build
+	@echo "rebuilding mywant CLI..."
+	@cd $(MYWANT_DIR) && make build-cli
+	@echo "restarting mywant server..."
+	@curl -s -X POST http://localhost:8080/api/v1/system/restart > /dev/null
+	@echo "done"
+
+# Reload after Go server changes: rebuild → restart rpg-server → reload mywant.
+reload-go: build-server
+	@echo "restarting rpg-server..."
+	@pkill -f 'bin/rpg-server' || true
+	@sleep 1
+	@nohup $(BIN_DIR)/rpg-server > /tmp/rpg-server.log 2>&1 &
+	@sleep 2
+	@echo "restarting mywant server..."
+	@curl -s -X POST http://localhost:8080/api/v1/system/restart > /dev/null
+	@echo "done — restart rpg_observe wants manually if needed"

@@ -107,7 +107,12 @@ func (s *Server) Observe(actor, target string) (any, *ControlResult, error) {
 func (s *Server) Control(in ControlInput) (ControlResult, int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	_, res := applyControl(s.state, in)
+	ev, res := applyControl(s.state, in)
+	s.state.EventHistory = append(s.state.EventHistory, ev)
+	const maxHistory = 20
+	if len(s.state.EventHistory) > maxHistory {
+		s.state.EventHistory = s.state.EventHistory[len(s.state.EventHistory)-maxHistory:]
+	}
 	if err := s.persistLocked(); err != nil {
 		// Persistence failure is server-side; surface but keep result.
 		res.Reason = fmt.Sprintf("%s; persist error: %v", res.Reason, err)
@@ -138,6 +143,7 @@ func (s *Server) DebugJumpStage(stageID string) error {
 	s.state.You.Position = stage.InitialPosition
 	s.state.You.Inventory = nil
 	s.state.Achievements = []string{}
+	s.state.EventHistory = nil
 	s.state.NextGoal = computeNextGoal(s.state)
 	return s.persistLocked()
 }
