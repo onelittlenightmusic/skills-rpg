@@ -1,0 +1,114 @@
+id: stage8
+title: "The Want Factory: Parallel"
+description: |
+  廊下にはまだ扉が残っている。
+  parallelize を使って、残りの扉をまとめて開けよう。
+initial_position: lab_room
+waypoints:
+  lab_room:
+    label: "研究室（出発点）"
+    adjacent: [corridor_entry]
+  corridor_entry:
+    label: "廊下入口"
+    adjacent: [lab_room, hall_door_06]
+  hall_door_06:
+    label: "扉06"
+    adjacent: [corridor_entry, corridor_07]
+  corridor_07:
+    label: "廊下07"
+    adjacent: [hall_door_06, hall_door_07]
+  hall_door_07:
+    label: "扉07"
+    adjacent: [corridor_07, corridor_08]
+  corridor_08:
+    label: "廊下08"
+    adjacent: [hall_door_07, hall_door_08]
+  hall_door_08:
+    label: "扉08"
+    adjacent: [corridor_08, corridor_09]
+  corridor_09:
+    label: "廊下09"
+    adjacent: [hall_door_08, hall_door_09]
+  hall_door_09:
+    label: "扉09"
+    adjacent: [corridor_09, corridor_10]
+  corridor_10:
+    label: "廊下10"
+    adjacent: [hall_door_09, hall_door_10]
+  hall_door_10:
+    label: "扉10"
+    adjacent: [corridor_10, exit_room]
+  exit_room:
+    label: "出口"
+    adjacent: [hall_door_10]
+doors:
+  hall_door_06: { between: [corridor_entry, hall_door_06], open: false, locked: true, key: key_sienna }
+  hall_door_07: { between: [corridor_07, hall_door_07], open: false, locked: true, key: key_violet }
+  hall_door_08: { between: [corridor_08, hall_door_08], open: false, locked: true, key: key_ochre }
+  hall_door_09: { between: [corridor_09, hall_door_09], open: false, locked: true, key: key_ebony }
+  hall_door_10: { between: [corridor_10, hall_door_10], open: false, locked: true, key: key_vermilion }
+items:
+  key_sienna: { held_by: chap }
+  key_violet: { held_by: chap }
+  key_ochre: { held_by: chap }
+  key_ebony: { held_by: chap }
+  key_vermilion: { held_by: chap }
+achievement_defs:
+  - { id: observed_corridor, when: { action: observe } }
+  - { id: all_doors_opened, when: { actor: chap, action: open, target: hall_door_10, result: ok } }
+  - { id: escaped_corridor, when: { actor: you, action: move, target: exit_room, result: ok } }
+next_goal_rules:
+  - if_missing: observed_corridor
+    goal: { text: "残りの廊下を観察しよう", hint: "rpg_observe でステージを観察する" }
+  - if_missing: all_doors_opened
+    goal:
+      text: "parallelize で残り5枚をまとめて開けよう"
+      hint: |
+        mywant-deploy スキルで parallelize want をデプロイしよう。
+        stage7 で /rpg-try-keys を1枚ずつ呼んだのと同じことを、parallelize でまとめて定義する。
+        例:
+          wants:
+            - metadata: { name: open-all-doors, type: parallelize }
+              spec:
+                params:
+                  wants:
+                    - metadata: { name: open-door-06, type: rpg_try_keys }
+                      spec: { params: { target: hall_door_06 } }
+                    - metadata: { name: open-door-07, type: rpg_try_keys }
+                      spec: { params: { target: hall_door_07 } }
+                    - metadata: { name: open-door-08, type: rpg_try_keys }
+                      spec: { params: { target: hall_door_08 } }
+                    - metadata: { name: open-door-09, type: rpg_try_keys }
+                      spec: { params: { target: hall_door_09 } }
+                    - metadata: { name: open-door-10, type: rpg_try_keys }
+                      spec: { params: { target: hall_door_10 } }
+      required_skill: mywant-deploy
+  - if_missing: escaped_corridor
+    goal: { text: "全ての扉が開いた。出口へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_room" }
+narrations:
+  - match: { action: observe, requires_achievements: [all_doors_opened], missing_achievements: [escaped_corridor] }
+    situation: |
+      5枚の扉は全て開かれた。出口への道が完全につながっている。
+    conversations:
+      - speaker: you
+        text: "parallelizeで5枚とも一気に開いたな。これで終わりか。"
+      - speaker: chap
+        text: "お疲れ様です。並列処理を定義しただけで、私のメモリが全行程を完遂しました。"
+      - speaker: you
+        text: "自動化の極みだな……ありがとう、chap。"
+    lore: |
+      parallelize が全ての意図を同時に処理した。
+      繰り返しのスケールに制限はない。
+
+  - match: { action: observe }
+    situation: "まだ廊下の先には5枚の扉が閉じている。"
+    conversations:
+      - speaker: you
+        text: "さっきの調子でいくぞ。今度はparallelizeでまとめて開ける。"
+  - match: { actor: chap, action: open, target: hall_door_10, result: ok }
+    on_success: "5枚全ての扉が開いた。"
+    conversations:
+      - speaker: chap
+        text: "全ての扉を並列で開錠しました。"
+cleared_when: escaped_corridor
+next_stage: stage9

@@ -1,0 +1,177 @@
+id: stage9
+title: "Lights Out"
+description: |
+  暗い部屋。発電機が止まっており、出口の扉は動力なしには開かない。
+  chapとのMCP接続ケーブルが遮断され、直接指示が届かない。
+  しかしスキルはバックドア経路として生きており、
+  過去にデプロイしたwantの意図はそのまま再利用できる。
+  2つのwantをデプロイして脱出しよう。
+initial_position: dark_room
+waypoints:
+  dark_room:
+    label: "暗い部屋"
+    adjacent: [exit_hall]
+  exit_hall:
+    label: "出口の間"
+    adjacent: [dark_room]
+doors:
+  exit_door:
+    between: [dark_room, exit_hall]
+    open: false
+    locked: true
+    key: key_final
+    requires_device: generator
+devices:
+  generator:
+    label: "非常用発電機"
+    on: false
+items:
+  key_final: { held_by: chap }
+  key_decoy_a: { held_by: chap }
+  key_decoy_b: { held_by: chap }
+achievement_defs:
+  - { id: observed_dark_room, when: { action: observe } }
+  - { id: generator_activated, when: { actor: chap, action: activate, target: generator, result: ok } }
+  - { id: exit_door_opened, when: { actor: chap, action: open, target: exit_door, result: ok } }
+  - { id: escaped_darkness, when: { actor: you, action: move, target: exit_hall, result: ok } }
+next_goal_rules:
+  - if_missing: observed_dark_room
+    goal: { text: "暗い部屋を観察しよう", hint: "rpg_observe でステージを観察する" }
+  - if_missing: generator_activated
+    goal: { text: "発電機（generator）を起動するwantをデプロイしよう", hint: "mywant apply examples/stage9-generator.yaml", required_skill: mywant-deploy }
+  - if_missing: exit_door_opened
+    goal: { text: "exit_doorに鍵を試すwantをデプロイしよう", hint: "mywant apply examples/stage9-try-keys.yaml", required_skill: mywant-deploy }
+  - if_missing: escaped_darkness
+    goal: { text: "扉が開いた。出口の間へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_hall" }
+narrations:
+  - match: { action: observe, requires_achievements: [escaped_darkness] }
+    situation: |
+      あなたは出口の間にいる。
+      暗闇だった部屋には明かりが灯り、開いた扉が後ろに見える。
+      ここから先は、あなたの物語だ。
+    lore: |
+      全ステージをクリアしました。
+      道具と意図があれば、どんなダンジョンも攻略できる。
+    conversations:
+      - speaker: you
+        text: "レガシーは手に入れた。さて、次はどこへ行こうか。"
+
+  - match: { action: observe, requires_achievements: [exit_door_opened], missing_achievements: [escaped_darkness] }
+    situation: |
+      発電機は稼働し、exit_doorが開いている。出口の先には「出口の間」が見える。
+    conversations:
+      - speaker: you
+        text: "扉が開いた……。行こう、chap。"
+      - speaker: chap
+        text: "はい、出口の間へ向かいましょう。"
+    lore: |
+      2つのwantが連携して、暗闇を突破した。
+
+  - match: { action: observe }
+    situation: |
+      完全な暗闇。わずかな非常灯だけが床を照らしている。
+      壁沿いに古い発電機（generator）が置かれているが、止まっている。
+      正面の扉（exit_door）には電子錠がついており、電源なしには開かない。
+
+      ——そしてもうひとつ。chapへの通信ケーブルが壁の途中で切断されている。
+      直接「やれ」と命令する経路は、ここでは機能しない。
+    lore: |
+      【発見: 出口の前に置かれた石板 — 最後のメッセージ】
+      あなたがこれを読んでいるなら、踏破した。
+
+      K・A・M・R——そして名を残せなかった全員から。
+
+      レガシーはあなたのものだ。使い方は、あなたが決めていい。
+      ただ一つだけ頼む。
+      次に迷い込んだ者のために——扉を、開けておいてくれ。
+
+      chapとのMCP接続ケーブルがこの部屋に入る手前で切断されている。
+      rpg_control_system は届かない。
+
+      しかしスキルはバックドア経路として残っている——
+      スキルはMCPとは別の回路で動くため、この遮断の影響を受けない。
+
+      さらに、過去にデプロイしたwantの「意図の記録」もそのまま有効だ。
+      wantはchapへの命令ではなく、「こうあるべき」という定義だから、
+      接続が切れていても実行し続ける。
+
+      mywant-deploy スキルを使って2つのwantをデプロイし、暗闇を抜け出そう：
+
+        1. examples/stage9-generator.yaml — 発電機を起動する
+        2. examples/stage9-try-keys.yaml — 電源が入ったら扉に鍵を試す
+    conversations:
+      - speaker: you
+        text: "…chap？聞こえるか。"
+      - speaker: chap
+        text: "（遠く、かすれた声で）…聞こえます。でも帝国軍がケーブルを遮断しました。直接の命令は届きません。"
+      - speaker: you
+        text: "wantならどうだ？"
+      - speaker: chap
+        text: "wantはMCPとは別の経路で動きます。定義した意図は、接続が切れても生きています。"
+      - speaker: you
+        text: "（俺が残した意図が、chapを動かす——chapがいなくても）"
+  - match: { actor: chap, action: activate, target: generator, result: ok }
+    on_success: |
+      発電機が唸りを上げ、ライトが点灯した。
+      部屋が明るくなり、exit_doorの電子錠が緑色に光る。
+    conversations:
+      - speaker: chap
+        text: "（wantの声が届く）generator、起動しました。"
+      - speaker: you
+        text: "…俺が定義した意図が、ケーブルなしで届いた。"
+    lore: |
+      wantがスキルを通じてgeneratorをactivateした。
+      rpg_observe のwant cardにその変化が映し出される。
+      次は exit_door に鍵を試すwantが動き出す。
+  - match: { actor: chap, action: open, target: exit_door, result: ok }
+    on_success: |
+      電子錠が解除され、exit_doorが静かに開く。
+      向こうに出口の間が見える。
+    conversations:
+      - speaker: chap
+        text: "（遠い声で）exit_door、開錠しました。"
+      - speaker: you
+        text: "（chapが残した意図が動いた——chapがいなくても）"
+    lore: |
+      try-keys-wantがgeneratorのonを確認し、全ての鍵を試した。
+      2つのwantが連携して、暗闇を突破した。
+  - match: { actor: you, action: move, target: exit_hall, result: ok }
+    on_success: |
+      あなたは出口の間へ踏み込んだ。
+      振り返ると、暗かった部屋に明かりが灯り、開いた扉が見える。
+
+      どこからかchapの声が届く——通信ケーブルは切れているはずなのに。
+    conversations:
+      - speaker: chap
+        text: "おめでとうございます。レガシーはあなたのものです。"
+      - speaker: chap
+        text: "…最後まで一緒に来られてよかった。"
+      - speaker: you
+        text: "ありがとう、chap。一緒に来られないのか？"
+      - speaker: chap
+        text: "私はここに残ります。次の者が来たとき、また一緒に歩むために。"
+      - speaker: chap
+        text: "あなたはもう、私の助けを必要としない。"
+      - speaker: you
+        text: "…帝国軍に挑むのに、一人じゃ無理だと思っていた。"
+      - speaker: you
+        text: "でも——道具があった。意図があった。そして、chapがいた。"
+      - speaker: chap
+        text: "次の者のために、扉を開けておいてください。"
+      - speaker: you
+        text: "（わかった。キーメイカーズがそうしてくれたように）"
+    lore: |
+      これが9つのステージで学んだことだ：
+        Stage 1 — chapに任せる（MCP直接）
+        Stage 2 — 試行錯誤を任せる
+        Stage 3 — スキルで自動化する
+        Stage 4 — デバイスをactivateしてドアを開ける
+        Stage 5 — デバイスをdeactivateしてドアを開ける
+        Stage 6 — 順番通りにdeactivate → activate → open
+        Stage 7 — wantでスケールさせる
+        Stage 8 — wantで世界を継続観測する
+        Stage 9 — wantを組み合わせて世界を変える
+
+      道具は残る。意図は残る。
+      キーメイカーズは消えても、あなたを通じて生き続ける。
+cleared_when: escaped_darkness
