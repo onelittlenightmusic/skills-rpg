@@ -71,8 +71,22 @@ next_goal_rules:
   - if_missing: escaped_corridor
     goal: { text: "全ての扉が開いた。出口へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_room" }
 narrations:
+  - match: { action: observe, requires_achievements: [all_doors_opened], missing_achievements: [escaped_corridor] }
+    situation: |
+      廊下の扉は全て開かれた。出口への道が完全につながっている。
+    conversations:
+      - speaker: you
+        text: "全ての扉が……開いた。"
+      - speaker: chap
+        text: "お見事です。指示された意図を、私が全て再現しました。"
+      - speaker: you
+        text: "これなら、どんな複雑な仕掛けも怖くないな。ありがとう、chap。"
+    lore: |
+      意図を定義すれば、繰り返しはスケールする。
+      あなたはもう、このダンジョンのルールを支配している。
+
   - match: { action: observe }
-    situation: "5枚の扉が廊下に並んでいる。"
+    situation: "長い廊下。5枚の扉が壁のように連なっている。"
     conversations:
       - speaker: you
         text: "扉が5枚か。これくらいならmywantの練習にちょうどいいな。"

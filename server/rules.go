@@ -193,21 +193,58 @@ func doMove(state *GameState, stage *Stage, in ControlInput) (map[string]any, er
 		return nil, fmt.Errorf("move requires target waypoint")
 	}
 	cur := state.You.Position
-	wpCur, ok := stage.Waypoints[cur]
-	if !ok {
+	if _, ok := stage.Waypoints[cur]; !ok {
 		return nil, fmt.Errorf("current position %q not in stage", cur)
 	}
 	if _, ok := stage.Waypoints[dst]; !ok {
 		return nil, fmt.Errorf("waypoint %q does not exist in current stage", dst)
 	}
-	if !has(wpCur.Adjacent, dst) {
-		return nil, fmt.Errorf("waypoint %q is not adjacent to %q", dst, cur)
+	// Try direct adjacency first.
+	wpCur := stage.Waypoints[cur]
+	if has(wpCur.Adjacent, dst) {
+		if err := blockedByAnyDoor(stage, cur, dst); err != nil {
+			return nil, err
+		}
+		state.You.Position = dst
+		return map[string]any{"you.position": dst}, nil
 	}
-	if err := blockedByAnyDoor(stage, cur, dst); err != nil {
-		return nil, err
+	// Fall back to BFS pathfinding through open waypoints.
+	path := findPath(stage, cur, dst)
+	if path == nil {
+		return nil, fmt.Errorf("no open path from %q to %q", cur, dst)
 	}
 	state.You.Position = dst
 	return map[string]any{"you.position": dst}, nil
+}
+
+// findPath returns a path from src to dst using BFS, only traversing edges
+// that are not blocked by a locked/closed door. Returns nil if no path exists.
+func findPath(stage *Stage, src, dst string) []string {
+	type node struct {
+		id   string
+		path []string
+	}
+	visited := map[string]bool{src: true}
+	queue := []node{{src, []string{src}}}
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		for _, next := range stage.Waypoints[cur.id].Adjacent {
+			if visited[next] {
+				continue
+			}
+			if blockedByAnyDoor(stage, cur.id, next) != nil {
+				continue
+			}
+			p := append(append([]string{}, cur.path...), next)
+			if next == dst {
+				return p
+			}
+			visited[next] = true
+			queue = append(queue, node{next, p})
+		}
+	}
+	return nil
 }
 
 func doPickup(state *GameState, stage *Stage, in ControlInput) (map[string]any, error) {

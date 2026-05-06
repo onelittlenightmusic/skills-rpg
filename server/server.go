@@ -126,6 +126,27 @@ func (s *Server) Observe(actor, target string) (any, *ControlResult, error) {
 	return subtree, &res, nil
 }
 
+// trimInactiveStages removes all stages except the current one from the
+// full-state subtree so LLMs don't get confused by 9 stages of data (~90KB).
+// A no-op when subtree is not the full state map.
+func trimInactiveStages(subtree any, currentStage string) any {
+	m, ok := subtree.(map[string]any)
+	if !ok {
+		return subtree
+	}
+	stages, ok := m["stages"].(map[string]any)
+	if !ok {
+		return subtree
+	}
+	cur := stages[currentStage]
+	trimmed := make(map[string]any, len(m))
+	for k, v := range m {
+		trimmed[k] = v
+	}
+	trimmed["stages"] = map[string]any{currentStage: cur}
+	return trimmed
+}
+
 // Control applies a control input.
 func (s *Server) Control(in ControlInput) (ControlResult, int) {
 	s.mu.Lock()

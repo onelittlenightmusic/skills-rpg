@@ -104,7 +104,7 @@ func (s *Server) handleObserve(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{
 		"target":                target,
 		"actor":                 res.Actor,
-		"value":                 subtree,
+		"value":                 trimInactiveStages(subtree, s.state.CurrentStage),
 		"achievements_unlocked": res.AchievementsUnlocked,
 		"next_goal":             res.NextGoal,
 		"scene":                 s.BuildScene(),
