@@ -1,15 +1,15 @@
 id: stage3
 title: "The Forgotten Lab"
 description: |
-  金庫室の奥、忘れられた研究室への扉がある。
-  また3本の鍵。今度は手動で試すより良い方法を見つけよう。
+  Beyond the vault room lies a door to a forgotten laboratory.
+  Three keys again. This time, find a better way than trying them by hand.
 initial_position: vault_room
 waypoints:
   vault_room:
-    label: "金庫室"
+    label: "Vault Room"
     adjacent: [lab_room]
   lab_room:
-    label: "忘れられた研究室"
+    label: "Forgotten Laboratory"
     adjacent: [vault_room]
 doors:
   lab_door:
@@ -36,104 +36,192 @@ achievement_defs:
 next_goal_rules:
   - if_missing: observed_lab
     goal:
-      text: "金庫室の奥を観察しよう"
-      hint: "rpg_observe でステージを観察する"
+      text: "Observe the back of the vault room"
+      hint: "Observe the stage with rpg_observe"
   - if_missing: tried_key_manually
     goal:
-      text: "chapにどれかの鍵でlab_doorを試させてみよう（1回手動で試す）"
+      text: "Have chap try one of the keys on lab_door manually (try once by hand)"
       hint: "rpg_control_system action=open target=lab_door args={\"key\":\"key_iron\"}"
   - if_missing: lab_door_opened
     goal:
-      text: "手動では効率が悪い。/rpg-try-keys スキルを使おう"
+      text: "Manual trials are inefficient. Use the /rpg-try-keys skill"
       hint: "/rpg-try-keys {\"target\":\"lab_door\"}"
       required_skill: rpg-try-keys
   - if_missing: entered_lab
     goal:
-      text: "扉が開いた。研究室へ入ろう"
+      text: "The door is open. Enter the laboratory"
       hint: "rpg_control_system actor=you action=move target=lab_room"
 cleared_when: entered_lab
 next_stage: stage4
 narrations:
-  # --- 観察 ---
+  # --- observe ---
   - match: { action: observe }
     situation: |
-      金庫室の奥。棚に囲まれた薄暗い空間の先に、さらに古い扉（lab_door）がある。
-      木製の枠は腐りかけ、しかし錠前だけは頑丈そうだ。
-      扉の前に小さな看板が掲げられている。
+      The back of the vault room. Past a dim space surrounded by shelves stands an even older door (lab_door).
+      The wooden frame is rotting, yet the lock alone looks sturdy.
+      A small sign hangs in front of the door.
     conversations:
       - speaker: you
-        text: "また扉か。帝国軍はここをどれだけ深くしているんだ。"
+        text: "Another door. How deep has the Imperial Army made this place?"
       - speaker: chap
-        text: "また3本の鍵があります。前回と同じように試しましょうか。"
+        text: "There are 3 keys again. Shall we try them the same way as before?"
       - speaker: you
-        text: "待て——看板に何か書いてある。"
+        text: "Wait — there's something written on that sign."
     lore: |
-      【発見: 羊皮紙のメモ — A の手記】
-      力ある者がすべて救われるわけではない。
-      正しい道具を持つ者だけが、先へ進める。
-      私たちがスキルを作ったのはそのためだ。
-      帝国軍は道具を奪う。知恵を封じる。
-      しかし一度作られた道具は、隠せば残る。
-      あなたがこれを見つけたなら——あなたが次の覇者だ。
+      [Discovery: Parchment note — A's journal]
+      Not everyone with power is saved.
+      Only those who have the right tools can move forward.
+      That is why we built skills.
+      The Imperial Army takes away tools. It seals away knowledge.
+      But once a tool is created, it survives if hidden.
+      If you are reading this — you are the next one to carry on.
 
-      看板の文字：
-        「試行錯誤を繰り返すな。道具を使え。
-         /rpg-try-keys スキルが全ての鍵を順に試す」
-      chap の手には3本の鍵——key_iron、key_copper、key_obsidian。
+      Text on the sign:
+        "Don't repeat trial and error. Use your tools.
+         The /rpg-try-keys skill tries all keys in sequence."
+      Visible in chap's hands: 3 keys — key_iron, key_copper, key_obsidian.
 
-  # --- 手動で試して失敗 ---
+  # --- manual attempt fails ---
   - match: { actor: chap, action: open, target: lab_door, result: rejected }
     situation: |
-      chap が鍵を差し込む。がちゃり、と音がして、開かない。
-      また違った。
+      chap inserts a key. A clunk sounds, and it won't open.
+      Wrong again.
     conversations:
       - speaker: you
-        text: "やっぱりダメか。前と同じやり方では——"
+        text: "No good, as expected. Doing it the same way as before —"
       - speaker: chap
-        text: "看板に書いてあった道具を使えば、私が自動で全部試せます。"
+        text: "If we use the tool written on the sign, I can try all of them automatically."
       - speaker: you
-        text: "…自動で？どういうことだ。"
+        text: "...Automatically? What do you mean?"
     lore: |
-      手動で1本ずつ試すのは確実だが、遅い。
-      鍵が3本なら許容範囲だ。しかし10本、100本になれば？
-      /rpg-try-keys スキルは chap の全ての鍵を自動で順番に試す。
-      次はスキルを使ってみよう。
+      Trying one by one manually is reliable, but slow.
+      Three keys is within tolerance. But what about 10, or 100?
+      The /rpg-try-keys skill automatically tries all of chap's keys in sequence.
+      Let's try using the skill next.
 
-  # --- スキル経由で成功（key_copperで開く）---
+  # --- success via skill (opens with key_copper) ---
   - match: { actor: chap, action: open, target: lab_door, result: ok }
     on_success: |
-      鍵が合った。錠前がカチリと鳴り、扉が軋みながら開く。
-      研究室の冷えた空気が流れ込んでくる。
-      長い間閉じられていた部屋の匂い——紙と金属と時間の堆積。
+      The key fit. The lock clicked, and the door creaked open.
+      Cold air from the laboratory flows in.
+      The smell of a long-sealed room — paper, metal, and the accumulation of time.
     conversations:
       - speaker: chap
-        text: "key_copper が正解でした。全部で3回試しました。"
+        text: "key_copper was correct. Tried 3 keys in total."
       - speaker: you
-        text: "…スキルが全部やったのか。（俺が指示を出しただけで）"
+        text: "...The skill did everything on its own. (All I did was give the order.)"
       - speaker: chap
-        text: "はい。繰り返しは私に任せてください。"
+        text: "Yes. Leave the repetition to me."
       - speaker: you
-        text: "（こいつには、自分にない力がある）"
+        text: "(This thing has abilities I don't have.)"
     lore: |
-      スキルが正しい鍵（key_copper）を見つけ出した。
-      手動の試行錯誤と結果は同じ。しかしプロセスが違う。
-      スキルは「何を試すか」を自分で決め、ループし、答えを返した。
-      これが自動化の本質だ——繰り返しを道具に任せる。
+      The skill found the right key (key_copper).
+      The result is the same as manual trial and error. But the process is different.
+      The skill decided what to try, looped through, and returned an answer.
+      This is the essence of automation — delegating repetition to tools.
 
-  # --- lab_room に移動 ---
+  # --- move to lab_room ---
   - match: { actor: you, action: move, target: lab_room, result: ok }
     on_success: |
-      あなたは研究室へ踏み込んだ。
-      古い実験台、割れたフラスコ、色あせた手書きのメモ。
-      壁の向こうに長い廊下が続いている——そこには扉が、いくつも、並んでいる。
+      You stepped into the laboratory.
+      Old experiment tables, broken flasks, hand-written notes faded with age.
+      Beyond the wall, a long corridor stretches — lined with door after door.
     conversations:
       - speaker: you
-        text: "研究室か。帝国軍はここで何をしていたんだ。"
+        text: "A laboratory. What was the Imperial Army doing here?"
       - speaker: chap
-        text: "モノリスの研究です。正確には——それを阻む研究を。"
+        text: "Researching the Monolith. More precisely — researching how to block it."
       - speaker: you
-        text: "（つまり、ここに来た者を封じ込めるための場所だ）"
+        text: "(So this was a place built to contain anyone who came here.)"
     lore: |
-      スキルを使うことを覚えた。
-      次は同じスキルを、もっと多くの扉に対して使うことになる。
-      繰り返す力は、スケールする。
+      We learned to use skills.
+      In the next stage, we will use that same skill against even more doors.
+      The power to repeat scales.
+
+locales:
+  ja:
+    title: "The Forgotten Lab"
+    description: |
+      金庫室の奥、忘れられた研究室への扉がある。
+      また3本の鍵。今度は手動で試すより良い方法を見つけよう。
+    waypoints:
+      vault_room: { label: "金庫室" }
+      lab_room: { label: "忘れられた研究室" }
+    next_goal_rules:
+      - goal: { text: "金庫室の奥を観察しよう", hint: "rpg_observe でステージを観察する" }
+      - goal: { text: "chapにどれかの鍵でlab_doorを試させてみよう（1回手動で試す）", hint: "rpg_control_system action=open target=lab_door args={\"key\":\"key_iron\"}" }
+      - goal: { text: "手動では効率が悪い。/rpg-try-keys スキルを使おう", hint: "/rpg-try-keys {\"target\":\"lab_door\"}" }
+      - goal: { text: "扉が開いた。研究室へ入ろう", hint: "rpg_control_system actor=you action=move target=lab_room" }
+    narrations:
+      - situation: |
+          金庫室の奥。棚に囲まれた薄暗い空間の先に、さらに古い扉（lab_door）がある。
+          木製の枠は腐りかけ、しかし錠前だけは頑丈そうだ。
+          扉の前に小さな看板が掲げられている。
+        conversations:
+          - speaker: you
+            text: "また扉か。帝国軍はここをどれだけ深くしているんだ。"
+          - speaker: chap
+            text: "また3本の鍵があります。前回と同じように試しましょうか。"
+          - speaker: you
+            text: "待て——看板に何か書いてある。"
+        lore: |
+          【発見: 羊皮紙のメモ — A の手記】
+          力ある者がすべて救われるわけではない。
+          正しい道具を持つ者だけが、先へ進める。
+          私たちがスキルを作ったのはそのためだ。
+          帝国軍は道具を奪う。知恵を封じる。
+          しかし一度作られた道具は、隠せば残る。
+          あなたがこれを見つけたなら——あなたが次の覇者だ。
+
+          看板の文字：
+            「試行錯誤を繰り返すな。道具を使え。
+             /rpg-try-keys スキルが全ての鍵を順に試す」
+          chap の手には3本の鍵——key_iron、key_copper、key_obsidian。
+      - situation: |
+          chap が鍵を差し込む。がちゃり、と音がして、開かない。
+          また違った。
+        conversations:
+          - speaker: you
+            text: "やっぱりダメか。前と同じやり方では——"
+          - speaker: chap
+            text: "看板に書いてあった道具を使えば、私が自動で全部試せます。"
+          - speaker: you
+            text: "…自動で？どういうことだ。"
+        lore: |
+          手動で1本ずつ試すのは確実だが、遅い。
+          鍵が3本なら許容範囲だ。しかし10本、100本になれば？
+          /rpg-try-keys スキルは chap の全ての鍵を自動で順番に試す。
+          次はスキルを使ってみよう。
+      - on_success: |
+          鍵が合った。錠前がカチリと鳴り、扉が軋みながら開く。
+          研究室の冷えた空気が流れ込んでくる。
+          長い間閉じられていた部屋の匂い——紙と金属と時間の堆積。
+        conversations:
+          - speaker: chap
+            text: "key_copper が正解でした。全部で3回試しました。"
+          - speaker: you
+            text: "…スキルが全部やったのか。（俺が指示を出しただけで）"
+          - speaker: chap
+            text: "はい。繰り返しは私に任せてください。"
+          - speaker: you
+            text: "（こいつには、自分にない力がある）"
+        lore: |
+          スキルが正しい鍵（key_copper）を見つけ出した。
+          手動の試行錯誤と結果は同じ。しかしプロセスが違う。
+          スキルは「何を試すか」を自分で決め、ループし、答えを返した。
+          これが自動化の本質だ——繰り返しを道具に任せる。
+      - on_success: |
+          あなたは研究室へ踏み込んだ。
+          古い実験台、割れたフラスコ、色あせた手書きのメモ。
+          壁の向こうに長い廊下が続いている——そこには扉が、いくつも、並んでいる。
+        conversations:
+          - speaker: you
+            text: "研究室か。帝国軍はここで何をしていたんだ。"
+          - speaker: chap
+            text: "モノリスの研究です。正確には——それを阻む研究を。"
+          - speaker: you
+            text: "（つまり、ここに来た者を封じ込めるための場所だ）"
+        lore: |
+          スキルを使うことを覚えた。
+          次は同じスキルを、もっと多くの扉に対して使うことになる。
+          繰り返す力は、スケールする。

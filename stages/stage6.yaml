@@ -1,16 +1,16 @@
 id: stage6
 title: "Control Room"
 description: |
-  制御室。アラームと発電機が連動している。
-  アラームを止めてから発電機を起動し、出口を開けよう。
-  rpg-switchスキルを使えば on/off を切り替えられる。
+  A control room. The alarm and generator are linked.
+  Stop the alarm first, then start the generator, and open the exit.
+  The rpg-switch skill can toggle devices on and off.
 initial_position: control_room
 waypoints:
   control_room:
-    label: "制御室"
+    label: "Control Room"
     adjacent: [exit_vault]
   exit_vault:
-    label: "脱出口"
+    label: "Exit"
     adjacent: [control_room]
 doors:
   vault_door:
@@ -21,10 +21,10 @@ doors:
     requires_device: main_generator
 devices:
   alarm_system:
-    label: "アラームシステム"
+    label: "Alarm System"
     on: true
   main_generator:
-    label: "メイン発電機"
+    label: "Main Generator"
     on: false
     blocked_by_device: alarm_system
 items:
@@ -48,151 +48,283 @@ achievement_defs:
 next_goal_rules:
   - if_missing: observed_control_room
     goal:
-      text: "制御室を観察しよう"
-      hint: "rpg_observe でステージを観察する"
+      text: "Observe the control room"
+      hint: "Observe the stage with rpg_observe"
   - if_missing: alarm_stopped
     goal:
-      text: "まずアラームを止めよう"
+      text: "First, stop the alarm"
       hint: "rpg_control_system actor=chap action=deactivate target=alarm_system"
   - if_missing: generator_started
     goal:
-      text: "アラームが止まった。発電機を起動しよう"
+      text: "The alarm has stopped. Start the generator"
       hint: "rpg_control_system actor=chap action=activate target=main_generator"
   - if_missing: stage6_vault_door_opened
     goal:
-      text: "vault_doorを /rpg-try-keys で開けよう"
+      text: "Open vault_door with /rpg-try-keys"
       hint: "/rpg-try-keys {\"target\":\"vault_door\"}"
       required_skill: rpg-try-keys
   - if_missing: escaped_control_room
     goal:
-      text: "脱出口へ向かおう"
+      text: "Head to the exit"
       hint: "rpg_control_system actor=you action=move target=exit_vault"
 cleared_when: escaped_control_room
 next_stage: stage7
 narrations:
   - match: { action: observe, requires_achievements: [stage6_vault_door_opened], missing_achievements: [escaped_control_room] }
     situation: |
-      アラームは止まり、発電機も稼働中だ。
-      vault_doorは開かれており、脱出口（exit_vault）への道が開いている。
+      The alarm has stopped and the generator is running.
+      vault_door is open and the path to the exit (exit_vault) is clear.
     conversations:
       - speaker: you
-        text: "3つのステップ……完璧だ。ありがとう、chap。君のおかげだ。"
+        text: "Three steps... perfect. Thank you, chap. You made this possible."
       - speaker: chap
-        text: "いえ、あなたが状況を正しく判断し、私に正しい指示をくれたからです。"
+        text: "No — you read the situation correctly and gave me the right instructions."
       - speaker: you
-        text: "よし、脱出口へ行こう。"
+        text: "All right, let's head to the exit."
     lore: |
-      deactivate → activate → open の順番が成功の鍵だった。
+      The sequence deactivate → activate → open was the key to success.
 
   - match: { action: observe, requires_achievements: [alarm_stopped, generator_started], missing_achievements: [stage6_vault_door_opened] }
     situation: |
-      アラームは止まり、発電機も轟音を立てて稼働している。
-      vault_doorの電子錠も緑色に光り 、開錠を待っている。
+      The alarm has stopped and the generator is roaring as it runs.
+      The electronic lock on vault_door glows green, waiting to be unlocked.
     conversations:
       - speaker: you
-        text: "完璧だ。準備は整ったな。"
+        text: "Perfect. Everything is in order."
       - speaker: chap
-        text: "はい。これで vault_door を開けられます。"
+        text: "Yes. We can now open vault_door."
       - speaker: you
-        text: "よし、あとは鍵だ。"
+        text: "Good. The key is all that's left."
     lore: |
-      deactivate → activate の順序が守られた。
-      あとは /rpg-try-keys スキルで開錠しよう。
+      The deactivate → activate order has been maintained.
+      Now use the /rpg-try-keys skill to unlock.
 
   - match: { action: observe, requires_achievements: [alarm_stopped], missing_achievements: [generator_started] }
     situation: |
-      アラームは止まり、制御室には静寂が戻った。
-      メイン発電機の起動ボタンが点灯し、押されるのを待っている。
+      The alarm has stopped and silence has returned to the control room.
+      The start button on the main generator is lit, waiting to be pressed.
     conversations:
       - speaker: you
-        text: "静かになった。次は発電機を起動しよう。"
+        text: "It's quiet now. Let's start the generator."
       - speaker: chap
-        text: "了解しました。main_generator を起動します。"
+        text: "Understood. Starting main_generator."
     lore: |
-      alarm_system が OFF になった。
-      次は main_generator を起動（activate）しよう。
+      alarm_system is now OFF.
+      Next, start (activate) main_generator.
 
   - match: { action: observe }
     situation: |
-      古い制御室。二つの装置が壁に並んでいる。
-      アラームシステム（alarm_system）——赤いランプが点滅し、鋭い警報音を発している。
-      メイン発電機（main_generator）——停止中。アラームの振動で機器が揺れている。
-      奥の金庫室ドア（vault_door）には電子錠がついているが、電源がない。
+      An old control room. Two devices are mounted side by side on the wall.
+      The alarm system (alarm_system) — red lights blinking, emitting a sharp warning tone.
+      The main generator (main_generator) — stopped. Equipment shakes from the alarm's vibration.
+      The vault door (vault_door) at the back has an electronic lock, but there is no power.
     conversations:
       - speaker: you
-        text: "複雑だな。アラームが鳴っていて、電源も来ていない。"
+        text: "Complicated. The alarm is going off and there's no power either."
       - speaker: chap
-        text: "順番があります。アラームを止めないと発電機は動かせません。"
+        text: "There is an order. The generator cannot be started without stopping the alarm first."
       - speaker: you
-        text: "なぜわかる？"
+        text: "How do you know that?"
       - speaker: chap
-        text: "帝国軍の設計を読みました。blocked_by_device と requires_device——2つの制約がかかっています。"
+        text: "I read the Imperial Army's design. There are two constraints — blocked_by_device and requires_device."
       - speaker: you
-        text: "（こいつは手順を理解している。指示するだけでいい）やってくれ、順番通りに。"
+        text: "(This thing understands the procedure. All I need to do is give the orders.) Do it, in order."
     lore: |
-      【発見: 封蝋された羊皮紙 — キーメイカーズより】
-      モノリスがレガシーを手放さない理由は、単純だ。
-      財宝は、それを持つ者に「救う力」を与える。
-      救われた民は、帝国に従わなくなる。
-      だから帝国軍は、救う者を消し続ける。
+      [Discovery: Wax-sealed parchment — From the Keymakers]
+      The reason the Monolith will not relinquish the legacy is simple.
+      The treasure grants whoever holds it the "power to save."
+      Those who are saved stop obeying the Empire.
+      So the Imperial Army keeps eliminating those who would save others.
 
-      私たちは道具を残すことしかできなかった。
-      しかしそれで十分だ。
-      覇者はいつか現れる。道具があれば、必ず。
+      All we could do was leave behind our tools.
+      But that is enough.
+      The one who will prevail will come eventually. With tools, it is certain.
 
-      ——キーメイカーズ一同
+      — The Keymakers
 
-      アラームが鳴っている限り、発電機は起動できない（blocked_by_device）。
-      発電機が動いていなければ、ドアは開かない（requires_device）。
-      順番がある：まずdeactivate → activate → open。
-      rpg-switchスキルを使えば on/off どちらも操作できる。
-      examples/stage6-switch.yaml を mywant apply してみよう。
+      As long as the alarm is sounding, the generator cannot be started (blocked_by_device).
+      Without the generator running, the door won't open (requires_device).
+      There is an order: deactivate → activate → open first.
+      The rpg-switch skill can operate both on and off.
+      Try running: mywant apply examples/stage6-switch.yaml
 
   - match: { actor: chap, action: deactivate, target: alarm_system, result: ok }
     on_success: |
-      アラームが沈黙した。制御室が静かになる。
-      メイン発電機の起動ボタンのランプが点灯した——起動可能になった。
+      The alarm fell silent. The control room grew quiet.
+      The startup button lamp on the main generator lit up — it is now ready to start.
     conversations:
       - speaker: chap
-        text: "alarm_system、停止しました。main_generatorが起動可能になりました。"
+        text: "alarm_system stopped. main_generator can now be started."
       - speaker: you
-        text: "次は発電機だな。"
-    lore: "alarm_systemがOFFになった。これでmain_generatorを起動できる。"
+        text: "Next is the generator."
+    lore: "alarm_system is now OFF. main_generator can now be started."
 
   - match: { actor: chap, action: activate, target: main_generator, result: ok }
     on_success: |
-      発電機が轟音と共に動き出した。
-      vault_doorの電子錠が緑色に光る。
+      The generator roared to life.
+      The electronic lock on vault_door glowed green.
     conversations:
       - speaker: chap
-        text: "main_generator、起動しました。vault_doorの電子錠が解除可能になりました。"
+        text: "main_generator started. The electronic lock on vault_door can now be released."
       - speaker: you
-        text: "完璧だ。（chapは手順を完全に理解している）"
+        text: "Perfect. (chap fully understands the procedure.)"
     lore: |
-      deactivate → activate の順番が守られた。
-      あとは vault_door に鍵を試すだけだ。
+      The deactivate → activate order has been maintained.
+      All that's left is to try keys on vault_door.
 
   - match: { actor: chap, action: open, target: vault_door, result: ok }
-    on_success: "vault_doorが重い音を立てて開く。"
+    on_success: "vault_door opens with a heavy sound."
     conversations:
       - speaker: chap
-        text: "vault_door、開錠しました。"
+        text: "vault_door unlocked."
       - speaker: you
-        text: "3つのステップ——止めて、起動して、開ける。それだけか。"
-    lore: "3つのステップを正しい順番で実行できた。"
+        text: "Three steps — stop, start, open. That's all it took."
+    lore: "The three steps were executed in the correct order."
 
   - match: { actor: you, action: move, target: exit_vault, result: ok }
     on_success: |
-      脱出口へ踏み込んだ。
-      制御室を振り返ると、静かな発電機と開いたドアが見える。
+      You stepped into the exit.
+      Looking back at the control room, you see a silent generator and an open door.
     conversations:
       - speaker: you
-        text: "…いつの間にか、chapに頼むことを迷わなくなっていた。"
+        text: "...Before I knew it, I stopped hesitating to rely on chap."
       - speaker: chap
-        text: "あなたが状況を正しく読んで、順番を理解した。私はその通りに動いただけです。"
+        text: "You read the situation correctly and understood the sequence. I just followed through."
       - speaker: you
-        text: "（チームになっている、と感じた）"
+        text: "(We've become a team, I thought.)"
     lore: |
-      deactivate（障害を除去）→ activate（条件を整える）→ open（扉を開ける）
-      この3ステップのパターン、覚えておこう。
-      次のステージでは10枚の扉が待っている。wantでスケールさせよう。
+      deactivate (remove the obstacle) → activate (set the condition) → open (open the door)
+      Remember this 3-step pattern.
+      In the next stage, 10 doors are waiting. Let's scale with wants.
+
+locales:
+  ja:
+    title: "Control Room"
+    description: |
+      制御室。アラームと発電機が連動している。
+      アラームを止めてから発電機を起動し、出口を開けよう。
+      rpg-switchスキルを使えば on/off を切り替えられる。
+    waypoints:
+      control_room: { label: "制御室" }
+      exit_vault: { label: "脱出口" }
+    devices:
+      alarm_system: { label: "アラームシステム" }
+      main_generator: { label: "メイン発電機" }
+    next_goal_rules:
+      - goal: { text: "制御室を観察しよう", hint: "rpg_observe でステージを観察する" }
+      - goal: { text: "まずアラームを止めよう", hint: "rpg_control_system actor=chap action=deactivate target=alarm_system" }
+      - goal: { text: "アラームが止まった。発電機を起動しよう", hint: "rpg_control_system actor=chap action=activate target=main_generator" }
+      - goal: { text: "vault_doorを /rpg-try-keys で開けよう", hint: "/rpg-try-keys {\"target\":\"vault_door\"}" }
+      - goal: { text: "脱出口へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_vault" }
+    narrations:
+      - situation: |
+          アラームは止まり、発電機も稼働中だ。
+          vault_doorは開かれており、脱出口（exit_vault）への道が開いている。
+        conversations:
+          - speaker: you
+            text: "3つのステップ……完璧だ。ありがとう、chap。君のおかげだ。"
+          - speaker: chap
+            text: "いえ、あなたが状況を正しく判断し、私に正しい指示をくれたからです。"
+          - speaker: you
+            text: "よし、脱出口へ行こう。"
+        lore: |
+          deactivate → activate → open の順番が成功の鍵だった。
+      - situation: |
+          アラームは止まり、発電機も轟音を立てて稼働している。
+          vault_doorの電子錠も緑色に光り 、開錠を待っている。
+        conversations:
+          - speaker: you
+            text: "完璧だ。準備は整ったな。"
+          - speaker: chap
+            text: "はい。これで vault_door を開けられます。"
+          - speaker: you
+            text: "よし、あとは鍵だ。"
+        lore: |
+          deactivate → activate の順序が守られた。
+          あとは /rpg-try-keys スキルで開錠しよう。
+      - situation: |
+          アラームは止まり、制御室には静寂が戻った。
+          メイン発電機の起動ボタンが点灯し、押されるのを待っている。
+        conversations:
+          - speaker: you
+            text: "静かになった。次は発電機を起動しよう。"
+          - speaker: chap
+            text: "了解しました。main_generator を起動します。"
+        lore: |
+          alarm_system が OFF になった。
+          次は main_generator を起動（activate）しよう。
+      - situation: |
+          古い制御室。二つの装置が壁に並んでいる。
+          アラームシステム（alarm_system）——赤いランプが点滅し、鋭い警報音を発している。
+          メイン発電機（main_generator）——停止中。アラームの振動で機器が揺れている。
+          奥の金庫室ドア（vault_door）には電子錠がついているが、電源がない。
+        conversations:
+          - speaker: you
+            text: "複雑だな。アラームが鳴っていて、電源も来ていない。"
+          - speaker: chap
+            text: "順番があります。アラームを止めないと発電機は動かせません。"
+          - speaker: you
+            text: "なぜわかる？"
+          - speaker: chap
+            text: "帝国軍の設計を読みました。blocked_by_device と requires_device——2つの制約がかかっています。"
+          - speaker: you
+            text: "（こいつは手順を理解している。指示するだけでいい）やってくれ、順番通りに。"
+        lore: |
+          【発見: 封蝋された羊皮紙 — キーメイカーズより】
+          モノリスがレガシーを手放さない理由は、単純だ。
+          財宝は、それを持つ者に「救う力」を与える。
+          救われた民は、帝国に従わなくなる。
+          だから帝国軍は、救う者を消し続ける。
+
+          私たちは道具を残すことしかできなかった。
+          しかしそれで十分だ。
+          覇者はいつか現れる。道具があれば、必ず。
+
+          ——キーメイカーズ一同
+
+          アラームが鳴っている限り、発電機は起動できない（blocked_by_device）。
+          発電機が動いていなければ、ドアは開かない（requires_device）。
+          順番がある：まずdeactivate → activate → open。
+          rpg-switchスキルを使えば on/off どちらも操作できる。
+          examples/stage6-switch.yaml を mywant apply してみよう。
+      - on_success: |
+          アラームが沈黙した。制御室が静かになる。
+          メイン発電機の起動ボタンのランプが点灯した——起動可能になった。
+        conversations:
+          - speaker: chap
+            text: "alarm_system、停止しました。main_generatorが起動可能になりました。"
+          - speaker: you
+            text: "次は発電機だな。"
+        lore: "alarm_systemがOFFになった。これでmain_generatorを起動できる。"
+      - on_success: |
+          発電機が轟音と共に動き出した。
+          vault_doorの電子錠が緑色に光る。
+        conversations:
+          - speaker: chap
+            text: "main_generator、起動しました。vault_doorの電子錠が解除可能になりました。"
+          - speaker: you
+            text: "完璧だ。（chapは手順を完全に理解している）"
+        lore: |
+          deactivate → activate の順番が守られた。
+          あとは vault_door に鍵を試すだけだ。
+      - on_success: "vault_doorが重い音を立てて開く。"
+        conversations:
+          - speaker: chap
+            text: "vault_door、開錠しました。"
+          - speaker: you
+            text: "3つのステップ——止めて、起動して、開ける。それだけか。"
+        lore: "3つのステップを正しい順番で実行できた。"
+      - on_success: |
+          脱出口へ踏み込んだ。
+          制御室を振り返ると、静かな発電機と開いたドアが見える。
+        conversations:
+          - speaker: you
+            text: "…いつの間にか、chapに頼むことを迷わなくなっていた。"
+          - speaker: chap
+            text: "あなたが状況を正しく読んで、順番を理解した。私はその通りに動いただけです。"
+          - speaker: you
+            text: "（チームになっている、と感じた）"
+        lore: |
+          deactivate（障害を除去）→ activate（条件を整える）→ open（扉を開ける）
+          この3ステップのパターン、覚えておこう。
+          次のステージでは10枚の扉が待っている。wantでスケールさせよう。

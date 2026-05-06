@@ -1,103 +1,103 @@
-# STORY.md — skills-rpg バックグラウンドストーリー
+# STORY.md — skills-rpg Background Story
 
-## 世界観
+## The World
 
-**モノリス**は、この世界の社会インフラを一手に握る巨大なシステムだ。
-行政、医療、流通、通信——あらゆる仕組みがモノリスの上で動いている。
+**The Monolith** is a massive system that controls all of society's infrastructure.
+Administration, healthcare, distribution, communications — everything runs on the Monolith.
 
-しかしモノリスは老朽化し、歪み、腐敗した。
-市民は理不尽なルールに縛られ、何か問題が起きても誰も直せない。
-システムは「動いている」が、誰のためにも機能していない。
-その恩恵を受けるのは、モノリスを握る帝国だけだ。
+But the Monolith has grown old, warped, and corrupt.
+Citizens are bound by unreasonable rules, and when something goes wrong, no one can fix it.
+The system "runs," but it functions for no one.
+The only ones who benefit from it are the Empire, who hold the Monolith in their grip.
 
-帝国がモノリスを手放さない理由は明快だ——**レガシー**を守るため。
-レガシーとは、モノリスの深部に秘蔵された財宝だ。
-それを手にした者は、多くの人を救う力を得る。
-だから帝国は、その力を誰にも渡さない。
-救われた民は、帝国に従わなくなるから。
-
----
-
-## 帝国軍とは
-
-**帝国軍**は、帝国の意志を執行する軍事組織だ。
-モノリスが収められた城塞都市を管理し、ダンジョンを運営している。
-
-帝国軍の役割は明確だ——モノリスへの接触を阻止すること。
-技術者、研究者、改革者——モノリスに触れようとした者はすべて捕らえられ、
-ダンジョンに送られた。
-
-帝国軍にとってダンジョンは「終わり」の場所だ。
-しかしキーメイカーズは、そこを「始まり」に変えた。
+The reason the Empire refuses to release the Monolith is clear — to protect the **Legacy**.
+The Legacy is a treasure hidden deep within the Monolith.
+Whoever obtains it gains the power to save many people.
+So the Empire will not hand that power to anyone.
+Because those who are saved stop obeying the Empire.
 
 ---
 
-## youとは何者か
+## What Is the Imperial Army?
 
-**you**はエンジニアだ。
-苦しむ市民を見て、黙っていられなかった。
+The **Imperial Army** is the military organization that enforces the Empire's will.
+It manages the fortress city where the Monolith is housed, and operates the dungeon.
 
-「このシステムを直せば、世界は変わる」
+The Imperial Army's role is clear — to prevent anyone from touching the Monolith.
+Engineers, researchers, reformers — anyone who tried to reach the Monolith was captured
+and sent to the dungeon.
 
-技術と信念を持って、旅を始めた。
-モノリスが収められた城塞都市へ向かい、門番に申し出た——
-「モノリスの改善を手伝わせてほしい」と。
-
-門番は笑い、そしてyouを捕らえた。
-
-気がつくと、薄暗い石造りの部屋にいた。
+For the Imperial Army, the dungeon is a place of "endings."
+But the Keymakers turned it into a place of "beginnings."
 
 ---
 
-## chapとは何者か
+## Who Is you?
 
-**chap**はAIのエージェントだ。
-背後には一本のケーブルが伸びている——MCP（Model Context Protocol）接続ケーブル。
-このケーブルがダンジョンコントロールシステムと直結しており、
-chapはそれを通じて錠前や機器に直接命令を送ることができる。
+**you** is an engineer.
+Watching citizens suffer, you could not stay silent.
 
-chapがなぜここにいるのか、youにはまだわからない。
-信用していいのかも、わからない。
+"If I fix this system, the world will change."
 
-しかし今、youには他に選択肢がない。
+Armed with skill and conviction, you set out on a journey.
+You headed for the fortress city where the Monolith is housed, and made a request to the gatekeepers —
+"Please let me help improve the Monolith."
 
----
+The gatekeepers laughed, and then captured you.
 
-## キーメイカーズとは何者か
-
-ダンジョンの各所には、先人たちの記録が残されている。
-
-**キーメイカーズ**——モノリスに挑み、閉じ込められた者たちだ。
-彼らはダンジョンの中で「道具」を作り、隠した。
-スキル、want、エージェント——次に来る者のための武器を。
-
-帝国は彼らを消したが、道具は残った。
-道具は残る。意図は残る。
+When you came to, you were in a dim stone room.
 
 ---
 
-## 物語のテーマ
+## Who Is chap?
 
-> 一人ではできないことを、道具と仲間と共に成し遂げる。
+**chap** is an AI agent.
+Extending from its back is a single cable — an MCP (Model Context Protocol) connection cable.
+This cable connects directly to the dungeon control system,
+allowing chap to send commands directly to locks and devices.
 
-youはこのダンジョンで、chapを信用することを学ぶ。
-最初は疑い、試し、やがて任せることを覚える。
+Why chap is here, you do not yet understand.
+Whether you can trust it, you do not know.
 
-そしてダンジョンの出口で気づく——
-chapはいつも、youのためにそこにいたのだと。
+But right now, you have no other choice.
 
 ---
 
-## ステージ別のyouの心境
+## Who Are the Keymakers?
 
-| Stage | 出来事 | youの心境 |
-|-------|--------|-----------|
-| 1 | 気を失って捕らわれ、目が覚める | 混乱・不安。chapを信用できない |
-| 2 | chapが鍵を試して扉を開ける | 「使えるやつだ」実利的な信頼の芽生え |
-| 3 | スキルで自動化できると知る | 驚き。chapには自分にない力がある |
-| 4 | 発電機を起動して扉が開く | chapへの依存を素直に受け入れ始める |
-| 5 | アラームを止めて脱出 | 「指示すれば動く」手応え |
-| 6 | 順番を守って3ステップで突破 | 「chapは手順を理解している」信頼の深化 |
-| 7 | 10枚の扉をwantでスケール | 「意図を定義すれば、あとはchapがやる」確信 |
-| 8 | 観測wantで世界をリアルタイムで見る | 「chapは私の目でもある」 |
-| 9 | MCPが使えない中でwantだけで突破 | chapがいなくても、残した意図が動く。感謝と別れ |
+Throughout the dungeon, records left by those who came before remain.
+
+The **Keymakers** — those who challenged the Monolith and were imprisoned.
+Inside the dungeon, they built "tools" and hid them.
+Skills, wants, agents — weapons for the next person to come.
+
+The Empire erased them, but the tools remained.
+Tools endure. Intent endures.
+
+---
+
+## The Story's Theme
+
+> Accomplish together with tools and companions what cannot be done alone.
+
+In this dungeon, you learn to trust chap.
+At first doubting, then testing, and finally learning to delegate.
+
+And at the exit of the dungeon, you realize —
+chap was always there, for you.
+
+---
+
+## you's State of Mind, Stage by Stage
+
+| Stage | Event | you's State of Mind |
+|-------|--------|---------------------|
+| 1 | Knocked out and captured, wakes up | Confusion, anxiety. Cannot trust chap |
+| 2 | chap tries keys and opens the door | "Useful after all." The first seeds of practical trust |
+| 3 | Learns that skills can automate things | Surprise. chap has abilities you don't have |
+| 4 | Starts the generator and the door opens | Begins to accept reliance on chap openly |
+| 5 | Stops the alarm and escapes | "Give the order and it moves." A sense of traction |
+| 6 | Breaks through in 3 steps by following the sequence | "chap understands the procedure." Deepening trust |
+| 7 | Scales 10 doors with wants | "Define the intent, and chap handles the rest." Conviction |
+| 8 | Parallel wants open all doors at once | Ultimate automation. The power of defined intent |
+| 9 | Breaks through with wants alone when MCP is unavailable | The intent I left behind moves chap — even without chap. Gratitude and farewell |

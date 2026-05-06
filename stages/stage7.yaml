@@ -1,45 +1,45 @@
 id: stage7
 title: "The Want Factory"
 description: |
-  長い廊下。5枚の扉が並んでいる。
-  手動でスキルを使い、残りはwantとしてデプロイして解決しよう。
+  A long corridor. Five doors stand in a row.
+  Open the first two using skills manually, then deploy the rest as a want.
 initial_position: lab_room
 waypoints:
   lab_room:
-    label: "研究室（出発点）"
+    label: "Laboratory (Starting Point)"
     adjacent: [corridor_entry]
   corridor_entry:
-    label: "廊下入口"
+    label: "Corridor Entrance"
     adjacent: [lab_room, hall_door_01]
   hall_door_01:
-    label: "扉01"
+    label: "Door 01"
     adjacent: [corridor_entry, corridor_02]
   corridor_02:
-    label: "廊下02"
+    label: "Corridor 02"
     adjacent: [hall_door_01, hall_door_02]
   hall_door_02:
-    label: "扉02"
+    label: "Door 02"
     adjacent: [corridor_02, corridor_03]
   corridor_03:
-    label: "廊下03"
+    label: "Corridor 03"
     adjacent: [hall_door_02, hall_door_03]
   hall_door_03:
-    label: "扉03"
+    label: "Door 03"
     adjacent: [corridor_03, corridor_04]
   corridor_04:
-    label: "廊下04"
+    label: "Corridor 04"
     adjacent: [hall_door_03, hall_door_04]
   hall_door_04:
-    label: "扉04"
+    label: "Door 04"
     adjacent: [corridor_04, corridor_05]
   corridor_05:
-    label: "廊下05"
+    label: "Corridor 05"
     adjacent: [hall_door_04, hall_door_05]
   hall_door_05:
-    label: "扉05"
+    label: "Door 05"
     adjacent: [corridor_05, exit_room]
   exit_room:
-    label: "出口"
+    label: "Exit"
     adjacent: [hall_door_05]
 doors:
   hall_door_01: { between: [corridor_entry, hall_door_01], open: false, locked: true, key: key_azure }
@@ -61,39 +61,86 @@ achievement_defs:
   - { id: escaped_corridor, when: { actor: you, action: move, target: exit_room, result: ok } }
 next_goal_rules:
   - if_missing: observed_corridor
-    goal: { text: "廊下を観察しよう", hint: "rpg_observe でステージを観察する" }
+    goal: { text: "Observe the corridor", hint: "Observe the stage with rpg_observe" }
   - if_missing: opened_door_01
-    goal: { text: "hall_door_01 を /rpg-try-keys で開けよう", hint: "/rpg-try-keys {\"target\":\"hall_door_01\"}", required_skill: rpg-try-keys }
+    goal: { text: "Open hall_door_01 with /rpg-try-keys", hint: "/rpg-try-keys {\"target\":\"hall_door_01\"}", required_skill: rpg-try-keys }
   - if_missing: opened_door_02
-    goal: { text: "hall_door_02 も /rpg-try-keys で開けよう", hint: "/rpg-try-keys {\"target\":\"hall_door_02\"}", required_skill: rpg-try-keys }
+    goal: { text: "Open hall_door_02 with /rpg-try-keys as well", hint: "/rpg-try-keys {\"target\":\"hall_door_02\"}", required_skill: rpg-try-keys }
   - if_missing: all_doors_opened
-    goal: { text: "残りの扉（3, 4, 5）を mywant-deploy でデプロイして開けよう", hint: "/mywant-deploy に want 定義を渡す", required_skill: mywant-deploy }
+    goal: { text: "Deploy the remaining doors (3, 4, 5) using mywant-deploy", hint: "Pass a want definition to /mywant-deploy", required_skill: mywant-deploy }
   - if_missing: escaped_corridor
-    goal: { text: "全ての扉が開いた。出口へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_room" }
+    goal: { text: "All doors are open. Head to the exit", hint: "rpg_control_system actor=you action=move target=exit_room" }
 narrations:
   - match: { action: observe, requires_achievements: [all_doors_opened], missing_achievements: [escaped_corridor] }
     situation: |
-      廊下の扉は全て開かれた。出口への道が完全につながっている。
+      All doors in the corridor have been opened. The path to the exit is fully connected.
     conversations:
       - speaker: you
-        text: "全ての扉が……開いた。"
+        text: "All the doors... are open."
       - speaker: chap
-        text: "お見事です。指示された意図を、私が全て再現しました。"
+        text: "Well done. I reproduced everything you intended."
       - speaker: you
-        text: "これなら、どんな複雑な仕掛けも怖くないな。ありがとう、chap。"
+        text: "With this, no mechanism can stop us. Thank you, chap."
     lore: |
-      意図を定義すれば、繰り返しはスケールする。
-      あなたはもう、このダンジョンのルールを支配している。
+      Define the intent, and repetition scales.
+      You are now in command of this dungeon's rules.
 
   - match: { action: observe }
-    situation: "長い廊下。5枚の扉が壁のように連なっている。"
+    situation: "A long corridor. Five doors line up like a wall."
     conversations:
       - speaker: you
-        text: "扉が5枚か。これくらいならmywantの練習にちょうどいいな。"
+        text: "Five doors, huh. Just the right number to practice with mywant."
   - match: { actor: chap, action: open, target: hall_door_05, result: ok }
-    on_success: "5枚全ての扉が開いた。"
+    on_success: "All five doors have been opened."
     conversations:
       - speaker: chap
-        text: "全ての扉が開錠されました。"
+        text: "All doors have been unlocked."
 cleared_when: escaped_corridor
 next_stage: stage8
+
+locales:
+  ja:
+    title: "The Want Factory"
+    description: |
+      長い廊下。5枚の扉が並んでいる。
+      手動でスキルを使い、残りはwantとしてデプロイして解決しよう。
+    waypoints:
+      lab_room: { label: "研究室（出発点）" }
+      corridor_entry: { label: "廊下入口" }
+      hall_door_01: { label: "扉01" }
+      corridor_02: { label: "廊下02" }
+      hall_door_02: { label: "扉02" }
+      corridor_03: { label: "廊下03" }
+      hall_door_03: { label: "扉03" }
+      corridor_04: { label: "廊下04" }
+      hall_door_04: { label: "扉04" }
+      corridor_05: { label: "廊下05" }
+      hall_door_05: { label: "扉05" }
+      exit_room: { label: "出口" }
+    next_goal_rules:
+      - goal: { text: "廊下を観察しよう", hint: "rpg_observe でステージを観察する" }
+      - goal: { text: "hall_door_01 を /rpg-try-keys で開けよう", hint: "/rpg-try-keys {\"target\":\"hall_door_01\"}" }
+      - goal: { text: "hall_door_02 も /rpg-try-keys で開けよう", hint: "/rpg-try-keys {\"target\":\"hall_door_02\"}" }
+      - goal: { text: "残りの扉（3, 4, 5）を mywant-deploy でデプロイして開けよう", hint: "/mywant-deploy に want 定義を渡す" }
+      - goal: { text: "全ての扉が開いた。出口へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_room" }
+    narrations:
+      - situation: |
+          廊下の扉は全て開かれた。出口への道が完全につながっている。
+        conversations:
+          - speaker: you
+            text: "全ての扉が……開いた。"
+          - speaker: chap
+            text: "お見事です。指示された意図を、私が全て再現しました。"
+          - speaker: you
+            text: "これなら、どんな複雑な仕掛けも怖くないな。ありがとう、chap。"
+        lore: |
+          意図を定義すれば、繰り返しはスケールする。
+          あなたはもう、このダンジョンのルールを支配している。
+      - situation: "長い廊下。5枚の扉が壁のように連なっている。"
+        conversations:
+          - speaker: you
+            text: "扉が5枚か。これくらいならmywantの練習にちょうどいいな。"
+      - on_success: "5枚全ての扉が開いた。"
+        conversations:
+          - speaker: chap
+            text: "全ての扉が開錠されました。"

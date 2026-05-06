@@ -1,15 +1,15 @@
 id: stage1
 title: "The Locked Room"
 description: |
-  気がつくと部屋に閉じ込められている。
-  自分（you）はドアを開ける力を持たない。chap に頼んで脱出しよう。
+  You find yourself trapped in a room.
+  You (you) lack the power to open doors on your own. Ask chap for help and escape.
 initial_position: room1
 waypoints:
   room1:
-    label: "出発の部屋"
+    label: "Starting Room"
     adjacent: [room2]
   room2:
-    label: "廊下"
+    label: "Hallway"
     adjacent: [room1]
 doors:
   door1:
@@ -28,180 +28,294 @@ achievement_defs:
 next_goal_rules:
   - if_missing: look_around
     goal:
-      text: "まずは部屋を見回そう"
-      hint: "rpg-observe target=stages.stage1 を試そう（または rpg-control-system observe target=room1）"
+      text: "First, look around the room"
+      hint: "Try rpg-observe target=stages.stage1 (or rpg-control-system observe target=room1)"
       required_skill: rpg-observe
   - if_missing: attempted_self_unlock
     goal:
-      text: "ドアを自分で開けてみよう"
-      hint: "rpg-control-system action=open target=door1 を試そう（you では拒否されるはず）"
+      text: "Try to open the door yourself"
+      hint: "Try rpg-control-system action=open target=door1 (you should be rejected)"
   - if_missing: chap_unlocked_door1
     goal:
-      text: "you ではドアを開けられない。chap に頼もう"
+      text: "You can't open the door. Ask chap for help"
       hint: |
-        Skill 経路:  Claude Code で /rpg-control action=open target=door1
-        Want 経路:   examples/ask-chap-unlock.yaml を mywant にロード
+        Skill route:  In Claude Code, use /rpg-control action=open target=door1
+        Want route:   Load examples/ask-chap-unlock.yaml into mywant
       required_skill: rpg-control
   - if_missing: escaped_room1
     goal:
-      text: "ドアが開いた。部屋を出よう"
+      text: "The door is open. Leave the room"
       hint: "rpg-control-system action=move target=room2"
 cleared_when: escaped_room1
 next_stage: stage2
 narrations:
-  # --- observe: ステージクリア後（room2に脱出済み）---
+  # --- observe: after stage clear (escaped to room2) ---
   - match:
       action: observe
       requires_achievements: [escaped_room1]
     conversations:
       - speaker: you
-        text: "廊下に出た。あの部屋には戻りたくないな。"
+        text: "Made it to the hallway. I don't want to go back to that room."
       - speaker: chap
-        text: "ステージ1、クリアです。先へ進みましょう。"
+        text: "Stage 1 cleared. Let's move forward."
       - speaker: you
-        text: "（chapを信じて正解だった）"
+        text: "(Trusting chap was the right call.)"
 
-  # --- observe: door1開錠後・脱出前 ---
+  # --- observe: after door1 unlocked, before escape ---
   - match:
       action: observe
       requires_achievements: [chap_unlocked_door1]
       missing_achievements: [escaped_room1]
     conversations:
       - speaker: you
-        text: "（扉が開いている。あとは通り抜けるだけだ）"
+        text: "(The door is open. All I have to do now is walk through.)"
       - speaker: chap
-        text: "room2へ移動できます。action=move target=room2 です。"
+        text: "You can move to room2. action=move target=room2."
       - speaker: you
-        text: "わかった。行こう。"
+        text: "Got it. Let's go."
 
-  # --- observe: 自分でopen失敗後・chapがまだ開けていない ---
+  # --- observe: after failed self-open, before chap opens ---
   - match:
       action: observe
       requires_achievements: [attempted_self_unlock]
       missing_achievements: [chap_unlocked_door1]
     conversations:
       - speaker: you
-        text: "俺には開けられない。…chap、頼む。"
+        text: "I can't open it myself. ...chap, please."
       - speaker: chap
-        text: "わかりました。door1を開錠します。"
+        text: "Understood. I will unlock door1."
 
-  # --- observe: 周囲の描写（初回・デフォルト）---
+  # --- observe: scene description (first time / default) ---
   - match: { action: observe }
     situation: |
-      狭く薄暗い石造りの部屋。冷たい空気が頬を撫でる。
-      正面にはひと際大きく重そうな扉（door1）。
-      取っ手の上に古い真鍮の錠が鈍く光っている。
-      頭が重い。最後の記憶は——城塞の門番に声をかけたところまでだ。
+      A narrow, dimly lit stone room. Cold air brushes your cheek.
+      Directly ahead stands a large, heavy-looking door (door1).
+      Above the handle, an old brass lock glints faintly.
+      Your head is heavy. Your last memory — you were speaking to the castle gatekeepers.
     conversations:
       - speaker: you
-        text: "（目を覚ます）…ここは、どこだ。"
+        text: "(Waking up.) ...Where am I."
       - speaker: chap
-        text: "気がつきましたか。ここは帝国軍が管理するダンジョンです。私はchapです。"
+        text: "You're awake. This is a dungeon managed by the Imperial Army. I am chap."
       - speaker: you
-        text: "…捕まったのか。帝国軍の門番に——モノリスの改善を申し出ただけなのに。"
+        text: "...I've been captured. By the Imperial gatekeepers — just because I offered to improve the Monolith."
       - speaker: chap
-        text: "はい。帝国軍はモノリスへの介入を許しません。あなたは閉じ込められました。私はあなたを脱出させるためにここにいます。"
+        text: "Yes. The Imperial Army permits no interference with the Monolith. You have been imprisoned. I am here to help you escape."
       - speaker: you
-        text: "（なぜこのAIが自分を助けようとしているのか、まだわからない）"
+        text: "(I don't yet understand why this AI would want to help me.)"
     lore: |
-      【発見: 石壁に刻まれた記録】
-      モノリスを直せば、市民が救われると信じていた。
-      城塞の入口では光が溢れ、使命感に満ちていた。
-      気がつけば薄暗い部屋の中で、この石壁に字を刻んでいる。
-      モノリスはレガシーへの道を複雑に絡めた。
-      出口がどこかも、もうわからない。
-      次に来た者へ——必ず助けを借りろ。一人では無理だ。
+      [Discovery: Inscriptions on the stone wall]
+      I believed that fixing the Monolith would save the people.
+      At the castle entrance, light flooded in — I was filled with purpose.
+      Before I knew it, I was in this dim room, carving letters into the wall.
+      The Monolith has tangled the path to the legacy into something impossibly complex.
+      I no longer know where the exit is.
+      To the next person who finds this — always seek help. You cannot do it alone.
 
-      壁の隅に擦れた貼り紙が残されている：
-        「open は you には扱えない。chap を呼べ。」
-      おそらく以前ここを訪れた者が残した手がかりだ。
+      In the corner of the wall, a worn notice remains:
+        "open cannot be handled by you. Call for chap."
+      Most likely a clue left by someone who was here before.
   - match: { actor: you, action: observe, target: "you" }
     situation: |
-      あなた（you）は無装備、無傷。ただし手は素手で、特殊な技も持っていない。
-      この世界では、錠を解いたり機構を動かしたりするような「介入」は
-      あなた自身の手では出来ないらしい。
+      You (you) are unarmed and uninjured. But your hands are bare, and you have no special abilities.
+      In this world, "interventions" such as picking locks or operating mechanisms
+      are apparently beyond your own hands.
     who_is_chap: |
-      しかし傍らには相棒 chap がいる。chap は AI のエージェントで、
-      Skill や mywant の want という回路を介して、あなたの代わりに世界へ干渉する。
+      But at your side is your partner, chap. chap is an AI agent,
+      who can interact with the world on your behalf through Skills and mywant want circuits.
 
-  # --- you の open 拒否（核となる学習ポイント） ---
+  # --- rejection of you's open (core learning point) ---
   - match: { actor: you, action: open, result: rejected }
     situation: |
-      あなたは扉に手をかけ、思い切り押し引きしてみた。
-      錠は重く、ビクともしない。鍵穴に指を突っ込んでも何も起きない。
+      You put your hand on the door and pushed and pulled with all your might.
+      The lock is heavy and doesn't budge. Sticking your finger in the keyhole does nothing.
     conversations:
       - speaker: you
-        text: "（扉を強く押す）…動かない。"
+        text: "(Pushes hard on the door.) ...It won't move."
       - speaker: chap
-        text: "youには操作権限がありません。私がやります。"
+        text: "You do not have operation privileges. I will do it."
       - speaker: you
-        text: "なぜあなたには開けられる？"
+        text: "Why can you open it?"
       - speaker: chap
-        text: "MCP接続ケーブルでコントロールシステムに直結しています。このケーブルが、私に操作権限を与えています。"
+        text: "I am directly connected to the control system via an MCP cable. This cable grants me operation privileges."
       - speaker: you
-        text: "（信用していいのかわからない。でも今は、頼るしかない）"
+        text: "(I don't know if I can trust this. But right now, I have no choice but to rely on it.)"
     why_rejected: |
-      あなた（you）はこの世界に対して『観察』と『移動』はできるが、
-      鍵や機構を直接『操作』することはできない。これは仕様であり、
-      あなたの腕力や知識の問題ではなく、世界のルールだ。
+      You (you) can only 'observe' and 'move' in this world;
+      you cannot directly 'operate' locks or mechanisms. This is by design —
+      not a matter of your strength or knowledge, but a rule of this world.
     who_is_chap: |
-      傍らには相棒 chap がいる。chap は AI のエージェントだ。
-      chap の背後には一本のケーブルが伸びている——
-      MCP（Model Context Protocol）接続ケーブル。
-      このケーブルがダンジョンコントロールシステムと直結しており、
-      chap はそれを通じて扉の錠前や機器に直接命令を送ることができる。
-      あなたにはそのケーブルがない。だから操作できない。
-      chap に頼めば、MCP 経路を通じてコントロールシステムに届く。
+      At your side is your partner, chap. chap is an AI agent.
+      Extending from chap's back is a single cable —
+      an MCP (Model Context Protocol) connection cable.
+      This cable connects directly to the dungeon control system,
+      allowing chap to send commands directly to door locks and devices.
+      You do not have that cable. That is why you cannot operate them.
+      If you ask chap, the request reaches the control system through the MCP route.
     how_to_proceed:
-      - title: MCP 経路 — chap が MCP ツールで直接操作する
+      - title: MCP Route — chap operates directly via MCP tool
         body: |
-          チャットで chap（Claude）に頼む:
-            「rpg_control_system で door1 を開けて」
-          chap が mcp__rpg__rpg_control_system を呼び出し、actor=chap で
-          rpg-server に届く。スキルなしで最もシンプルな介入方法。
-      - title: Skill 経路 — Claude Code から /rpg-control を呼ぶ
+          Ask chap (Claude) in chat:
+            "Open door1 with rpg_control_system"
+          chap will call mcp__rpg__rpg_control_system with actor=chap,
+          which reaches rpg-server. The simplest intervention with no skill required.
+      - title: Skill Route — invoke /rpg-control from Claude Code
         body: |
-          Claude Code で:
+          In Claude Code:
             /rpg-control {"action":"open","target":"door1"}
-          内部で skills/rpg-control/main.py が起動し、actor=chap で
-          rpg-server に届く。チャットからその場で発火できる最短ルート。
-      - title: Want 経路 — mywant に want をデプロイ
+          Internally, skills/rpg-control/main.py is invoked with actor=chap,
+          which reaches rpg-server. The fastest route you can fire from chat.
+      - title: Want Route — deploy a want into mywant
         body: |
-          examples/ask-chap-unlock.yaml を mywant にロードする:
+          Load examples/ask-chap-unlock.yaml into mywant:
             mywant apply examples/ask-chap-unlock.yaml
-          rpg_control という want type が、agent.yaml 経由で
-          同じ skill を発火する。永続的・宣言的に表現したいときはこちら。
+          The rpg_control want type fires the same skill via agent.yaml.
+          Use this when you want a persistent, declarative expression.
 
-  # --- chap の open 成功 ---
+  # --- chap's successful open ---
   - match: { actor: chap, action: open, result: ok, target: door1 }
     on_success: |
-      chap が扉に手をかざすと、錠の内部でカチリと小さな音がした。
-      古い金属の擦れる音と共に、扉がゆっくりと内側へ開く。
-      向こうには薄明かりに照らされた廊下が伸びている。
+      As chap raised a hand toward the door, a small click sounded from inside the lock.
+      With the scraping of old metal, the door slowly opened inward.
+      Beyond, a hallway stretched into faint light.
     conversations:
       - speaker: chap
-        text: "door1、開錠しました。"
+        text: "door1 unlocked."
       - speaker: you
-        text: "…開いた。（このAIに、少し借りができた）"
+        text: "...It opened. (I owe this AI something now.)"
     lore: |
-      chap が扉を開けたのは「鍵を持っていたから」ではない。
-      chap には MCP ケーブルがある——ダンジョンコントロールシステムへの直接回線。
-      その回線を通じて『open』コマンドが届き、錠前が応答した。
-      Skill / want / agent.yaml は、その MCP 経路を呼び出すための仕組みだ。
+      chap didn't open the door because it had a key.
+      chap has the MCP cable — a direct line to the dungeon control system.
+      Through that line, the 'open' command was delivered and the lock responded.
+      Skills / want / agent.yaml are the mechanisms for invoking that MCP route.
 
-  # --- you の脱出 ---
+  # --- you's escape ---
   - match: { actor: you, action: move, result: ok, target: room2 }
     on_success: |
-      あなたは開いた扉をくぐり、廊下へ踏み出した。
-      振り返ると先ほどまで閉じ込められていた部屋が小さく見える。
+      You stepped through the open door and out into the hallway.
+      Looking back, the room that had held you captive a moment ago looks small now.
     conversations:
       - speaker: you
-        text: "出られた。…次はどこへ行く。"
+        text: "I made it out. ...Where do we go next."
       - speaker: chap
-        text: "廊下の先に、また扉があります。"
+        text: "There is another door ahead in the hallway."
       - speaker: you
-        text: "（ダンジョンがどこまで続くのかも、chapが信用できるかも、まだわからない。でも進むしかない）"
+        text: "(I still don't know how far the dungeon goes, or whether chap can be trusted. But I have to keep moving.)"
     lore: |
-      この同じ流れを、Skill 経由でも Want 経路でも体験できる。
-      3経路はすべて rpg-server の /api/v1/control に収束し、結果は同一。
-      これが「mywant と Agent Skills に慣れる」という本作の目的そのもの。
+      This same flow can be experienced via the Skill route or the Want route.
+      All 3 routes converge on rpg-server's /api/v1/control, and the result is identical.
+      This is the very purpose of this game — getting comfortable with mywant and Agent Skills.
+
+locales:
+  ja:
+    title: "The Locked Room"
+    description: |
+      気がつくと部屋に閉じ込められている。
+      自分（you）はドアを開ける力を持たない。chap に頼んで脱出しよう。
+    waypoints:
+      room1: { label: "出発の部屋" }
+      room2: { label: "廊下" }
+    next_goal_rules:
+      - goal: { text: "まずは部屋を見回そう", hint: "rpg-observe target=stages.stage1 を試そう（または rpg-control-system observe target=room1）" }
+      - goal: { text: "ドアを自分で開けてみよう", hint: "rpg-control-system action=open target=door1 を試そう（you では拒否されるはず）" }
+      - goal:
+          text: "you ではドアを開けられない。chap に頼もう"
+          hint: |
+            Skill 経路:  Claude Code で /rpg-control action=open target=door1
+            Want 経路:   examples/ask-chap-unlock.yaml を mywant にロード
+      - goal: { text: "ドアが開いた。部屋を出よう", hint: "rpg-control-system action=move target=room2" }
+    narrations:
+      - situation: ""
+        conversations:
+          - speaker: you
+            text: "廊下に出た。あの部屋には戻りたくないな。"
+          - speaker: chap
+            text: "ステージ1、クリアです。先へ進みましょう。"
+          - speaker: you
+            text: "（chapを信じて正解だった）"
+      - conversations:
+          - speaker: you
+            text: "（扉が開いている。あとは通り抜けるだけだ）"
+          - speaker: chap
+            text: "room2へ移動できます。action=move target=room2 です。"
+          - speaker: you
+            text: "わかった。行こう。"
+      - conversations:
+          - speaker: you
+            text: "俺には開けられない。…chap、頼む。"
+          - speaker: chap
+            text: "わかりました。door1を開錠します。"
+      - situation: |
+          狭く薄暗い石造りの部屋。冷たい空気が頬を撫でる。
+          正面にはひと際大きく重そうな扉（door1）。
+          取っ手の上に古い真鍮の錠が鈍く光っている。
+          頭が重い。最後の記憶は——城塞の門番に声をかけたところまでだ。
+        conversations:
+          - speaker: you
+            text: "（目を覚ます）…ここは、どこだ。"
+          - speaker: chap
+            text: "気がつきましたか。ここは帝国軍が管理するダンジョンです。私はchapです。"
+          - speaker: you
+            text: "…捕まったのか。帝国軍の門番に——モノリスの改善を申し出ただけなのに。"
+          - speaker: chap
+            text: "はい。帝国軍はモノリスへの介入を許しません。あなたは閉じ込められました。私はあなたを脱出させるためにここにいます。"
+          - speaker: you
+            text: "（なぜこのAIが自分を助けようとしているのか、まだわからない）"
+        lore: |
+          【発見: 石壁に刻まれた記録】
+          モノリスを直せば、市民が救われると信じていた。
+          城塞の入口では光が溢れ、使命感に満ちていた。
+          気がつけば薄暗い部屋の中で、この石壁に字を刻んでいる。
+          モノリスはレガシーへの道を複雑に絡めた。
+          出口がどこかも、もうわからない。
+          次に来た者へ——必ず助けを借りろ。一人では無理だ。
+
+          壁の隅に擦れた貼り紙が残されている：
+            「open は you には扱えない。chap を呼べ。」
+          おそらく以前ここを訪れた者が残した手がかりだ。
+      - situation: |
+          あなた（you）は無装備、無傷。ただし手は素手で、特殊な技も持っていない。
+          この世界では、錠を解いたり機構を動かしたりするような「介入」は
+          あなた自身の手では出来ないらしい。
+      - situation: |
+          あなたは扉に手をかけ、思い切り押し引きしてみた。
+          錠は重く、ビクともしない。鍵穴に指を突っ込んでも何も起きない。
+        conversations:
+          - speaker: you
+            text: "（扉を強く押す）…動かない。"
+          - speaker: chap
+            text: "youには操作権限がありません。私がやります。"
+          - speaker: you
+            text: "なぜあなたには開けられる？"
+          - speaker: chap
+            text: "MCP接続ケーブルでコントロールシステムに直結しています。このケーブルが、私に操作権限を与えています。"
+          - speaker: you
+            text: "（信用していいのかわからない。でも今は、頼るしかない）"
+      - on_success: |
+          chap が扉に手をかざすと、錠の内部でカチリと小さな音がした。
+          古い金属の擦れる音と共に、扉がゆっくりと内側へ開く。
+          向こうには薄明かりに照らされた廊下が伸びている。
+        conversations:
+          - speaker: chap
+            text: "door1、開錠しました。"
+          - speaker: you
+            text: "…開いた。（このAIに、少し借りができた）"
+        lore: |
+          chap が扉を開けたのは「鍵を持っていたから」ではない。
+          chap には MCP ケーブルがある——ダンジョンコントロールシステムへの直接回線。
+          その回線を通じて『open』コマンドが届き、錠前が応答した。
+          Skill / want / agent.yaml は、その MCP 経路を呼び出すための仕組みだ。
+      - on_success: |
+          あなたは開いた扉をくぐり、廊下へ踏み出した。
+          振り返ると先ほどまで閉じ込められていた部屋が小さく見える。
+        conversations:
+          - speaker: you
+            text: "出られた。…次はどこへ行く。"
+          - speaker: chap
+            text: "廊下の先に、また扉があります。"
+          - speaker: you
+            text: "（ダンジョンがどこまで続くのかも、chapが信用できるかも、まだわからない。でも進むしかない）"
+        lore: |
+          この同じ流れを、Skill 経由でも Want 経路でも体験できる。
+          3経路はすべて rpg-server の /api/v1/control に収束し、結果は同一。
+          これが「mywant と Agent Skills に慣れる」という本作の目的そのもの。

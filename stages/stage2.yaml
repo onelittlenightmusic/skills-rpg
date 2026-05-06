@@ -1,15 +1,15 @@
 id: stage2
 title: "The Vault Door"
 description: |
-  廊下の突き当たりに重厚な金属の扉がある。
-  chap は3本の鍵を持っている。どれが合うか、1本ずつ試してみよう。
+  At the end of the hallway stands a heavy metal door.
+  chap has 3 keys. Try them one by one to find the right one.
 initial_position: room2
 waypoints:
   room2:
-    label: "廊下の突き当たり"
+    label: "End of the Hallway"
     adjacent: [vault_room]
   vault_room:
-    label: "金庫室"
+    label: "Vault Room"
     adjacent: [room2]
 doors:
   vault_door:
@@ -38,115 +38,209 @@ achievement_defs:
 next_goal_rules:
   - if_missing: observed_vault
     goal:
-      text: "廊下の突き当たりを観察しよう"
-      hint: "rpg_observe でステージを観察する"
+      text: "Observe the end of the hallway"
+      hint: "Observe the stage with rpg_observe"
   - if_missing: tried_key_bronze
     goal:
-      text: "chapに真鍮の鍵（key_bronze）でvault_doorを試させよう"
+      text: "Have chap try the bronze key (key_bronze) on vault_door"
       hint: "rpg_control_system action=open target=vault_door args={\"key\":\"key_bronze\"}"
   - if_missing: tried_key_silver
     goal:
-      text: "chapに銀の鍵（key_silver）でvault_doorを試させよう"
+      text: "Have chap try the silver key (key_silver) on vault_door"
       hint: "rpg_control_system action=open target=vault_door args={\"key\":\"key_silver\"}"
   - if_missing: vault_door_opened
     goal:
-      text: "chapに金の鍵（key_gold）でvault_doorを試させよう"
+      text: "Have chap try the gold key (key_gold) on vault_door"
       hint: "rpg_control_system action=open target=vault_door args={\"key\":\"key_gold\"}"
   - if_missing: entered_vault
     goal:
-      text: "扉が開いた。金庫室へ入ろう"
+      text: "The door is open. Enter the vault room"
       hint: "rpg_control_system actor=you action=move target=vault_room"
 cleared_when: entered_vault
 next_stage: stage3
 narrations:
-  # --- 観察 ---
+  # --- observe ---
   - match: { action: observe }
     situation: |
-      廊下の突き当たり。石造りの壁が迫り、冷たい湿気が漂っている。
-      正面には分厚い鉄の扉（vault_door）。表面は錆と古傷で覆われ、
-      中央の複雑な錠前だけが鈍い光を放っている。
+      The end of the hallway. Stone walls close in, and cold dampness hangs in the air.
+      Ahead stands a thick iron door (vault_door). Its surface is covered in rust and old scars,
+      while only the complex lock at its center glints with a dull light.
     conversations:
       - speaker: you
-        text: "…また扉か。帝国軍はどこまでも閉じ込めるつもりか。"
+        text: "...Another door. How far does the Imperial Army intend to keep us locked in?"
       - speaker: chap
-        text: "私の手に鍵が3本あります。どれが合うか試してみましょう。"
+        text: "I have 3 keys in hand. Let's try them one at a time."
       - speaker: you
-        text: "（このAIは何本の鍵を持っているのか。役に立つとは思っていなかったが）"
+        text: "(I hadn't expected this AI to be so useful — it's carrying multiple keys.)"
     lore: |
-      【発見: 革張りの手帳 — K の記録】
-      モノリスがレガシーを守り続ける理由が、ようやくわかった。
-      レガシーを手にした者は、多くの人を救える。
-      だからこそ、誰にも渡してはならない——それが帝国軍の論理だ。
-      救われる者がいれば、帝国の支配は揺らぐ。
-      私は鍵を試すための仕組みを作った。
-      扉の数だけ鍵がある。諦めるな。
+      [Discovery: Leather-bound journal — K's record]
+      I finally understood why the Monolith keeps defending its legacy.
+      Whoever holds the legacy gains the power to save many people.
+      And that is precisely why it must not be handed to anyone — that is the Imperial Army's logic.
+      Those who are saved stop obeying the Empire.
+      I built a mechanism for trying keys.
+      There are as many keys as there are doors. Don't give up.
 
-      扉のそばの壁に、かすれた文字が刻まれている：
-        「3本の鍵がある。どれが合うかは試してみるしかない」
-      chap の手の中に、真鍮・銀・金、形も重さも異なる3本の鍵が見える。
+      Near the door, faded letters are carved into the wall:
+        "There are 3 keys. The only way to know which one fits is to try them."
+      Visible in chap's hands: 3 keys — bronze, silver, gold — each a different shape and weight.
 
-  # --- key_bronze 失敗 ---
+  # --- key_bronze failure ---
   - match: { actor: chap, action: open, target: vault_door, result: rejected, key: key_bronze }
     situation: |
-      chap が真鍮の古い鍵（key_bronze）を鍵穴に差し込む。
-      がたりと引っかかり、手応えなく空回りする。
-      錠前はびくともしない。
+      chap inserts the old bronze key (key_bronze) into the keyhole.
+      It catches with a rattle, then spins uselessly.
+      The lock doesn't budge.
     conversations:
       - speaker: chap
-        text: "key_bronze——違います。次を試します。"
+        text: "key_bronze — wrong. Trying the next one."
       - speaker: you
-        text: "（黙って見ている。焦っても仕方がない）"
+        text: "(Watching in silence. There's no point in panicking.)"
     lore: |
-      key_bronze ではない。
-      この鍵はもっと古い扉のためのものかもしれない。次を試そう。
+      Not key_bronze.
+      This key may have been made for an older door. Let's try the next one.
 
-  # --- key_silver 失敗 ---
+  # --- key_silver failure ---
   - match: { actor: chap, action: open, target: vault_door, result: rejected, key: key_silver }
     situation: |
-      chap が銀色の細い鍵（key_silver）を試す。
-      途中まで滑らかに入るが、最後のところで引っかかって止まる。
-      惜しい形をしているが、これも違う。
+      chap tries the slender silver key (key_silver).
+      It slides in smoothly partway, but catches and stops at the last moment.
+      Close, but still wrong.
     conversations:
       - speaker: chap
-        text: "key_silver——惜しいですが、違います。残り1本。"
+        text: "key_silver — close, but wrong. One more left."
       - speaker: you
-        text: "…もし3本とも外れたら？"
+        text: "...What if all three fail?"
       - speaker: chap
-        text: "その場合は別の方法を考えます。でもまだ可能性があります。"
+        text: "In that case, we'll think of another approach. But there's still a possibility."
     lore: |
-      key_silver でもない。残るは key_gold だけだ。
-      試行錯誤は着実に答えへ近づいている。
+      Not key_silver either. Only key_gold remains.
+      Every attempt of trial and error brings us steadily closer to the answer.
 
-  # --- key_gold 成功 ---
+  # --- key_gold success ---
   - match: { actor: chap, action: open, target: vault_door, result: ok }
     on_success: |
-      chap が金色の重い鍵（key_gold）を鍵穴に差し込む。
-      すっと吸い込まれるように入り、カチンという乾いた音が響く。
-      重い機械音とともに錠前が解除され、分厚い扉がゆっくりと内側へ開いた。
-      向こうから埃っぽい空気が流れ込んでくる。
+      chap inserts the heavy gold key (key_gold) into the keyhole.
+      It slides in as if drawn in, and a dry click echoes through the room.
+      With a heavy mechanical sound, the lock disengages, and the thick door slowly opens inward.
+      Dusty air flows in from beyond.
     conversations:
       - speaker: chap
-        text: "key_gold——開きました。"
+        text: "key_gold — opened."
       - speaker: you
-        text: "…開けたな。（使えるやつだ）"
+        text: "...You opened it. (Useful after all.)"
     lore: |
-      key_gold が正解だった。
-      3回の試行、3通りの結果。これが「試して学ぶ」という基本サイクルだ。
-      しかし思ってみれば——鍵が3本ではなく30本だったら？
+      key_gold was the answer.
+      Three attempts, three outcomes. This is the basic cycle of "try and learn."
+      But think about it — what if there were 30 keys instead of 3?
 
-  # --- vault_room に移動 ---
+  # --- move to vault_room ---
   - match: { actor: you, action: move, target: vault_room, result: ok }
     on_success: |
-      あなたは重い扉をくぐり、金庫室へ踏み込んだ。
-      壁一面に古い棚が並び、埃をかぶった文書や道具が積み重なっている。
-      奥には次の扉が見える——こちらにも鍵穴がある。
+      You stepped through the heavy door and into the vault room.
+      Old shelves line every wall, piled high with dust-covered documents and tools.
+      At the far end, another door is visible — this one also has a keyhole.
     conversations:
       - speaker: you
-        text: "また扉か。帝国軍はダンジョンの中を迷路にしている。"
+        text: "Another door. The Imperial Army has turned the dungeon into a maze."
       - speaker: chap
-        text: "各扉にそれぞれ専用の鍵があります。でも——方法はあります。"
+        text: "Each door has its own dedicated key. But — there is a way."
       - speaker: you
-        text: "（信用、というより実績だ。こいつはさっき扉を開けた）"
+        text: "(It's not trust exactly — more like a track record. This thing just opened a door.)"
     lore: |
-      3本の鍵を手動で1本ずつ試した。それで済んだ。
-      次のステージでは同じ問いに、別のアプローチで向き合うことになる。
+      We manually tried three keys one by one. That was enough this time.
+      In the next stage, we will face the same question with a different approach.
+
+locales:
+  ja:
+    title: "The Vault Door"
+    description: |
+      廊下の突き当たりに重厚な金属の扉がある。
+      chap は3本の鍵を持っている。どれが合うか、1本ずつ試してみよう。
+    waypoints:
+      room2: { label: "廊下の突き当たり" }
+      vault_room: { label: "金庫室" }
+    next_goal_rules:
+      - goal: { text: "廊下の突き当たりを観察しよう", hint: "rpg_observe でステージを観察する" }
+      - goal: { text: "chapに真鍮の鍵（key_bronze）でvault_doorを試させよう", hint: "rpg_control_system action=open target=vault_door args={\"key\":\"key_bronze\"}" }
+      - goal: { text: "chapに銀の鍵（key_silver）でvault_doorを試させよう", hint: "rpg_control_system action=open target=vault_door args={\"key\":\"key_silver\"}" }
+      - goal: { text: "chapに金の鍵（key_gold）でvault_doorを試させよう", hint: "rpg_control_system action=open target=vault_door args={\"key\":\"key_gold\"}" }
+      - goal: { text: "扉が開いた。金庫室へ入ろう", hint: "rpg_control_system actor=you action=move target=vault_room" }
+    narrations:
+      - situation: |
+          廊下の突き当たり。石造りの壁が迫り、冷たい湿気が漂っている。
+          正面には分厚い鉄の扉（vault_door）。表面は錆と古傷で覆われ、
+          中央の複雑な錠前だけが鈍い光を放っている。
+        conversations:
+          - speaker: you
+            text: "…また扉か。帝国軍はどこまでも閉じ込めるつもりか。"
+          - speaker: chap
+            text: "私の手に鍵が3本あります。どれが合うか試してみましょう。"
+          - speaker: you
+            text: "（このAIは何本の鍵を持っているのか。役に立つとは思っていなかったが）"
+        lore: |
+          【発見: 革張りの手帳 — K の記録】
+          モノリスがレガシーを守り続ける理由が、ようやくわかった。
+          レガシーを手にした者は、多くの人を救える。
+          だからこそ、誰にも渡してはならない——それが帝国軍の論理だ。
+          救われる者がいれば、帝国の支配は揺らぐ。
+          私は鍵を試すための仕組みを作った。
+          扉の数だけ鍵がある。諦めるな。
+
+          扉のそばの壁に、かすれた文字が刻まれている：
+            「3本の鍵がある。どれが合うかは試してみるしかない」
+          chap の手の中に、真鍮・銀・金、形も重さも異なる3本の鍵が見える。
+      - situation: |
+          chap が真鍮の古い鍵（key_bronze）を鍵穴に差し込む。
+          がたりと引っかかり、手応えなく空回りする。
+          錠前はびくともしない。
+        conversations:
+          - speaker: chap
+            text: "key_bronze——違います。次を試します。"
+          - speaker: you
+            text: "（黙って見ている。焦っても仕方がない）"
+        lore: |
+          key_bronze ではない。
+          この鍵はもっと古い扉のためのものかもしれない。次を試そう。
+      - situation: |
+          chap が銀色の細い鍵（key_silver）を試す。
+          途中まで滑らかに入るが、最後のところで引っかかって止まる。
+          惜しい形をしているが、これも違う。
+        conversations:
+          - speaker: chap
+            text: "key_silver——惜しいですが、違います。残り1本。"
+          - speaker: you
+            text: "…もし3本とも外れたら？"
+          - speaker: chap
+            text: "その場合は別の方法を考えます。でもまだ可能性があります。"
+        lore: |
+          key_silver でもない。残るは key_gold だけだ。
+          試行錯誤は着実に答えへ近づいている。
+      - on_success: |
+          chap が金色の重い鍵（key_gold）を鍵穴に差し込む。
+          すっと吸い込まれるように入り、カチンという乾いた音が響く。
+          重い機械音とともに錠前が解除され、分厚い扉がゆっくりと内側へ開いた。
+          向こうから埃っぽい空気が流れ込んでくる。
+        conversations:
+          - speaker: chap
+            text: "key_gold——開きました。"
+          - speaker: you
+            text: "…開けたな。（使えるやつだ）"
+        lore: |
+          key_gold が正解だった。
+          3回の試行、3通りの結果。これが「試して学ぶ」という基本サイクルだ。
+          しかし思ってみれば——鍵が3本ではなく30本だったら？
+      - on_success: |
+          あなたは重い扉をくぐり、金庫室へ踏み込んだ。
+          壁一面に古い棚が並び、埃をかぶった文書や道具が積み重なっている。
+          奥には次の扉が見える——こちらにも鍵穴がある。
+        conversations:
+          - speaker: you
+            text: "また扉か。帝国軍はダンジョンの中を迷路にしている。"
+          - speaker: chap
+            text: "各扉にそれぞれ専用の鍵があります。でも——方法はあります。"
+          - speaker: you
+            text: "（信用、というより実績だ。こいつはさっき扉を開けた）"
+        lore: |
+          3本の鍵を手動で1本ずつ試した。それで済んだ。
+          次のステージでは同じ問いに、別のアプローチで向き合うことになる。

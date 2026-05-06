@@ -1,202 +1,220 @@
 # Stages
 
-## このゲームで学ぶこと
+## What You Learn in This Game
 
-このゲームは **MCP・Skill・Want という3つの介入手段** を段階的に体験させることを目的とする。
+This game is designed to let you experience three escalating methods of intervention — **MCP, Skills, and Wants** — step by step.
 
 ```
-MCP（直接操作）→ Skill（自動化）→ Want（意図の定義・スケール）
+MCP (direct operation) → Skill (automation) → Want (intent definition and scaling)
 ```
 
-プレイヤーは「you」として世界を観察・移動し、AIエージェント「chap」に介入を依頼する。
-chapへの依頼手段を徐々に高度化することで、エージェントシステムの本質を体で覚える。
+The player observes and moves through the world as "you," delegating interventions to the AI agent "chap."
+By gradually advancing the methods you use to make requests of chap, you build an intuitive understanding of what agent systems are about.
 
-### 学習の流れ
+### Learning Flow
 
-| フェーズ | ステージ | 学ぶこと |
+| Phase | Stage | What You Learn |
 |---|---|---|
-| MCP直接操作 | stage1 | chapにMCPツールで直接アクションを依頼する |
-| 手動試行錯誤 | stage2 | 鍵を1本ずつ手動で試す。繰り返しの限界を感じる |
-| スキルによる自動化 | stage3 | `/rpg-try-keys` スキルに繰り返しを任せる |
-| デバイス操作（activate） | stage4 | 前提条件（requires_device）を満たしてから開錠する |
-| デバイス操作（deactivate） | stage5 | 障害（blocked_by_device）を除去してから開錠する |
-| 順序のある複合操作 | stage6 | deactivate → activate → open の正しい順番を学ぶ |
-| wantによるスケール | stage7 | 繰り返しパターンをwantとして定義・デプロイする |
-| wantの組み合わせ | stage8 | 複数のwantを連携させ、MCP不要で世界に介入する |
+| Direct MCP operation | stage1 | Ask chap to take a direct action via an MCP tool |
+| Manual trial and error | stage2 | Try keys one by one manually. Feel the limits of repetition |
+| Automation with skills | stage3 | Delegate repetition to the `/rpg-try-keys` skill |
+| Device operation (activate) | stage4 | Satisfy a precondition (requires_device) before unlocking |
+| Device operation (deactivate) | stage5 | Remove an obstacle (blocked_by_device) before unlocking |
+| Ordered compound operations | stage6 | Learn the correct sequence: deactivate → activate → open |
+| Scaling with wants | stage7 | Define a repeating pattern as a want and deploy it |
+| Combining wants | stage8 | Chain multiple wants together and intervene without MCP |
 
-### 核心メッセージ
+### Core Message
 
-- **スキルは道具**、**wantはその道具を使う「意図の定義」**
-- 意図を定義すれば繰り返しはスケールする
-- MCPがなくても、wantとスキルの組み合わせで世界に介入できる
+- **Skills are tools**, **wants are the "definition of intent" that uses those tools**
+- Define the intent and repetition scales
+- Even without MCP, you can intervene in the world by combining wants and skills
 
 ---
 
-全8ステージの概要。詳細は `stages/<id>.yaml` を参照。
+Full overview of all 9 stages. See `stages/<id>.yaml` for details.
 
 ---
 
 ## stage1 — The Locked Room
 
-**学習テーマ**: MCP経由でchapに操作を依頼する基本
+**Learning Theme**: The basics of asking chap to take action via MCP
 
-| 項目 | 内容 |
+| Item | Details |
 |---|---|
-| 扉 | door1 |
-| デバイス | なし |
-| 鍵 | なし（chapがopen能力を持つ） |
-| クリア条件 | `escaped_room1`（room2へ移動） |
-| 次ステージ | stage2 |
+| Door | door1 |
+| Devices | None |
+| Keys | None (chap has the ability to open) |
+| Clear Condition | `escaped_room1` (move to room2) |
+| Next Stage | stage2 |
 
-**ゴール手順**:
-1. 観察（look_around）
-2. youがdoor1を開けようとする → rejected
-3. chapにdoor1を開けさせる（MCP / Skill / Want 経路）
-4. room2へ移動
+**Goal Steps**:
+1. Observe (look_around)
+2. you tries to open door1 → rejected
+3. Have chap open door1 (MCP / Skill / Want route)
+4. Move to room2
 
 ---
 
 ## stage2 — The Vault Door
 
-**学習テーマ**: 鍵を1本ずつ手動で試す試行錯誤
+**Learning Theme**: Manual trial and error, trying keys one by one
 
-| 項目 | 内容 |
+| Item | Details |
 |---|---|
-| 扉 | vault_door（key: key_gold） |
-| デバイス | なし |
-| 鍵 | key_bronze, key_silver, key_gold（chapが保持） |
-| クリア条件 | `entered_vault`（vault_roomへ移動） |
-| 次ステージ | stage3 |
+| Door | vault_door (key: key_gold) |
+| Devices | None |
+| Keys | key_bronze, key_silver, key_gold (held by chap) |
+| Clear Condition | `entered_vault` (move to vault_room) |
+| Next Stage | stage3 |
 
-**ゴール手順**:
-1. 観察
-2. key_bronze で試す → rejected
-3. key_silver で試す → rejected
-4. key_gold で開錠
-5. vault_roomへ移動
+**Goal Steps**:
+1. Observe
+2. Try key_bronze → rejected
+3. Try key_silver → rejected
+4. Unlock with key_gold
+5. Move to vault_room
 
 ---
 
 ## stage3 — The Forgotten Lab
 
-**学習テーマ**: `/rpg-try-keys` スキルで鍵探しを自動化
+**Learning Theme**: Automate key-finding with the `/rpg-try-keys` skill
 
-| 項目 | 内容 |
+| Item | Details |
 |---|---|
-| 扉 | lab_door（key: key_copper） |
-| デバイス | なし |
-| 鍵 | key_iron, key_copper, key_obsidian（chapが保持） |
-| クリア条件 | `entered_lab`（lab_roomへ移動） |
-| 次ステージ | stage4 |
+| Door | lab_door (key: key_copper) |
+| Devices | None |
+| Keys | key_iron, key_copper, key_obsidian (held by chap) |
+| Clear Condition | `entered_lab` (move to lab_room) |
+| Next Stage | stage4 |
 
-**ゴール手順**:
-1. 観察
-2. 手動で1回試す（tried_key_manually）
-3. `/rpg-try-keys {"target":"lab_door"}` で自動開錠
-4. lab_roomへ移動
+**Goal Steps**:
+1. Observe
+2. Try manually once (tried_key_manually)
+3. Auto-unlock with `/rpg-try-keys {"target":"lab_door"}`
+4. Move to lab_room
 
 ---
 
 ## stage4 — Dark Lab
 
-**学習テーマ**: `activate` アクションと `requires_device`
+**Learning Theme**: The `activate` action and `requires_device`
 
-| 項目 | 内容 |
+| Item | Details |
 |---|---|
-| 扉 | power_door（key: key_lab, requires_device: generator） |
-| デバイス | generator（初期: OFF） |
-| 鍵 | key_lab, key_wrong_a（chapが保持） |
-| クリア条件 | `entered_lab`（lab_innerへ移動） |
-| 次ステージ | stage5 |
+| Door | power_door (key: key_lab, requires_device: generator) |
+| Devices | generator (initial: OFF) |
+| Keys | key_lab, key_wrong_a (held by chap) |
+| Clear Condition | `entered_lab` (move to lab_inner) |
+| Next Stage | stage5 |
 
-**ゴール手順**:
-1. 観察
-2. `activate generator`（発電機起動）
-3. `/rpg-try-keys {"target":"power_door"}` で開錠
-4. lab_innerへ移動
+**Goal Steps**:
+1. Observe
+2. `activate generator` (start the generator)
+3. Unlock with `/rpg-try-keys {"target":"power_door"}`
+4. Move to lab_inner
 
 ---
 
 ## stage5 — Alarm Room
 
-**学習テーマ**: `deactivate` アクションと `blocked_by_device`
+**Learning Theme**: The `deactivate` action and `blocked_by_device`
 
-| 項目 | 内容 |
+| Item | Details |
 |---|---|
-| 扉 | alarm_door（key: key_escape, blocked_by_device: alarm） |
-| デバイス | alarm（初期: ON） |
-| 鍵 | key_escape, key_dummy（chapが保持） |
-| クリア条件 | `escaped_alarm_room`（safe_corridorへ移動） |
-| 次ステージ | stage6 |
+| Door | alarm_door (key: key_escape, blocked_by_device: alarm) |
+| Devices | alarm (initial: ON) |
+| Keys | key_escape, key_dummy (held by chap) |
+| Clear Condition | `escaped_alarm_room` (move to safe_corridor) |
+| Next Stage | stage6 |
 
-**ゴール手順**:
-1. 観察
-2. `deactivate alarm`（アラーム停止）
-3. `/rpg-try-keys {"target":"alarm_door"}` で開錠
-4. safe_corridorへ移動
+**Goal Steps**:
+1. Observe
+2. `deactivate alarm` (stop the alarm)
+3. Unlock with `/rpg-try-keys {"target":"alarm_door"}`
+4. Move to safe_corridor
 
 ---
 
 ## stage6 — Control Room
 
-**学習テーマ**: deactivate → activate の順番、`rpg-switch` スキル
+**Learning Theme**: The deactivate → activate sequence; the `rpg-switch` skill
 
-| 項目 | 内容 |
+| Item | Details |
 |---|---|
-| 扉 | vault_door（key: key_vault, requires_device: main_generator） |
-| デバイス | alarm_system（初期: ON）、main_generator（初期: OFF, blocked_by_device: alarm_system） |
-| 鍵 | key_vault, key_wrong_1, key_wrong_2（chapが保持） |
-| クリア条件 | `escaped_control_room`（exit_vaultへ移動） |
-| 次ステージ | stage7 |
-| 例ファイル | `examples/stage6-switch.yaml` |
+| Door | vault_door (key: key_vault, requires_device: main_generator) |
+| Devices | alarm_system (initial: ON), main_generator (initial: OFF, blocked_by_device: alarm_system) |
+| Keys | key_vault, key_wrong_1, key_wrong_2 (held by chap) |
+| Clear Condition | `escaped_control_room` (move to exit_vault) |
+| Next Stage | stage7 |
+| Example File | `examples/stage6-switch.yaml` |
 
-**ゴール手順**:
-1. 観察
+**Goal Steps**:
+1. Observe
 2. `deactivate alarm_system`
 3. `activate main_generator`
 4. `/rpg-try-keys {"target":"vault_door"}`
-5. exit_vaultへ移動
+5. Move to exit_vault
 
 ---
 
 ## stage7 — The Want Factory
 
-**学習テーマ**: want のデプロイによるスケール（繰り返しの自動化）
+**Learning Theme**: Scaling with want deployment (automating repetition)
 
-| 項目 | 内容 |
+| Item | Details |
 |---|---|
-| 扉 | hall_door_01〜10（各鍵: key_azure〜key_vermilion） |
-| デバイス | なし |
-| 鍵 | 10本（chapが保持） |
-| クリア条件 | `escaped_corridor`（exit_roomへ移動） |
-| 次ステージ | stage8 |
-| 例ファイル | `examples/stage7-open-all.yaml` |
+| Doors | hall_door_01 through 05 (keys: key_azure through key_indigo) |
+| Devices | None |
+| Keys | 5 keys (held by chap) |
+| Clear Condition | `escaped_corridor` (move to exit_room) |
+| Next Stage | stage8 |
+| Example File | `examples/stage7-open-all.yaml` |
 
-**ゴール手順**:
-1. 観察
-2. `/rpg-try-keys {"target":"hall_door_01"}` で手動開錠
-3. `/rpg-try-keys {"target":"hall_door_02"}` で手動開錠
-4. `mywant apply examples/stage7-open-all.yaml` で残り8枚を自動開錠
-5. exit_roomへ移動
+**Goal Steps**:
+1. Observe
+2. Manually unlock with `/rpg-try-keys {"target":"hall_door_01"}`
+3. Manually unlock with `/rpg-try-keys {"target":"hall_door_02"}`
+4. Auto-unlock the remaining 3 doors with `mywant apply examples/stage7-open-all.yaml`
+5. Move to exit_room
 
 ---
 
-## stage8 — Lights Out
+## stage8 — The Want Factory: Parallel
 
-**学習テーマ**: want の組み合わせによる自律的な世界への介入
+**Learning Theme**: Parallel want deployment
 
-| 項目 | 内容 |
+| Item | Details |
 |---|---|
-| 扉 | exit_door（key: key_final, requires_device: generator） |
-| デバイス | generator（初期: OFF） |
-| 鍵 | key_final, key_decoy_a, key_decoy_b（chapが保持） |
-| クリア条件 | `escaped_darkness`（exit_hallへ移動） |
-| 次ステージ | なし（エンディング） |
-| 例ファイル | `examples/stage8-generator.yaml`, `examples/stage8-monitor.yaml`, `examples/stage8-try-keys.yaml` |
+| Doors | hall_door_06 through 10 (keys: key_sienna through key_vermilion) |
+| Devices | None |
+| Keys | 5 keys (held by chap) |
+| Clear Condition | `escaped_corridor` (move to exit_room) |
+| Next Stage | stage9 |
 
-**ゴール手順**:
-1. 観察
-2. `mywant apply examples/stage8-generator.yaml`（発電機起動want）
-3. `mywant apply examples/stage8-monitor.yaml`（監視want）
-4. `mywant apply examples/stage8-try-keys.yaml`（鍵試行want）
-5. exit_hallへ移動
+**Goal Steps**:
+1. Observe
+2. Deploy a parallelize want with `mywant-deploy` to open all 5 doors at once
+3. Move to exit_room
+
+---
+
+## stage9 — Lights Out
+
+**Learning Theme**: Autonomous intervention using combined wants without MCP
+
+| Item | Details |
+|---|---|
+| Door | exit_door (key: key_final, requires_device: generator) |
+| Devices | generator (initial: OFF) |
+| Keys | key_final, key_decoy_a, key_decoy_b (held by chap) |
+| Clear Condition | `escaped_darkness` (move to exit_hall) |
+| Next Stage | None (ending) |
+| Example Files | `examples/stage9-generator.yaml`, `examples/stage9-try-keys.yaml` |
+
+**Goal Steps**:
+1. Observe
+2. `mywant apply examples/stage9-generator.yaml` (generator start want)
+3. `mywant apply examples/stage9-try-keys.yaml` (key-trial want)
+4. Move to exit_hall

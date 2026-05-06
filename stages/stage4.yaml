@@ -1,15 +1,15 @@
 id: stage4
 title: "Dark Lab"
 description: |
-  停電した研究室。発電機を起動しなければドアは開かない。
-  chapにactivateを指示して、電源を入れよう。
+  A laboratory with the power out. The door won't open without starting the generator.
+  Tell chap to activate it and restore the power.
 initial_position: lab_entrance
 waypoints:
   lab_entrance:
-    label: "研究室入口"
+    label: "Lab Entrance"
     adjacent: [lab_inner]
   lab_inner:
-    label: "研究室内部"
+    label: "Lab Interior"
     adjacent: [lab_entrance]
 doors:
   power_door:
@@ -20,7 +20,7 @@ doors:
     requires_device: generator
 devices:
   generator:
-    label: "非常用発電機"
+    label: "Emergency Generator"
     on: false
 items:
   key_lab:
@@ -39,103 +39,194 @@ achievement_defs:
 next_goal_rules:
   - if_missing: observed_dark_lab
     goal:
-      text: "研究室を観察しよう"
-      hint: "rpg_observe でステージを観察する"
+      text: "Observe the laboratory"
+      hint: "Observe the stage with rpg_observe"
   - if_missing: generator_activated
     goal:
-      text: "chapに発電機（generator）を起動させよう"
+      text: "Have chap start the generator"
       hint: "rpg_control_system actor=chap action=activate target=generator"
   - if_missing: power_door_opened
     goal:
-      text: "power_doorを /rpg-try-keys で開けよう"
+      text: "Open power_door with /rpg-try-keys"
       hint: "/rpg-try-keys {\"target\":\"power_door\"}"
       required_skill: rpg-try-keys
   - if_missing: entered_dark_lab
     goal:
-      text: "扉が開いた。研究室内部へ進もう"
+      text: "The door is open. Proceed to the lab interior"
       hint: "rpg_control_system actor=you action=move target=lab_inner"
 cleared_when: entered_dark_lab
 next_stage: stage5
 narrations:
   - match: { action: observe, requires_achievements: [power_door_opened], missing_achievements: [entered_dark_lab] }
     situation: |
-      発電機が動き、power_doorも開かれた。
-      室内は明るく、研究室内部（lab_inner）への道が確保されている。
+      The generator is running and power_door has been opened.
+      The room is lit, and the path to the lab interior (lab_inner) is clear.
     conversations:
       - speaker: you
-        text: "先に電源を入れて、それからドアを開ける——順番があるんだな。"
+        text: "Power on first, then open the door — there's an order to things."
       - speaker: chap
-        text: "その通りです。制約を一つずつ解除していくのが、このダンジョンのルールです。"
+        text: "Exactly. The rule of this dungeon is to remove constraints one by one."
     lore: |
-      activate（電源）→ open（開錠）の順序が正しかった。
-      この学びは、後のより複雑な仕掛けでも役立つだろう。
-      準備ができたら、lab_inner へ移動しよう。
+      The order of activate (power) → open (unlock) was correct.
+      This lesson will come in handy with more complex mechanisms later.
+      When you're ready, move to lab_inner.
 
   - match: { action: observe }
     situation: |
-      停電した研究室。非常灯のわずかな光だけが室内を照らしている。
-      壁際に古い発電機（generator）が置かれているが、停止している。
-      正面のドア（power_door）には電子錠がついており、電源がなければ開かない。
-      chapは鍵を何本か持っているようだが……まず電源が必要だ。
+      A laboratory with the power out. Only faint emergency lights illuminate the room.
+      An old generator (generator) sits against the wall, but it has stopped.
+      The door (power_door) has an electronic lock — it won't open without power.
+      chap appears to be holding several keys, but... power is needed first.
     conversations:
       - speaker: you
-        text: "暗い。電気が来ていない。"
+        text: "Dark. No electricity."
       - speaker: chap
-        text: "発電機があります。私が起動できます。"
+        text: "There is a generator. I can start it."
       - speaker: you
-        text: "鍵だけじゃなく機械も動かせるのか。"
+        text: "Can you operate machinery as well as locks?"
       - speaker: chap
-        text: "MCP経由でアクセスできるものなら、何でも。"
+        text: "Anything accessible via MCP."
       - speaker: you
-        text: "（頼っていいのかまだわからないが——今は他に手がない）"
+        text: "(I still don't know if I can rely on this — but there's no other option right now.)"
     lore: |
-      【発見: 設計図の裏に書かれたメモ — M の分析】
-      モノリスのダンジョンを調べ尽くした。
-      仕掛けは偶然ではない。順番がある。
-      帝国軍は「手順を知る者」だけを中枢に置いてきた。
-      知識の独占が、力の源泉だ。
-      しかしその設計を逆読みすれば、突破できる。
-      このメモが役に立つことを祈る。
+      [Discovery: Note written on the back of a blueprint — M's analysis]
+      I studied every part of the Monolith's dungeon.
+      The mechanisms are not random. There is an order.
+      The Imperial Army has always placed only those who know the procedures at the center.
+      Monopoly over knowledge is the source of their power.
+      But if you read the design in reverse, you can break through.
+      I hope this note is of use.
 
-      これがrequires_device——「デバイスが動いていないと開かないドア」だ。
-      chapはactivateアクションでデバイスを起動できる。
-      rpg_control_system actor=chap action=activate target=generator を試してみよう。
+      This is requires_device — "a door that won't open unless a device is running."
+      chap can start a device with the activate action.
+      Try: rpg_control_system actor=chap action=activate target=generator
 
   - match: { actor: chap, action: activate, target: generator, result: ok }
     on_success: |
-      発電機が唸りを上げ、蛍光灯が点滅しながら点灯した。
-      power_doorの電子錠が赤から緑に変わる。
+      The generator roared to life, and the fluorescent lights flickered on.
+      The electronic lock on power_door switched from red to green.
     conversations:
       - speaker: chap
-        text: "generator、起動しました。電子錠が解除可能になりました。"
+        text: "generator started. The electronic lock can now be released."
       - speaker: you
-        text: "…やったな。（素直に頼めばよかった）"
+        text: "...Well done. (Should have just asked right away.)"
     lore: |
-      generatorがONになった。これでpower_doorの条件が満たされた。
-      次は /rpg-try-keys でドアを開けよう。
+      The generator is now ON. The condition for power_door has been met.
+      Now let's open the door with /rpg-try-keys.
 
   - match: { actor: chap, action: open, target: power_door, result: ok }
     on_success: |
-      電子錠が解除され、power_doorが開く。
-      研究室の内部へ続く道が開けた。
+      The electronic lock disengages and power_door opens.
+      The path leading to the lab interior is now clear.
     conversations:
       - speaker: chap
-        text: "power_door、開錠しました。"
+        text: "power_door unlocked."
       - speaker: you
-        text: "先に電源を入れて、それからドアを開ける——順番があるんだな。"
-    lore: "スキルが正しい鍵を自動で見つけた。"
+        text: "Power on first, then open the door — there's an order to things."
+    lore: "The skill automatically found the correct key."
 
   - match: { actor: you, action: move, target: lab_inner, result: ok }
     on_success: |
-      研究室の内部へ踏み込んだ。
-      明かりの下に、実験機材と次のステージへのメモが残されていた。
+      You stepped into the lab interior.
+      Under the lights, experimental equipment and notes for the next stage were left behind.
     conversations:
       - speaker: you
-        text: "明るくなった。…chapがいなければここで詰まっていた。"
+        text: "There's light now. ...Without chap, I would have been stuck here."
       - speaker: chap
-        text: "あなたが指示を出してくれたから動けました。"
+        text: "I could act because you gave the instructions."
       - speaker: you
-        text: "（そうか——俺が指示して、こいつが動く。それがこのチームの形か）"
+        text: "(That's it — I give the orders, and this thing moves. That's how this team works.)"
     lore: |
-      activate → open の順番が重要だった。
-      次のステージでは逆の操作——deactivate——が必要になる。
+      The order of activate → open was critical.
+      In the next stage, the reverse operation — deactivate — will be needed.
+
+locales:
+  ja:
+    title: "Dark Lab"
+    description: |
+      停電した研究室。発電機を起動しなければドアは開かない。
+      chapにactivateを指示して、電源を入れよう。
+    waypoints:
+      lab_entrance: { label: "研究室入口" }
+      lab_inner: { label: "研究室内部" }
+    devices:
+      generator: { label: "非常用発電機" }
+    next_goal_rules:
+      - goal: { text: "研究室を観察しよう", hint: "rpg_observe でステージを観察する" }
+      - goal: { text: "chapに発電機（generator）を起動させよう", hint: "rpg_control_system actor=chap action=activate target=generator" }
+      - goal: { text: "power_doorを /rpg-try-keys で開けよう", hint: "/rpg-try-keys {\"target\":\"power_door\"}" }
+      - goal: { text: "扉が開いた。研究室内部へ進もう", hint: "rpg_control_system actor=you action=move target=lab_inner" }
+    narrations:
+      - situation: |
+          発電機が動き、power_doorも開かれた。
+          室内は明るく、研究室内部（lab_inner）への道が確保されている。
+        conversations:
+          - speaker: you
+            text: "先に電源を入れて、それからドアを開ける——順番があるんだな。"
+          - speaker: chap
+            text: "その通りです。制約を一つずつ解除していくのが、このダンジョンのルールです。"
+        lore: |
+          activate（電源）→ open（開錠）の順序が正しかった。
+          この学びは、後のより複雑な仕掛けでも役立つだろう。
+          準備ができたら、lab_inner へ移動しよう。
+      - situation: |
+          停電した研究室。非常灯のわずかな光だけが室内を照らしている。
+          壁際に古い発電機（generator）が置かれているが、停止している。
+          正面のドア（power_door）には電子錠がついており、電源がなければ開かない。
+          chapは鍵を何本か持っているようだが……まず電源が必要だ。
+        conversations:
+          - speaker: you
+            text: "暗い。電気が来ていない。"
+          - speaker: chap
+            text: "発電機があります。私が起動できます。"
+          - speaker: you
+            text: "鍵だけじゃなく機械も動かせるのか。"
+          - speaker: chap
+            text: "MCP経由でアクセスできるものなら、何でも。"
+          - speaker: you
+            text: "（頼っていいのかまだわからないが——今は他に手がない）"
+        lore: |
+          【発見: 設計図の裏に書かれたメモ — M の分析】
+          モノリスのダンジョンを調べ尽くした。
+          仕掛けは偶然ではない。順番がある。
+          帝国軍は「手順を知る者」だけを中枢に置いてきた。
+          知識の独占が、力の源泉だ。
+          しかしその設計を逆読みすれば、突破できる。
+          このメモが役に立つことを祈る。
+
+          これがrequires_device——「デバイスが動いていないと開かないドア」だ。
+          chapはactivateアクションでデバイスを起動できる。
+          rpg_control_system actor=chap action=activate target=generator を試してみよう。
+      - on_success: |
+          発電機が唸りを上げ、蛍光灯が点滅しながら点灯した。
+          power_doorの電子錠が赤から緑に変わる。
+        conversations:
+          - speaker: chap
+            text: "generator、起動しました。電子錠が解除可能になりました。"
+          - speaker: you
+            text: "…やったな。（素直に頼めばよかった）"
+        lore: |
+          generatorがONになった。これでpower_doorの条件が満たされた。
+          次は /rpg-try-keys でドアを開けよう。
+      - on_success: |
+          電子錠が解除され、power_doorが開く。
+          研究室の内部へ続く道が開けた。
+        conversations:
+          - speaker: chap
+            text: "power_door、開錠しました。"
+          - speaker: you
+            text: "先に電源を入れて、それからドアを開ける——順番があるんだな。"
+        lore: "スキルが正しい鍵を自動で見つけた。"
+      - on_success: |
+          研究室の内部へ踏み込んだ。
+          明かりの下に、実験機材と次のステージへのメモが残されていた。
+        conversations:
+          - speaker: you
+            text: "明るくなった。…chapがいなければここで詰まっていた。"
+          - speaker: chap
+            text: "あなたが指示を出してくれたから動けました。"
+          - speaker: you
+            text: "（そうか——俺が指示して、こいつが動く。それがこのチームの形か）"
+        lore: |
+          activate → open の順番が重要だった。
+          次のステージでは逆の操作——deactivate——が必要になる。

@@ -1,25 +1,25 @@
 # skill-rpg CLAUDE.md
 
-## ドキュメント
+## Documentation
 
 ### STAGES.md
-各ステージの学習テーマ・扉・デバイス・鍵・クリア条件・ゴール手順を記録する。
-ステージを追加・変更したら `STAGES.md` も必ず更新すること。
+Records the learning theme, doors, devices, keys, clear conditions, and goal steps for each stage.
+Whenever a stage is added or changed, `STAGES.md` must also be updated.
 
 ---
 
-## 開発メモ
+## Development Notes
 
-### ステージYAML変更後はサーバーリセットが必要
+### Server reset required after changing stage YAMLs
 
-`stages/*.yaml` を編集した後にサーバーを再起動しても、`~/.mywant-rpg/current.yaml` が存在する限りサーバーはそちらを読み込む（ステージYAMLは読み直されない）。
+After editing `stages/*.yaml` and restarting the server, as long as `~/.mywant-rpg/current.yaml` exists, the server will load from that file (the stage YAMLs will not be re-read).
 
-新しいステージ内容をサーバーに反映するには、再起動後に必ずリセットを実行すること：
+To apply new stage content to the server, always run a reset after restarting:
 
 ```bash
 curl -s -X POST http://localhost:7100/api/v1/reset
 ```
 
-または MCP ツール経由でも可。
+Or via the MCP tool.
 
-**将来対策案**: サーバー起動時にステージYAMLのmtimeをcurrent.yamlと比較し、新しければ自動リブートする。
+**Future improvement idea**: On server startup, compare the mtime of stage YAMLs against current.yaml, and auto-reboot if the YAMLs are newer.

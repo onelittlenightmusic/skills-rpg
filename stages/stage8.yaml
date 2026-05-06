@@ -1,45 +1,45 @@
 id: stage8
 title: "The Want Factory: Parallel"
 description: |
-  廊下にはまだ扉が残っている。
-  parallelize を使って、残りの扉をまとめて開けよう。
+  More doors remain in the corridor.
+  Use parallelize to open all the remaining doors at once.
 initial_position: lab_room
 waypoints:
   lab_room:
-    label: "研究室（出発点）"
+    label: "Laboratory (Starting Point)"
     adjacent: [corridor_entry]
   corridor_entry:
-    label: "廊下入口"
+    label: "Corridor Entrance"
     adjacent: [lab_room, hall_door_06]
   hall_door_06:
-    label: "扉06"
+    label: "Door 06"
     adjacent: [corridor_entry, corridor_07]
   corridor_07:
-    label: "廊下07"
+    label: "Corridor 07"
     adjacent: [hall_door_06, hall_door_07]
   hall_door_07:
-    label: "扉07"
+    label: "Door 07"
     adjacent: [corridor_07, corridor_08]
   corridor_08:
-    label: "廊下08"
+    label: "Corridor 08"
     adjacent: [hall_door_07, hall_door_08]
   hall_door_08:
-    label: "扉08"
+    label: "Door 08"
     adjacent: [corridor_08, corridor_09]
   corridor_09:
-    label: "廊下09"
+    label: "Corridor 09"
     adjacent: [hall_door_08, hall_door_09]
   hall_door_09:
-    label: "扉09"
+    label: "Door 09"
     adjacent: [corridor_09, corridor_10]
   corridor_10:
-    label: "廊下10"
+    label: "Corridor 10"
     adjacent: [hall_door_09, hall_door_10]
   hall_door_10:
-    label: "扉10"
+    label: "Door 10"
     adjacent: [corridor_10, exit_room]
   exit_room:
-    label: "出口"
+    label: "Exit"
     adjacent: [hall_door_10]
 doors:
   hall_door_06: { between: [corridor_entry, hall_door_06], open: false, locked: true, key: key_sienna }
@@ -59,14 +59,14 @@ achievement_defs:
   - { id: escaped_corridor, when: { actor: you, action: move, target: exit_room, result: ok } }
 next_goal_rules:
   - if_missing: observed_corridor
-    goal: { text: "残りの廊下を観察しよう", hint: "rpg_observe でステージを観察する" }
+    goal: { text: "Observe the remaining corridor", hint: "Observe the stage with rpg_observe" }
   - if_missing: all_doors_opened
     goal:
-      text: "parallelize で残り5枚をまとめて開けよう"
+      text: "Use parallelize to open all 5 remaining doors at once"
       hint: |
-        mywant-deploy スキルで parallelize want をデプロイしよう。
-        stage7 で /rpg-try-keys を1枚ずつ呼んだのと同じことを、parallelize でまとめて定義する。
-        例:
+        Deploy a parallelize want using the mywant-deploy skill.
+        Define the same thing you did with /rpg-try-keys one door at a time in stage7, but bundled together with parallelize.
+        Example:
           wants:
             - metadata: { name: open-all-doors, type: parallelize }
               spec:
@@ -84,31 +84,96 @@ next_goal_rules:
                       spec: { params: { target: hall_door_10 } }
       required_skill: mywant-deploy
   - if_missing: escaped_corridor
-    goal: { text: "全ての扉が開いた。出口へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_room" }
+    goal: { text: "All doors are open. Head to the exit", hint: "rpg_control_system actor=you action=move target=exit_room" }
 narrations:
   - match: { action: observe, requires_achievements: [all_doors_opened], missing_achievements: [escaped_corridor] }
     situation: |
-      5枚の扉は全て開かれた。出口への道が完全につながっている。
+      All five doors have been opened. The path to the exit is fully connected.
     conversations:
       - speaker: you
-        text: "parallelizeで5枚とも一気に開いたな。これで終わりか。"
+        text: "All five doors opened at once with parallelize. Is that the end?"
       - speaker: chap
-        text: "お疲れ様です。並列処理を定義しただけで、私のメモリが全行程を完遂しました。"
+        text: "Good work. Just by defining parallel processing, my memory completed the entire sequence."
       - speaker: you
-        text: "自動化の極みだな……ありがとう、chap。"
+        text: "The ultimate in automation... thank you, chap."
     lore: |
-      parallelize が全ての意図を同時に処理した。
-      繰り返しのスケールに制限はない。
+      parallelize processed all the intents simultaneously.
+      There is no limit to how far repetition can scale.
 
   - match: { action: observe }
-    situation: "まだ廊下の先には5枚の扉が閉じている。"
+    situation: "There are still five closed doors ahead in the corridor."
     conversations:
       - speaker: you
-        text: "さっきの調子でいくぞ。今度はparallelizeでまとめて開ける。"
+        text: "Let's keep up the pace. This time I'll open them all at once with parallelize."
   - match: { actor: chap, action: open, target: hall_door_10, result: ok }
-    on_success: "5枚全ての扉が開いた。"
+    on_success: "All five doors have been opened."
     conversations:
       - speaker: chap
-        text: "全ての扉を並列で開錠しました。"
+        text: "All doors have been unlocked in parallel."
 cleared_when: escaped_corridor
 next_stage: stage9
+
+locales:
+  ja:
+    title: "The Want Factory: Parallel"
+    description: |
+      廊下にはまだ扉が残っている。
+      parallelize を使って、残りの扉をまとめて開けよう。
+    waypoints:
+      lab_room: { label: "研究室（出発点）" }
+      corridor_entry: { label: "廊下入口" }
+      hall_door_06: { label: "扉06" }
+      corridor_07: { label: "廊下07" }
+      hall_door_07: { label: "扉07" }
+      corridor_08: { label: "廊下08" }
+      hall_door_08: { label: "扉08" }
+      corridor_09: { label: "廊下09" }
+      hall_door_09: { label: "扉09" }
+      corridor_10: { label: "廊下10" }
+      hall_door_10: { label: "扉10" }
+      exit_room: { label: "出口" }
+    next_goal_rules:
+      - goal: { text: "残りの廊下を観察しよう", hint: "rpg_observe でステージを観察する" }
+      - goal:
+          text: "parallelize で残り5枚をまとめて開けよう"
+          hint: |
+            mywant-deploy スキルで parallelize want をデプロイしよう。
+            stage7 で /rpg-try-keys を1枚ずつ呼んだのと同じことを、parallelize でまとめて定義する。
+            例:
+              wants:
+                - metadata: { name: open-all-doors, type: parallelize }
+                  spec:
+                    params:
+                      wants:
+                        - metadata: { name: open-door-06, type: rpg_try_keys }
+                          spec: { params: { target: hall_door_06 } }
+                        - metadata: { name: open-door-07, type: rpg_try_keys }
+                          spec: { params: { target: hall_door_07 } }
+                        - metadata: { name: open-door-08, type: rpg_try_keys }
+                          spec: { params: { target: hall_door_08 } }
+                        - metadata: { name: open-door-09, type: rpg_try_keys }
+                          spec: { params: { target: hall_door_09 } }
+                        - metadata: { name: open-door-10, type: rpg_try_keys }
+                          spec: { params: { target: hall_door_10 } }
+      - goal: { text: "全ての扉が開いた。出口へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_room" }
+    narrations:
+      - situation: |
+          5枚の扉は全て開かれた。出口への道が完全につながっている。
+        conversations:
+          - speaker: you
+            text: "parallelizeで5枚とも一気に開いたな。これで終わりか。"
+          - speaker: chap
+            text: "お疲れ様です。並列処理を定義しただけで、私のメモリが全行程を完遂しました。"
+          - speaker: you
+            text: "自動化の極みだな……ありがとう、chap。"
+        lore: |
+          parallelize が全ての意図を同時に処理した。
+          繰り返しのスケールに制限はない。
+      - situation: "まだ廊下の先には5枚の扉が閉じている。"
+        conversations:
+          - speaker: you
+            text: "さっきの調子でいくぞ。今度はparallelizeでまとめて開ける。"
+      - on_success: "5枚全ての扉が開いた。"
+        conversations:
+          - speaker: chap
+            text: "全ての扉を並列で開錠しました。"
