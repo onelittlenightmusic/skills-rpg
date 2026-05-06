@@ -1,172 +1,267 @@
-# Skill RPG
+# Skills RPG
 
-An RPG-style learning game for getting comfortable with **mywant** and **Claude Code Agent Skills**.
+> *An interactive RPG to learn MCP, Agent Skills, and Wants — by playing through them.*
 
-You (`you`) are trapped. Your AI agent (`chap`) can act on your behalf via Skills, MCP tools, or
-mywant want types. Three routes converge on the same game-state HTTP API; that convergence is the
-lesson.
+---
 
-## Components
+## The Story
 
-| Component | Role |
-|---|---|
-| `cmd/rpg-server` | Authoritative game-state HTTP server (state, control, saves) |
-| `cmd/rpg-mcp` | Thin stdio MCP wrapper around rpg-server (`actor=you`) |
-| `skills/` | Machine Readable Skills — invoke rpg-server with `actor=chap` |
-| `generated-want-types/` | Want type YAML auto-generated from skills |
-| `stages/` | Stage definitions loaded by rpg-server on first run |
-| `examples/` | mywant YAML examples chaining buttons / observers / actions |
+The **Monolith** controls all of society's infrastructure — administration, healthcare, distribution, communications. But it has grown old and corrupt. Citizens suffer under broken rules that no one can fix. The Empire hoards the Monolith's power and imprisons anyone who dares to challenge it.
 
-## Quick start
+**You** are an engineer. Watching citizens suffer, you set out to fix the Monolith. The Imperial Army captured you at the fortress gates and threw you into their dungeon.
+
+When you woke up, a strange AI agent named **chap** was waiting. A single cable runs from its back — an **MCP (Model Context Protocol)** connection cable that links it directly to the dungeon control system.
+
+You don't know if you can trust it yet. But right now, you have no other choice.
+
+*Escape the dungeon. Claim the Legacy. Save the people.*
+
+---
+
+## What You Learn
+
+This game is designed to give you **hands-on experience with three escalating methods of AI agent intervention**:
+
+```
+MCP (direct command) → Agent Skills (automation) → Wants (intent definition & scaling)
+```
+
+Each stage teaches one concept. By the time you escape, you will have used all three layers in real code — not just read about them.
+
+| # | Stage | Concept |
+|---|-------|---------|
+| 1 | The Locked Room | Ask chap directly via MCP |
+| 2 | The Vault Door | Manual trial-and-error; feel the limits of repetition |
+| 3 | The Forgotten Lab | Automate repetition with an Agent Skill |
+| 4 | Dark Lab | Activate a device to satisfy a door precondition |
+| 5 | Alarm Room | Deactivate a device to remove a blocker |
+| 6 | Control Room | Correct sequence: deactivate → activate → open |
+| 7 | The Want Factory | Scale across 5 doors with a deployed Want |
+| 8 | The Want Factory: Parallel | Open 5 doors at once with a `parallelize` Want |
+| 9 | Lights Out | Combine two Wants to change the world without MCP |
+
+**Core insight:** Skills are *tools*. Wants are the *definition of intent* that orchestrates those tools. Define the intent once, and the scale is unlimited.
+
+---
+
+## Prerequisites
+
+| Requirement | Notes |
+|-------------|-------|
+| [Claude Code](https://claude.ai/code) | The CLI / IDE extension |
+| Go 1.22+ | To build the RPG server |
+| Python 3.9+ | Some skills use Python |
+| [mywant](https://github.com/onelittlenightmusic/mywant) | Required for stages 7–9 |
+| mywant-skills | Included in the mywant repo |
+
+---
+
+## Setup (English)
+
+### 1. Clone and build
 
 ```sh
+git clone https://github.com/onelittlenightmusic/skills-rpg.git
+cd skills-rpg
 make build
-./bin/rpg-server &              # default :7100
-curl localhost:7100/api/v1/next-goal
 ```
 
-See `docs/playthrough-stage1.md` for the intended first run.
-
-## Prerequisites: mywant-skills
-
-Stage 7 and 8 use `mywant` wants to automate door-opening. The `/mywant-deploy`
-skill (from [mywant-skills](https://github.com/onelittlenightmusic/mywant)) is
-required. Install it first:
+### 2. Start the RPG server
 
 ```sh
-# See ~/.mywant/custom-types/mywant-skills/README.md for details
-```
-
-Once mywant-skills is installed at `~/.mywant/custom-types/mywant-skills/`,
-`make install-claude` (below) will automatically link them into `~/.claude/skills/`.
-
-## Installing Skills into Claude Code
-
-The `skills/` directory contains Agent Skills (e.g. `rpg-try-keys`). To make them
-available as `/skill-name` slash commands in Claude Code, register the `skills/`
-directory as a project:
-
-```sh
-python3 - <<'EOF'
-import json, pathlib
-
-claude_json = pathlib.Path.home() / ".claude.json"
-skills_dir  = str(pathlib.Path(__file__).resolve().parent / "skills")  # adjust if needed
-
-with open(claude_json) as f:
-    d = json.load(f)
-
-if skills_dir not in d.get("projects", {}):
-    d.setdefault("projects", {})[skills_dir] = {}
-    with open(claude_json, "w") as f:
-        json.dump(d, f, indent=2)
-    print("registered:", skills_dir)
-else:
-    print("already registered")
-EOF
-```
-
-Or run the one-liner directly (replace the path if your clone is elsewhere):
-
-```sh
-python3 -c "
-import json, pathlib
-p = pathlib.Path.home() / '.claude.json'
-d = json.load(open(p))
-s = '$PWD/skills'
-d.setdefault('projects', {})[s] = {}
-json.dump(d, open(p,'w'), indent=2)
-print('registered', s)
-"
-```
-
-After registration the following skills become available in any Claude Code session:
-
-| Skill | Description |
-|---|---|
-| `/rpg-try-keys` | Try all of chap's keys on a door and unlock it |
-| `/rpg-control` | Send a control action as chap |
-| `/rpg-observe` | Observe a subtree of game state |
-| `/rpg-next-goal` | Show the next suggested goal |
-| `/rpg-save` / `/rpg-load` | Save-slot management |
-
-> **Note:** No restart is required — skills are re-read on each invocation.
-
-## Connecting Claude Code to the rpg MCP server
-
-`bin/rpg-mcp` is a stdio MCP server that wraps `rpg-server`. The project already
-includes `.claude/settings.json` with the MCP configuration, so no manual registration
-is needed for project-scope use.
-
-### 1. Build and start `rpg-server`
-
-```sh
-make build
 ./bin/rpg-server &
-curl -sf http://localhost:7100/healthz       # → {"ok":true}
+curl -sf http://localhost:7100/healthz   # → {"ok":true}
 ```
 
-### 2. Restart Claude Code
-
-Restart Claude Code so the MCP server (configured in `.claude/settings.json`) is
-loaded. After restart the following tools become available (prefixed `mcp__rpg__`):
-
-| Tool | Purpose |
-|---|---|
-| `rpg_next_goal` | Show what to do next |
-| `rpg_observe` | Read a subtree of game state by dot-path |
-| `rpg_control_system` | Perform an action **as `chap`** (the AI agent) |
-| `rpg_save` / `rpg_load` / `rpg_save_list` / `rpg_save_delete` | Save-slot management |
-
-Try in chat: *"Use rpg_control_system to open door1."*
-
-### Optional: user-scope registration
-
-To make the server available across all projects instead:
-
-```sh
-claude mcp add rpg \
-  --scope user \
-  --env RPG_SERVER_URL=http://localhost:7100 \
-  -- "$PWD/bin/rpg-mcp"
-```
-
-### Verify
-
-```sh
-claude mcp list
-# rpg: /Users/.../skill-rpg/bin/rpg-mcp  - ✓ Connected
-```
-
-### Removing the server
-
-```sh
-claude mcp remove rpg --scope user
-```
-
-### Troubleshooting
-
-| Symptom | Fix |
-|---|---|
-| `cannot reach rpg-server` from a tool | Make sure `./bin/rpg-server` is running and `RPG_SERVER_URL` matches its port |
-| `claude mcp list` shows the server but not "Connected" | Check stderr in Claude Code logs; rebuild with `make build` |
-| Tools missing in chat | Restart Claude Code after `claude mcp add` |
-| Stage YAML changes not reflected | Run `curl -X POST http://localhost:7100/api/v1/reset` to reload stage definitions and clear state |
-
-## Development
-
-### Reloading Stage YAMLs
-If you modify stage definitions in the `stages/` directory, the running `rpg-server` will not pick up the changes automatically. To force a reload and reset the game state to its initial state:
+The server saves game state to `~/.mywant-rpg/current.yaml`.  
+To reset back to stage 1 at any time:
 
 ```sh
 curl -X POST http://localhost:7100/api/v1/reset
 ```
 
-If you only want to restart the server while keeping the current binary, use:
+### 3. Install Skills into Claude Code
+
 ```sh
-make stop-server && make run-server
+make install-skills
 ```
-Or use the convenience target to rebuild and restart:
+
+This registers the `skills/` directory so the following slash commands become available in Claude Code:
+
+| Skill | What it does |
+|-------|-------------|
+| `/rpg-observe` | Read the current game state and narration |
+| `/rpg-control` | Send a control action as chap |
+| `/rpg-try-keys` | Try all keys on a door and unlock it |
+| `/rpg-next-goal` | Show the current objective |
+| `/rpg-save` / `/rpg-load` | Save-slot management |
+
+> Run `/mcp reload` in Claude Code after installing.
+
+### 4. Connect the MCP server
+
+The project includes `.claude/settings.json` with the MCP configuration.  
+After building, **restart Claude Code** — the following MCP tools become available automatically:
+
+| Tool | Purpose |
+|------|---------|
+| `rpg_observe` | Read game state by dot-path |
+| `rpg_control_system` | Perform an action as chap or you |
+| `rpg_next_goal` | Show next objective |
+| `rpg_start` | Get full onboarding context |
+| `rpg_save` / `rpg_load` / `rpg_save_list` / `rpg_save_delete` | Saves |
+| `rpg_debug_jump_stage` | Jump to any stage (debug) |
+
+To add the MCP server globally (all projects):
+
+```sh
+claude mcp add rpg --scope user -- "$PWD/bin/rpg-mcp"
+```
+
+### 5. Install mywant-skills (required for stages 7–9)
+
+Stages 7–9 require the `mywant-deploy` skill from [mywant-skills](https://github.com/onelittlenightmusic/mywant).
+Follow the installation guide in that repository, then run:
+
+```sh
+make install-claude   # links mywant-skills into ~/.claude/skills/
+```
+
+### 6. Start playing
+
+Open Claude Code and say:
+
+> *"Let's play skills-rpg. Use rpg_start to get the context, then rpg_observe to look around."*
+
+Follow chap's guidance stage by stage.
+
+### Language setting
+
+By default the game runs in English. To switch to Japanese:
+
+```sh
+curl -X PUT http://localhost:7100/api/v1/settings \
+  -H "Content-Type: application/json" \
+  -d '{"language":"ja"}'
+```
+
+Setting is saved to `~/.skills-rpg.conf`.
+
+---
+
+## セットアップ (日本語)
+
+### 1. クローンとビルド
+
+```sh
+git clone https://github.com/onelittlenightmusic/skills-rpg.git
+cd skills-rpg
+make build
+```
+
+### 2. RPGサーバーを起動
+
+```sh
+./bin/rpg-server &
+curl -sf http://localhost:7100/healthz   # → {"ok":true}
+```
+
+ゲーム状態は `~/.mywant-rpg/current.yaml` に保存されます。  
+いつでもステージ1に戻すには：
+
+```sh
+curl -X POST http://localhost:7100/api/v1/reset
+```
+
+### 3. スキルをClaude Codeにインストール
+
+```sh
+make install-skills
+```
+
+インストール後、Claude Code で `/mcp reload` を実行してください。
+
+### 4. MCPサーバーに接続
+
+`.claude/settings.json` にMCP設定が含まれています。  
+ビルド後に **Claude Code を再起動** すると、MCPツールが自動的に有効になります。
+
+### 5. mywant-skillsをインストール（ステージ7〜9に必要）
+
+[mywant](https://github.com/onelittlenightmusic/mywant) リポジトリの手順に従ってmywant-skillsをインストールした後：
+
+```sh
+make install-claude
+```
+
+### 6. 日本語に切り替え
+
+```sh
+curl -X PUT http://localhost:7100/api/v1/settings \
+  -H "Content-Type: application/json" \
+  -d '{"language":"ja"}'
+```
+
+設定は `~/.skills-rpg.conf` に保存されます。
+
+### 7. ゲーム開始
+
+Claude Code を開いて次のように話しかけてください：
+
+> *「skills-rpgをプレイしよう。rpg_startでコンテキストを取得して、rpg_observeで周りを見回して。」*
+
+chapのガイダンスに従ってステージを進めてください。
+
+---
+
+## Architecture
+
+```
+Claude Code (you)
+    │
+    ├── MCP tools (rpg_control_system, rpg_observe, …)
+    │       └── bin/rpg-mcp  ──────────────────────────────┐
+    │                                                        │
+    └── Agent Skills (/rpg-try-keys, /rpg-observe, …)       │
+            └── skills/*.sh / *.py  ───────────────────────►│
+                                                             │
+                                               bin/rpg-server  :7100
+                                               (game state, rules, narration)
+                                                             │
+                                               ~/.mywant-rpg/current.yaml
+```
+
+Wants (stages 7–9) are deployed via the `mywant-deploy` skill and run as background agents that call the same HTTP API.
+
+## Settings API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/settings` | GET | Get current settings |
+| `/api/v1/settings` | PUT | Update settings (e.g. `{"language":"ja"}`) |
+
+Supported languages: `en` (default), `ja`
+
+## Development
+
+### Reloading stage YAMLs
+
+```sh
+curl -X POST http://localhost:7100/api/v1/reset
+```
+
+### Rebuild and restart
+
 ```sh
 make restart
 ```
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `cannot reach rpg-server` | Ensure `./bin/rpg-server` is running on port 7100 |
+| MCP server not connected | Restart Claude Code; check `claude mcp list` |
+| Tools missing in chat | Run `/mcp reload` in Claude Code |
+| Stage changes not reflected | Run `curl -X POST http://localhost:7100/api/v1/reset` |
+| Stages 7–9 skill not found | Run `make install-claude` to link mywant-skills |
