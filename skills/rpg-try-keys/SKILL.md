@@ -45,18 +45,15 @@ python3 "${CLAUDE_SKILL_DIR}/main.py" '{"target":"lab_door"}'
 
 ## mywant want としてデプロイする場合
 
-`/mywant-deploy` で `{"action":"create", "yaml": "..."}` を使う場合、**`spec.requires` と `spec.finalResultField` が必須**です。
-これらが欠けると "Invalid want type" エラーになります。
+`requires` と `finalResultField` は want type 定義に既定値が設定されているため **省略可能**です。
+最小構成で動作します。
 
 ```yaml
 wants:
   - metadata:
-      name: open-lab-door
+      name: my-rpg-try-keys
       type: rpg_try_keys
     spec:
       params:
         target: lab_door
-      requires:
-        - rpg_try_keys       # 必須: エージェントとの紐付け
-      finalResultField: summary  # 必須: 結果フィールドの指定
 ```

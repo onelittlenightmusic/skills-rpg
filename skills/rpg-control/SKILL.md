@@ -70,18 +70,16 @@ python3 "${CLAUDE_SKILL_DIR}/main.py" '{"action":"open","target":"door1"}'
 
 ## mywant want としてデプロイする場合
 
-`spec.requires` と `spec.finalResultField` が必須です。省略すると "Invalid want type" になります。
+`requires` と `finalResultField` は want type 定義に既定値が設定されているため **省略可能**です。
+最小構成で動作します。
 
 ```yaml
 wants:
   - metadata:
-      name: open-door1
+      name: my-rpg-control
       type: rpg_control
     spec:
       params:
         action: open
         target: door1
-      requires:
-        - rpg_control
-      finalResultField: summary
 ```

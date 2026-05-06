@@ -33,14 +33,15 @@ python3 "${CLAUDE_SKILL_DIR}/main.py"
 
 ## mywant want としてデプロイする場合
 
+`requires` と `finalResultField` は want type 定義に既定値が設定されているため **省略可能**です。
+最小構成で動作します。
+
 ```yaml
 wants:
   - metadata:
-      name: save-list
+      name: my-rpg-save-list
       type: rpg_save_list
     spec:
-      params: {}
-      requires:
-        - rpg_save_list
-      finalResultField: slots
+      params:
+        {}
 ```
