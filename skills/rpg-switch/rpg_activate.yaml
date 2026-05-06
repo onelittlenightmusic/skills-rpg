@@ -1,1 +1,52 @@
-/Users/hiroyukiosaki/work/skills-rpg/generated-want-types/rpg_activate.yaml
+wantType:
+  metadata:
+    name: rpg_activate
+    title: RPG Activate
+    description: |
+      chap がステージ上のデバイスを起動する（activate）。
+      発電機・スイッチなど、youには操作できない機器を動かす用途で使う。
+    version: '1.0'
+    category: rpg
+    pattern: independent
+    labels:
+      child-role: doer
+
+  finalResultField: summary
+
+  parameters:
+    - name: target
+      description: 起動するデバイスの ID
+      type: string
+      required: true
+
+  state:
+    - { name: skill_json_arg,        description: JSON arg passed to main.py, type: string, label: current, persistent: false, initialValue: "" }
+    - { name: target,                description: target device (mirror), type: string, label: current, persistent: false, initialValue: "" }
+    - { name: error,                 description: error message if failed, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: summary,               description: summary text, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: achieving_percentage,  description: 0-100 progress, type: int, label: current, persistent: false, initialValue: 0 }
+
+  finalizeWhen:
+    achieved:
+      field: mrs_raw_output
+      operator: "!="
+      value: null
+    failed:
+      field: error
+      operator: "!="
+      value: ""
+
+  onInitialize:
+    current:
+      skill_json_arg: '{"action":"activate","target":"${target}"}'
+
+  requires:
+    - rpg_control
+
+  examples:
+    - name: activate generator
+      description: chapが発電機を起動する
+      want:
+        metadata: { name: activate-generator, type: rpg_activate }
+        spec:
+          params: { target: generator }

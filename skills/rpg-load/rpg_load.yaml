@@ -1,1 +1,33 @@
-/Users/hiroyukiosaki/work/skills-rpg/generated-want-types/rpg_load.yaml
+wantType:
+  metadata:
+    name: rpg_load
+    title: RPG Load
+    description: rpg-server の状態を指定スロットの内容で復元する。
+    version: '1.0'
+    category: rpg
+    pattern: independent
+    labels:
+      child-role: doer
+
+  finalResultField: ok
+
+  parameters:
+    - { name: slot, description: 復元元スロット名, type: string, required: true }
+
+  state:
+    - { name: skill_json_arg,       description: JSON arg, type: string, label: current, persistent: false, initialValue: "" }
+    - { name: slot,                 description: slot (mirror), type: string, label: current, persistent: false, initialValue: "" }
+    - { name: error,                description: error, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: summary,              description: summary, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: achieving_percentage, description: 0-100, type: int, label: current, persistent: false, initialValue: 0 }
+
+  finalizeWhen:
+    achieved: { field: mrs_raw_output, operator: "!=", value: null }
+    failed:   { field: error, operator: "!=", value: "" }
+
+  onInitialize:
+    current:
+      skill_json_arg: '{"slot":"${slot}"}'
+
+  requires:
+    - rpg_load
