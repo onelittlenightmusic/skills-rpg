@@ -49,11 +49,30 @@ next_goal_rules:
   - if_missing: generator_activated
     goal:
       text: "発電機（generator）を起動するwantをデプロイしよう"
-      hint: "mywant apply examples/stage9-generator.yaml"
+      hint: |
+        mywant-deploy スキルで rpg_control want をデプロイしよう。
+        stage6 で rpg_control_system action=activate target=generator と直接呼んだのと同じことを、今度は want として定義する。
+        例:
+          wants:
+            - metadata: { name: start-generator, type: rpg_control }
+              spec:
+                params:
+                  action: activate
+                  target: generator
+      required_skill: mywant-deploy
   - if_missing: exit_door_opened
     goal:
       text: "exit_doorに鍵を試すwantをデプロイしよう"
-      hint: "mywant apply examples/stage9-try-keys.yaml"
+      hint: |
+        mywant-deploy スキルで rpg_try_keys want をデプロイしよう。
+        stage7 で /rpg-try-keys を直接呼んだのと同じことを、今度は want として定義する。
+        例:
+          wants:
+            - metadata: { name: open-exit-door, type: rpg_try_keys }
+              spec:
+                params:
+                  target: exit_door
+      required_skill: mywant-deploy
   - if_missing: escaped_darkness
     goal:
       text: "扉が開いた。出口の間へ向かおう"
@@ -100,10 +119,10 @@ narrations:
       wantはchapへの命令ではなく、「こうあるべき」という定義だから、
       接続が切れていても実行し続ける。
 
-      2つのwantをデプロイして、暗闇を抜け出そう：
+      mywant-deploy スキルを使って2つのwantをデプロイし、暗闇を抜け出そう：
 
-        1. examples/stage9-generator.yaml — 発電機を起動する
-        2. examples/stage9-try-keys.yaml — 電源が入ったら扉に鍵を試す
+        1. rpg_control want — stage6 で activate したのと同じことを want として定義する
+        2. rpg_try_keys want — stage7 で /rpg-try-keys を呼んだのと同じことを want として定義する
 
   - match: { actor: chap, action: activate, target: generator, result: ok }
     on_success: |

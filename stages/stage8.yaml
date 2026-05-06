@@ -61,7 +61,28 @@ next_goal_rules:
   - if_missing: observed_corridor
     goal: { text: "残りの廊下を観察しよう", hint: "rpg_observe でステージを観察する" }
   - if_missing: all_doors_opened
-    goal: { text: "parallelize で残り5枚をまとめて開けよう", hint: "/mywant-deploy に parallelize want を定義", required_skill: mywant-deploy }
+    goal:
+      text: "parallelize で残り5枚をまとめて開けよう"
+      hint: |
+        mywant-deploy スキルで parallelize want をデプロイしよう。
+        stage7 で /rpg-try-keys を1枚ずつ呼んだのと同じことを、parallelize でまとめて定義する。
+        例:
+          wants:
+            - metadata: { name: open-all-doors, type: parallelize }
+              spec:
+                params:
+                  wants:
+                    - metadata: { name: open-door-06, type: rpg_try_keys }
+                      spec: { params: { target: hall_door_06 } }
+                    - metadata: { name: open-door-07, type: rpg_try_keys }
+                      spec: { params: { target: hall_door_07 } }
+                    - metadata: { name: open-door-08, type: rpg_try_keys }
+                      spec: { params: { target: hall_door_08 } }
+                    - metadata: { name: open-door-09, type: rpg_try_keys }
+                      spec: { params: { target: hall_door_09 } }
+                    - metadata: { name: open-door-10, type: rpg_try_keys }
+                      spec: { params: { target: hall_door_10 } }
+      required_skill: mywant-deploy
   - if_missing: escaped_corridor
     goal: { text: "全ての扉が開いた。出口へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_room" }
 narrations:
