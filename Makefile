@@ -28,24 +28,12 @@ install-skills:
 	  rm -rf "$(SKILL_DST)/$$name"; \
 	  ln -s "$$src" "$(SKILL_DST)/$$name"; \
 	done
-	@for f in generated-want-types/*.yaml; do \
-	  [ -e "$$f" ] || continue; \
-	  src=$$(cd "$$(dirname "$$f")" && pwd)/$$(basename "$$f"); \
-	  echo "linking $$(basename $$f)"; \
-	  rm -f "$(SKILL_DST)/$$(basename $$f)"; \
-	  ln -s "$$src" "$(SKILL_DST)/$$(basename $$f)"; \
-	done
 
 uninstall-skills:
 	@for d in skills/*/; do \
 	  name=$$(basename $$d); \
 	  echo "removing $$name from $(SKILL_DST)"; \
 	  rm -rf "$(SKILL_DST)/$$name"; \
-	done
-	@for f in generated-want-types/*.yaml; do \
-	  [ -e "$$f" ] || continue; \
-	  rm -f "$(SKILL_DST)/$$(basename $$f)"; \
-	  echo "removed $$(basename $$f)"; \
 	done
 
 CLAUDE_SKILLS    := $(HOME)/.claude/skills
