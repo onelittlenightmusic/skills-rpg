@@ -26,60 +26,47 @@ devices:
     label: "非常用発電機"
     on: false
 items:
-  key_final:
-    held_by: chap
-  key_decoy_a:
-    held_by: chap
-  key_decoy_b:
-    held_by: chap
+  key_final: { held_by: chap }
+  key_decoy_a: { held_by: chap }
+  key_decoy_b: { held_by: chap }
 achievement_defs:
-  - id: observed_dark_room
-    when: { action: observe }
-  - id: generator_activated
-    when: { actor: chap, action: activate, target: generator, result: ok }
-  - id: exit_door_opened
-    when: { actor: chap, action: open, target: exit_door, result: ok }
-  - id: escaped_darkness
-    when: { actor: you, action: move, target: exit_hall, result: ok }
+  - { id: observed_dark_room, when: { action: observe } }
+  - { id: generator_activated, when: { actor: chap, action: activate, target: generator, result: ok } }
+  - { id: exit_door_opened, when: { actor: chap, action: open, target: exit_door, result: ok } }
+  - { id: escaped_darkness, when: { actor: you, action: move, target: exit_hall, result: ok } }
 next_goal_rules:
   - if_missing: observed_dark_room
-    goal:
-      text: "暗い部屋を観察しよう"
-      hint: "rpg_observe でステージを観察する"
+    goal: { text: "暗い部屋を観察しよう", hint: "rpg_observe でステージを観察する" }
   - if_missing: generator_activated
-    goal:
-      text: "発電機（generator）を起動するwantをデプロイしよう"
-      hint: |
-        mywant-deploy スキルで rpg_control want をデプロイしよう。
-        stage6 で rpg_control_system action=activate target=generator と直接呼んだのと同じことを、今度は want として定義する。
-        例:
-          wants:
-            - metadata: { name: start-generator, type: rpg_control }
-              spec:
-                params:
-                  action: activate
-                  target: generator
-      required_skill: mywant-deploy
+    goal: { text: "発電機（generator）を起動するwantをデプロイしよう", hint: "mywant apply examples/stage9-generator.yaml", required_skill: mywant-deploy }
   - if_missing: exit_door_opened
-    goal:
-      text: "exit_doorに鍵を試すwantをデプロイしよう"
-      hint: |
-        mywant-deploy スキルで rpg_try_keys want をデプロイしよう。
-        stage7 で /rpg-try-keys を直接呼んだのと同じことを、今度は want として定義する。
-        例:
-          wants:
-            - metadata: { name: open-exit-door, type: rpg_try_keys }
-              spec:
-                params:
-                  target: exit_door
-      required_skill: mywant-deploy
+    goal: { text: "exit_doorに鍵を試すwantをデプロイしよう", hint: "mywant apply examples/stage9-try-keys.yaml", required_skill: mywant-deploy }
   - if_missing: escaped_darkness
-    goal:
-      text: "扉が開いた。出口の間へ向かおう"
-      hint: "rpg_control_system actor=you action=move target=exit_hall"
-cleared_when: escaped_darkness
-next_stage: ""
+    goal: { text: "扉が開いた。出口の間へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_hall" }
 narrations:
+  - match: { action: observe, requires_achievements: [escaped_darkness] }
+    situation: |
+      あなたは出口の間にいる。
+      暗闇だった部屋には明かりが灯り、開いた扉が後ろに見える。
+      ここから先は、あなたの物語だ。
+    lore: |
+      全ステージをクリアしました。
+      道具と意図があれば、どんなダンジョンも攻略できる。
+    conversations:
+      - speaker: you
+        text: "レガシーは手に入れた。さて、次はどこへ行こうか。"
+
+  - match: { action: observe, requires_achievements: [exit_door_opened], missing_achievements: [escaped_darkness] }
+    situation: |
+      発電機は稼働し、exit_doorが開いている。出口の先には「出口の間」が見える。
+    conversations:
+      - speaker: you
+        text: "扉が開いた……。行こう、chap。"
+      - speaker: chap
+        text: "はい、出口の間へ向かいましょう。"
+    lore: |
+      2つのwantが連携して、暗闇を突破した。
+
   - match: { action: observe }
     situation: |
       完全な暗闇。わずかな非常灯だけが床を照らしている。
@@ -88,17 +75,6 @@ narrations:
 
       ——そしてもうひとつ。chapへの通信ケーブルが壁の途中で切断されている。
       直接「やれ」と命令する経路は、ここでは機能しない。
-    conversations:
-      - speaker: you
-        text: "…chap？聞こえるか。"
-      - speaker: chap
-        text: "（遠く、かすれた声で）…聞こえます。でも帝国軍がケーブルを遮断しました。直接の命令は届きません。"
-      - speaker: you
-        text: "wantならどうだ？"
-      - speaker: chap
-        text: "wantはMCPとは別の経路で動きます。定義した意図は、接続が切れても生きています。"
-      - speaker: you
-        text: "（俺が残した意図が、chapを動かす——chapがいなくても）"
     lore: |
       【発見: 出口の前に置かれた石板 — 最後のメッセージ】
       あなたがこれを読んでいるなら、踏破した。
@@ -121,9 +97,19 @@ narrations:
 
       mywant-deploy スキルを使って2つのwantをデプロイし、暗闇を抜け出そう：
 
-        1. rpg_control want — stage6 で activate したのと同じことを want として定義する
-        2. rpg_try_keys want — stage7 で /rpg-try-keys を呼んだのと同じことを want として定義する
-
+        1. examples/stage9-generator.yaml — 発電機を起動する
+        2. examples/stage9-try-keys.yaml — 電源が入ったら扉に鍵を試す
+    conversations:
+      - speaker: you
+        text: "…chap？聞こえるか。"
+      - speaker: chap
+        text: "（遠く、かすれた声で）…聞こえます。でも帝国軍がケーブルを遮断しました。直接の命令は届きません。"
+      - speaker: you
+        text: "wantならどうだ？"
+      - speaker: chap
+        text: "wantはMCPとは別の経路で動きます。定義した意図は、接続が切れても生きています。"
+      - speaker: you
+        text: "（俺が残した意図が、chapを動かす——chapがいなくても）"
   - match: { actor: chap, action: activate, target: generator, result: ok }
     on_success: |
       発電機が唸りを上げ、ライトが点灯した。
@@ -137,7 +123,6 @@ narrations:
       wantがスキルを通じてgeneratorをactivateした。
       rpg_observe のwant cardにその変化が映し出される。
       次は exit_door に鍵を試すwantが動き出す。
-
   - match: { actor: chap, action: open, target: exit_door, result: ok }
     on_success: |
       電子錠が解除され、exit_doorが静かに開く。
@@ -150,10 +135,9 @@ narrations:
     lore: |
       try-keys-wantがgeneratorのonを確認し、全ての鍵を試した。
       2つのwantが連携して、暗闇を突破した。
-
   - match: { actor: you, action: move, target: exit_hall, result: ok }
     on_success: |
-      あなたは出口の間へ踏み出した。
+      あなたは出口の間へ踏み込んだ。
       振り返ると、暗かった部屋に明かりが灯り、開いた扉が見える。
 
       どこからかchapの声が届く——通信ケーブルは切れているはずなのに。
@@ -190,3 +174,4 @@ narrations:
 
       道具は残る。意図は残る。
       キーメイカーズは消えても、あなたを通じて生き続ける。
+cleared_when: escaped_darkness
