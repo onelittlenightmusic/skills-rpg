@@ -1,4 +1,4 @@
-.PHONY: all build build-server build-mcp install-skills uninstall-skills install-claude uninstall-claude clean run-server stop-server restart-server smoke reload-go rebuild-frontend
+.PHONY: all build build-server build-mcp install-skills uninstall-skills install-claude uninstall-claude clean run-server stop-server restart-server restart reset smoke reload-go rebuild-frontend
 
 BIN_DIR := bin
 SKILL_DST ?= $(HOME)/.mywant/custom-types
@@ -94,6 +94,18 @@ stop-server:
 restart-server: stop-server
 	@sleep 1
 	$(MAKE) run-server
+
+# build → background restart (no game state reset)
+restart: build
+	@pkill -f 'bin/rpg-server' || true
+	@sleep 1
+	@nohup $(BIN_DIR)/rpg-server > /tmp/rpg-server.log 2>&1 &
+	@sleep 2
+	@echo "rpg-server restarted (log: /tmp/rpg-server.log)"
+
+# reset game state to initial (stages/*.yaml) without restarting server
+reset:
+	@curl -s -X POST http://localhost:7100/api/v1/reset > /dev/null && echo "game state reset"
 
 smoke:
 	bash docs/smoke.sh

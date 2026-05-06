@@ -1,234 +1,85 @@
 id: stage7
 title: "The Want Factory"
 description: |
-  研究室の先に10枚の扉が並ぶ長い廊下がある。
-  2枚は手動でスキルを使い、残りはwantとして定義してデプロイすれば自動で開く。
+  長い廊下。5枚の扉が並んでいる。
+  手動でスキルを使い、残りはwantとしてデプロイして解決しよう。
 initial_position: lab_room
 waypoints:
   lab_room:
     label: "研究室（出発点）"
-    adjacent: [corridor]
-  corridor:
-    label: "長い廊下"
-    adjacent: [lab_room, exit_room]
+    adjacent: [corridor_entry]
+  corridor_entry:
+    label: "廊下入口"
+    adjacent: [lab_room, hall_door_01]
+  hall_door_01:
+    label: "扉01"
+    adjacent: [corridor_entry, corridor_02]
+  corridor_02:
+    label: "廊下02"
+    adjacent: [hall_door_01, hall_door_02]
+  hall_door_02:
+    label: "扉02"
+    adjacent: [corridor_02, corridor_03]
+  corridor_03:
+    label: "廊下03"
+    adjacent: [hall_door_02, hall_door_03]
+  hall_door_03:
+    label: "扉03"
+    adjacent: [corridor_03, corridor_04]
+  corridor_04:
+    label: "廊下04"
+    adjacent: [hall_door_03, hall_door_04]
+  hall_door_04:
+    label: "扉04"
+    adjacent: [corridor_04, corridor_05]
+  corridor_05:
+    label: "廊下05"
+    adjacent: [hall_door_04, hall_door_05]
+  hall_door_05:
+    label: "扉05"
+    adjacent: [corridor_05, exit_room]
   exit_room:
     label: "出口"
-    adjacent: [corridor]
+    adjacent: [hall_door_05]
 doors:
-  hall_door_01:
-    between: [corridor, exit_room]
-    open: false
-    locked: true
-    key: key_azure
-  hall_door_02:
-    between: [corridor, exit_room]
-    open: false
-    locked: true
-    key: key_amber
-  hall_door_03:
-    between: [corridor, exit_room]
-    open: false
-    locked: true
-    key: key_jade
-  hall_door_04:
-    between: [corridor, exit_room]
-    open: false
-    locked: true
-    key: key_crimson
-  hall_door_05:
-    between: [corridor, exit_room]
-    open: false
-    locked: true
-    key: key_indigo
-  hall_door_06:
-    between: [corridor, exit_room]
-    open: false
-    locked: true
-    key: key_sienna
-  hall_door_07:
-    between: [corridor, exit_room]
-    open: false
-    locked: true
-    key: key_violet
-  hall_door_08:
-    between: [corridor, exit_room]
-    open: false
-    locked: true
-    key: key_ochre
-  hall_door_09:
-    between: [corridor, exit_room]
-    open: false
-    locked: true
-    key: key_ebony
-  hall_door_10:
-    between: [corridor, exit_room]
-    open: false
-    locked: true
-    key: key_vermilion
+  hall_door_01: { between: [corridor_entry, hall_door_01], open: false, locked: true, key: key_azure }
+  hall_door_02: { between: [corridor_02, hall_door_02], open: false, locked: true, key: key_amber }
+  hall_door_03: { between: [corridor_03, hall_door_03], open: false, locked: true, key: key_jade }
+  hall_door_04: { between: [corridor_04, hall_door_04], open: false, locked: true, key: key_crimson }
+  hall_door_05: { between: [corridor_05, hall_door_05], open: false, locked: true, key: key_indigo }
 items:
-  key_azure:
-    held_by: chap
-  key_amber:
-    held_by: chap
-  key_jade:
-    held_by: chap
-  key_crimson:
-    held_by: chap
-  key_indigo:
-    held_by: chap
-  key_sienna:
-    held_by: chap
-  key_violet:
-    held_by: chap
-  key_ochre:
-    held_by: chap
-  key_ebony:
-    held_by: chap
-  key_vermilion:
-    held_by: chap
+  key_azure: { held_by: chap }
+  key_amber: { held_by: chap }
+  key_jade: { held_by: chap }
+  key_crimson: { held_by: chap }
+  key_indigo: { held_by: chap }
 achievement_defs:
-  - id: observed_corridor
-    when: { action: observe }
-  - id: opened_door_01
-    when: { actor: chap, action: open, target: hall_door_01, result: ok }
-  - id: opened_door_02
-    when: { actor: chap, action: open, target: hall_door_02, result: ok }
-  - id: opened_door_03
-    when: { actor: chap, action: open, target: hall_door_03, result: ok }
-  - id: opened_door_04
-    when: { actor: chap, action: open, target: hall_door_04, result: ok }
-  - id: opened_door_05
-    when: { actor: chap, action: open, target: hall_door_05, result: ok }
-  - id: all_doors_opened
-    when: { actor: chap, action: open, target: hall_door_10, result: ok }
-  - id: escaped_corridor
-    when: { actor: you, action: move, target: exit_room, result: ok }
+  - { id: observed_corridor, when: { action: observe } }
+  - { id: opened_door_01, when: { actor: chap, action: open, target: hall_door_01, result: ok } }
+  - { id: opened_door_02, when: { actor: chap, action: open, target: hall_door_02, result: ok } }
+  - { id: all_doors_opened, when: { actor: chap, action: open, target: hall_door_05, result: ok } }
+  - { id: escaped_corridor, when: { actor: you, action: move, target: exit_room, result: ok } }
 next_goal_rules:
   - if_missing: observed_corridor
-    goal:
-      text: "廊下を観察しよう"
-      hint: "rpg_observe でステージを観察する"
+    goal: { text: "廊下を観察しよう", hint: "rpg_observe でステージを観察する" }
   - if_missing: opened_door_01
-    goal:
-      text: "hall_door_01 を /rpg-try-keys で開けよう"
-      hint: "/rpg-try-keys {\"target\":\"hall_door_01\"}"
-      required_skill: rpg-try-keys
+    goal: { text: "hall_door_01 を /rpg-try-keys で開けよう", hint: "/rpg-try-keys {\"target\":\"hall_door_01\"}", required_skill: rpg-try-keys }
   - if_missing: opened_door_02
-    goal:
-      text: "hall_door_02 も /rpg-try-keys で開けよう"
-      hint: "/rpg-try-keys {\"target\":\"hall_door_02\"}"
-      required_skill: rpg-try-keys
-  - if_missing: opened_door_03
-    goal:
-      text: "hall_door_03 を want としてデプロイして開けよう"
-      hint: |
-        /mywant-deploy
-        wants:
-          - metadata:
-              name: open-door-03
-              type: rpg_try_keys
-            spec:
-              params:
-                target: hall_door_03
-      required_skill: mywant-deploy
-  - if_missing: opened_door_04
-    goal:
-      text: "hall_door_04 も want としてデプロイして開けよう"
-      hint: |
-        /mywant-deploy
-        wants:
-          - metadata:
-              name: open-door-04
-              type: rpg_try_keys
-            spec:
-              params:
-                target: hall_door_04
-      required_skill: mywant-deploy
-  - if_missing: opened_door_05
-    goal:
-      text: "hall_door_05 も want としてデプロイして開けよう（これで3枚目）"
-      hint: |
-        /mywant-deploy
-        wants:
-          - metadata:
-              name: open-door-05
-              type: rpg_try_keys
-            spec:
-              params:
-                target: hall_door_05
-      required_skill: mywant-deploy
+    goal: { text: "hall_door_02 も /rpg-try-keys で開けよう", hint: "/rpg-try-keys {\"target\":\"hall_door_02\"}", required_skill: rpg-try-keys }
   - if_missing: all_doors_opened
-    goal:
-      text: "parallelize で残り5枚をまとめて開けよう"
-      hint: |
-        /mywant-deploy examples/stage7-open-last5.yaml
-
-        【parallelize が解禁された！】
-          hall_door_01〜05 を5回繰り返してわかった——このパターンは自動化できる。
-          child_type に want の種類、child_params に各 want のパラメータ一覧を渡すだけで、
-          指定した数の want を一度に並列起動するレシピが「parallelize」だ。
-          5枚分を個別に書く代わりに、1つの want で全部まとめられる。
-
-        【mywant-deploy スキルとは】
-          YAML ファイルに定義した want を mywant サーバーへデプロイするスキル。
-          Claude Code のチャットで /mywant-deploy <YAMLパス> と入力するだけ。
-      required_skill: mywant-deploy
+    goal: { text: "残りの扉（3, 4, 5）を mywant-deploy でデプロイして開けよう", hint: "/mywant-deploy に want 定義を渡す", required_skill: mywant-deploy }
   - if_missing: escaped_corridor
-    goal:
-      text: "全ての扉が開いた。出口へ向かおう"
-      hint: "rpg_control_system actor=you action=move target=exit_room"
-cleared_when: escaped_corridor
-next_stage: stage8
+    goal: { text: "全ての扉が開いた。出口へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_room" }
 narrations:
   - match: { action: observe }
-    situation: |
-      研究室の扉を抜けると、長い廊下が目の前に広がる。
-      石畳の床が遠くまで伸び、出口の手前に10枚の扉が壁のように連なっている。
-      それぞれの錠前が、暗がりの中で鈍く光っている。
-    lore: |
-      chapの手には10本の鍵。前のステージで /rpg-try-keys の使い方は覚えた。
-      しかし10回繰り返すのか？
-      まずは手動で感触を確かめ、次はwantとして定義することで何が変わるか体験しよう。
-
-  - match: { actor: chap, action: open, target: hall_door_01, result: ok }
-    on_success: "hall_door_01 が開く。スキルが正しい鍵を見つけた。"
-    lore: "1枚目。同じ操作をあと9回やることになる——次はwantとして定義してみよう。"
-
-  - match: { actor: chap, action: open, target: hall_door_02, result: ok }
-    on_success: "hall_door_02 が開く。"
-    lore: |
-      2枚目。スキルを直接呼ぶのとwantとしてデプロイするのは何が違うのか。
-      次は /rpg-try-keys を呼ぶのではなく、want として定義してみよう。
-
-  - match: { actor: chap, action: open, target: hall_door_03, result: ok }
-    on_success: "hall_door_03 が開く。wantが鍵を探し当てた。"
-    lore: "3枚目。wantを定義してデプロイした——スキルを直接呼ぶより少し手間がかかる。でも何かが違う気がする。"
-
-  - match: { actor: chap, action: open, target: hall_door_04, result: ok }
-    on_success: "hall_door_04 が開く。"
-    lore: "4枚目。target を変えて、また同じ want を書いた。コピペで済む——でもこれを残り6回やるのか？"
-
+    situation: "5枚の扉が廊下に並んでいる。"
+    conversations:
+      - speaker: you
+        text: "扉が5枚か。これくらいならmywantの練習にちょうどいいな。"
   - match: { actor: chap, action: open, target: hall_door_05, result: ok }
-    on_success: "hall_door_05 が開く。5枚目。廊下の半分を過ぎた。"
-    lore: |
-      ——ここで気づく。
-      「target だけ違う、同じ want を5回書いた」。
-      このパターンには名前がある: parallelize。
-      child_type に want の種類、child_params に target のリストを渡せば、
-      N個の want が一度に並列で起動する。残り5枚は1つの want で済む。
-
-  - match: { actor: chap, action: open, target: hall_door_10, result: ok }
-    on_success: |
-      hall_door_10 が開く。廊下の全ての扉が一列に開け放たれた。
-      出口から光が差し込んでくる。
-    lore: |
-      parallelize が rpg_try_keys want を5つ並列起動した。あなたは何もしていない。
-      スキルは道具、want はその道具を使う「意図の定義」、
-      parallelize は「その意図をN個まとめて発火する仕組み」だ。
-      意図を定義すれば、繰り返しはスケールする。
-
-  - match: { actor: you, action: move, target: exit_room, result: ok }
-    on_success: |
-      廊下を抜け、出口へ踏み出した。
-      振り返ると10枚の扉が全て開いて、石畳が向こうまで見通せる。
-    lore: "次は chapのMCPが使えないステージだ。wantだけで世界に介入することになる。"
+    on_success: "5枚全ての扉が開いた。"
+    conversations:
+      - speaker: chap
+        text: "全ての扉が開錠されました。"
+cleared_when: escaped_corridor
+next_stage: stage8

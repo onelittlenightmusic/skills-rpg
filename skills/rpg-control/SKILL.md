@@ -67,3 +67,21 @@ python3 "${CLAUDE_SKILL_DIR}/main.py" '{"action":"open","target":"door1"}'
 ```json
 { "error": "cannot reach rpg-server at ...", "ok": false }
 ```
+
+## mywant want としてデプロイする場合
+
+`spec.requires` と `spec.finalResultField` が必須です。省略すると "Invalid want type" になります。
+
+```yaml
+wants:
+  - metadata:
+      name: open-door1
+      type: rpg_control
+    spec:
+      params:
+        action: open
+        target: door1
+      requires:
+        - rpg_control
+      finalResultField: summary
+```

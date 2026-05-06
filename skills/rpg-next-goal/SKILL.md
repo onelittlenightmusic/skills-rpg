@@ -33,3 +33,17 @@ python3 "${CLAUDE_SKILL_DIR}/main.py"
 ```json
 { "error": "cannot reach rpg-server: ..." }
 ```
+
+## mywant want としてデプロイする場合
+
+```yaml
+wants:
+  - metadata:
+      name: next-goal
+      type: rpg_next_goal
+    spec:
+      params: {}
+      requires:
+        - rpg_next_goal
+      finalResultField: text
+```

@@ -30,3 +30,17 @@ python3 "${CLAUDE_SKILL_DIR}/main.py"
 ```json
 { "error": "...", "slots": [] }
 ```
+
+## mywant want としてデプロイする場合
+
+```yaml
+wants:
+  - metadata:
+      name: save-list
+      type: rpg_save_list
+    spec:
+      params: {}
+      requires:
+        - rpg_save_list
+      finalResultField: slots
+```

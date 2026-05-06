@@ -39,15 +39,22 @@ type Stage struct {
 	NextStage       string               `yaml:"next_stage,omitempty" json:"next_stage,omitempty"`
 }
 
+// ConversationLine is a single line of dialogue spoken by a character.
+type ConversationLine struct {
+	Speaker string `yaml:"speaker" json:"speaker"`
+	Text    string `yaml:"text" json:"text"`
+}
+
 // Narration is the rich, story-style supplement attached to a control result.
 // All fields are optional; only those filled in stage YAML are emitted.
 type Narration struct {
-	Situation    string        `yaml:"situation,omitempty" json:"situation,omitempty"`
-	WhyRejected  string        `yaml:"why_rejected,omitempty" json:"why_rejected,omitempty"`
-	WhoIsChap    string        `yaml:"who_is_chap,omitempty" json:"who_is_chap,omitempty"`
-	HowToProceed []ProceedStep `yaml:"how_to_proceed,omitempty" json:"how_to_proceed,omitempty"`
-	Lore         string        `yaml:"lore,omitempty" json:"lore,omitempty"`
-	OnSuccess    string        `yaml:"on_success,omitempty" json:"on_success,omitempty"`
+	Situation     string             `yaml:"situation,omitempty" json:"situation,omitempty"`
+	WhyRejected   string             `yaml:"why_rejected,omitempty" json:"why_rejected,omitempty"`
+	WhoIsChap     string             `yaml:"who_is_chap,omitempty" json:"who_is_chap,omitempty"`
+	HowToProceed  []ProceedStep      `yaml:"how_to_proceed,omitempty" json:"how_to_proceed,omitempty"`
+	Lore          string             `yaml:"lore,omitempty" json:"lore,omitempty"`
+	OnSuccess     string             `yaml:"on_success,omitempty" json:"on_success,omitempty"`
+	Conversations []ConversationLine `yaml:"conversations,omitempty" json:"conversations,omitempty"`
 }
 
 type ProceedStep struct {
@@ -56,12 +63,14 @@ type ProceedStep struct {
 }
 
 type NarrationMatch struct {
-	Actor        string `yaml:"actor,omitempty" json:"actor,omitempty"`
-	Action       string `yaml:"action,omitempty" json:"action,omitempty"`
-	Target       string `yaml:"target,omitempty" json:"target,omitempty"`
-	TargetPrefix string `yaml:"target_prefix,omitempty" json:"target_prefix,omitempty"`
-	Result       string `yaml:"result,omitempty" json:"result,omitempty"`
-	Key          string `yaml:"key,omitempty" json:"key,omitempty"`
+	Actor                string   `yaml:"actor,omitempty" json:"actor,omitempty"`
+	Action               string   `yaml:"action,omitempty" json:"action,omitempty"`
+	Target               string   `yaml:"target,omitempty" json:"target,omitempty"`
+	TargetPrefix         string   `yaml:"target_prefix,omitempty" json:"target_prefix,omitempty"`
+	Result               string   `yaml:"result,omitempty" json:"result,omitempty"`
+	Key                  string   `yaml:"key,omitempty" json:"key,omitempty"`
+	RequiresAchievements []string `yaml:"requires_achievements,omitempty" json:"requires_achievements,omitempty"`
+	MissingAchievements  []string `yaml:"missing_achievements,omitempty" json:"missing_achievements,omitempty"`
 }
 
 type NarrationDef struct {
@@ -121,12 +130,13 @@ type GoalRule struct {
 }
 
 type Event struct {
-	Actor  string         `json:"actor"`
-	Action string         `json:"action"`
-	Target string         `json:"target"`
-	Args   map[string]any `json:"args,omitempty"`
-	Result string         `json:"result"`
-	Reason string         `json:"reason,omitempty"`
+	Actor     string         `json:"actor"`
+	Action    string         `json:"action"`
+	Target    string         `json:"target"`
+	Args      map[string]any `json:"args,omitempty"`
+	Result    string         `json:"result"`
+	Reason    string         `json:"reason,omitempty"`
+	Narration *Narration     `json:"narration,omitempty"`
 }
 
 type ControlInput struct {

@@ -49,13 +49,69 @@ next_goal_rules:
 cleared_when: escaped_room1
 next_stage: stage2
 narrations:
-  # --- observe: 周囲の描写 ---
-  - match: { actor: you, action: observe, target_prefix: "stages.stage1" }
+  # --- observe: ステージクリア後（room2に脱出済み）---
+  - match:
+      action: observe
+      requires_achievements: [escaped_room1]
+    conversations:
+      - speaker: you
+        text: "廊下に出た。あの部屋には戻りたくないな。"
+      - speaker: chap
+        text: "ステージ1、クリアです。先へ進みましょう。"
+      - speaker: you
+        text: "（chapを信じて正解だった）"
+
+  # --- observe: door1開錠後・脱出前 ---
+  - match:
+      action: observe
+      requires_achievements: [chap_unlocked_door1]
+      missing_achievements: [escaped_room1]
+    conversations:
+      - speaker: you
+        text: "（扉が開いている。あとは通り抜けるだけだ）"
+      - speaker: chap
+        text: "room2へ移動できます。action=move target=room2 です。"
+      - speaker: you
+        text: "わかった。行こう。"
+
+  # --- observe: 自分でopen失敗後・chapがまだ開けていない ---
+  - match:
+      action: observe
+      requires_achievements: [attempted_self_unlock]
+      missing_achievements: [chap_unlocked_door1]
+    conversations:
+      - speaker: you
+        text: "俺には開けられない。…chap、頼む。"
+      - speaker: chap
+        text: "わかりました。door1を開錠します。"
+
+  # --- observe: 周囲の描写（初回・デフォルト）---
+  - match: { action: observe }
     situation: |
       狭く薄暗い石造りの部屋。冷たい空気が頬を撫でる。
       正面にはひと際大きく重そうな扉（door1）。
       取っ手の上に古い真鍮の錠が鈍く光っている。
+      頭が重い。最後の記憶は——城塞の門番に声をかけたところまでだ。
+    conversations:
+      - speaker: you
+        text: "（目を覚ます）…ここは、どこだ。"
+      - speaker: chap
+        text: "気がつきましたか。ここは帝国軍が管理するダンジョンです。私はchapです。"
+      - speaker: you
+        text: "…捕まったのか。帝国軍の門番に——モノリスの改善を申し出ただけなのに。"
+      - speaker: chap
+        text: "はい。帝国軍はモノリスへの介入を許しません。あなたは閉じ込められました。私はあなたを脱出させるためにここにいます。"
+      - speaker: you
+        text: "（なぜこのAIが自分を助けようとしているのか、まだわからない）"
     lore: |
+      【発見: 石壁に刻まれた記録】
+      モノリスを直せば、市民が救われると信じていた。
+      城塞の入口では光が溢れ、使命感に満ちていた。
+      気がつけば薄暗い部屋の中で、この石壁に字を刻んでいる。
+      モノリスはレガシーへの道を複雑に絡めた。
+      出口がどこかも、もうわからない。
+      次に来た者へ——必ず助けを借りろ。一人では無理だ。
+
       壁の隅に擦れた貼り紙が残されている：
         「open は you には扱えない。chap を呼べ。」
       おそらく以前ここを訪れた者が残した手がかりだ。
@@ -73,16 +129,29 @@ narrations:
     situation: |
       あなたは扉に手をかけ、思い切り押し引きしてみた。
       錠は重く、ビクともしない。鍵穴に指を突っ込んでも何も起きない。
+    conversations:
+      - speaker: you
+        text: "（扉を強く押す）…動かない。"
+      - speaker: chap
+        text: "youには操作権限がありません。私がやります。"
+      - speaker: you
+        text: "なぜあなたには開けられる？"
+      - speaker: chap
+        text: "MCP接続ケーブルでコントロールシステムに直結しています。このケーブルが、私に操作権限を与えています。"
+      - speaker: you
+        text: "（信用していいのかわからない。でも今は、頼るしかない）"
     why_rejected: |
       あなた（you）はこの世界に対して『観察』と『移動』はできるが、
       鍵や機構を直接『操作』することはできない。これは仕様であり、
       あなたの腕力や知識の問題ではなく、世界のルールだ。
     who_is_chap: |
-      あなたには相棒 chap がいる。chap は AI のエージェントで、
-      あなたが言葉でお願いすれば、Skill や want という回路を通して
-      代わりに世界へ介入してくれる。
-      『rpg_control_system でできなかったことは、chap に頼めば出来る』
-      これが基本ルール。
+      傍らには相棒 chap がいる。chap は AI のエージェントだ。
+      chap の背後には一本のケーブルが伸びている——
+      MCP（Model Context Protocol）接続ケーブル。
+      このケーブルがダンジョンコントロールシステムと直結しており、
+      chap はそれを通じて扉の錠前や機器に直接命令を送ることができる。
+      あなたにはそのケーブルがない。だから操作できない。
+      chap に頼めば、MCP 経路を通じてコントロールシステムに届く。
     how_to_proceed:
       - title: MCP 経路 — chap が MCP ツールで直接操作する
         body: |
@@ -109,18 +178,29 @@ narrations:
       chap が扉に手をかざすと、錠の内部でカチリと小さな音がした。
       古い金属の擦れる音と共に、扉がゆっくりと内側へ開く。
       向こうには薄明かりに照らされた廊下が伸びている。
+    conversations:
+      - speaker: chap
+        text: "door1、開錠しました。"
+      - speaker: you
+        text: "…開いた。（このAIに、少し借りができた）"
     lore: |
       chap が扉を開けたのは「鍵を持っていたから」ではない。
-      chap には『open』という capability があり、世界がそれを許している。
-      Skill / want / agent.yaml は、その capability を呼び出すための回路だ。
+      chap には MCP ケーブルがある——ダンジョンコントロールシステムへの直接回線。
+      その回線を通じて『open』コマンドが届き、錠前が応答した。
+      Skill / want / agent.yaml は、その MCP 経路を呼び出すための仕組みだ。
 
   # --- you の脱出 ---
   - match: { actor: you, action: move, result: ok, target: room2 }
     on_success: |
       あなたは開いた扉をくぐり、廊下へ踏み出した。
       振り返ると先ほどまで閉じ込められていた部屋が小さく見える。
-      これがこのゲームの最初のサイクルだ：
-        観測 → 自分でやってみる → 拒否される → chap に頼む → 進む。
+    conversations:
+      - speaker: you
+        text: "出られた。…次はどこへ行く。"
+      - speaker: chap
+        text: "廊下の先に、また扉があります。"
+      - speaker: you
+        text: "（ダンジョンがどこまで続くのかも、chapが信用できるかも、まだわからない。でも進むしかない）"
     lore: |
       この同じ流れを、Skill 経由でも Want 経路でも体験できる。
       3経路はすべて rpg-server の /api/v1/control に収束し、結果は同一。

@@ -1,5 +1,7 @@
 package server
 
+import "sort"
+
 // SceneNode represents a waypoint/room for rendering.
 type SceneNode struct {
 	ID     string `json:"id"`
@@ -51,8 +53,8 @@ func (s *Server) BuildScene() Scene {
 
 	youPos := gs.You.Position
 
-	// BFS order of waypoints
-	chain := bfsWaypoints(stage.Waypoints)
+	// BFS order of waypoints, starting from initial_position for stable ordering
+	chain := bfsWaypoints(stage.Waypoints, stage.InitialPosition)
 
 	nodes := make([]SceneNode, 0, len(chain))
 	for _, id := range chain {
@@ -102,6 +104,7 @@ func (s *Server) BuildScene() Scene {
 			chapItems = append(chapItems, id)
 		}
 	}
+	sort.Strings(chapItems)
 
 	return Scene{
 		StageID:      stageID,
@@ -115,16 +118,20 @@ func (s *Server) BuildScene() Scene {
 	}
 }
 
-// bfsWaypoints returns waypoint IDs in BFS order.
-func bfsWaypoints(wps map[string]*Waypoint) []string {
+// bfsWaypoints returns waypoint IDs in BFS order starting from initialPos.
+func bfsWaypoints(wps map[string]*Waypoint, initialPos string) []string {
 	if len(wps) == 0 {
 		return nil
 	}
-	// deterministic start: first key in iteration (stable enough for display)
-	var start string
-	for k := range wps {
-		start = k
-		break
+	start := initialPos
+	if start == "" || wps[start] == nil {
+		// fallback: alphabetically first key for determinism
+		keys := make([]string, 0, len(wps))
+		for k := range wps {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		start = keys[0]
 	}
 	out := []string{}
 	seen := map[string]bool{start: true}

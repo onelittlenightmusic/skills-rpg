@@ -42,3 +42,21 @@ python3 "${CLAUDE_SKILL_DIR}/main.py" $ARGUMENTS
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/main.py" '{"target":"lab_door"}'
 ```
+
+## mywant want としてデプロイする場合
+
+`/mywant-deploy` で `{"action":"create", "yaml": "..."}` を使う場合、**`spec.requires` と `spec.finalResultField` が必須**です。
+これらが欠けると "Invalid want type" エラーになります。
+
+```yaml
+wants:
+  - metadata:
+      name: open-lab-door
+      type: rpg_try_keys
+    spec:
+      params:
+        target: lab_door
+      requires:
+        - rpg_try_keys       # 必須: エージェントとの紐付け
+      finalResultField: summary  # 必須: 結果フィールドの指定
+```

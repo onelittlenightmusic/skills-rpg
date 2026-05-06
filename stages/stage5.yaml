@@ -58,12 +58,61 @@ next_goal_rules:
 cleared_when: escaped_alarm_room
 next_stage: stage6
 narrations:
-  - match: { action: observe }
+  - match: { action: observe, requires_achievements: [alarm_door_opened] }
+    situation: |
+      アラームは止まり、扉（alarm_door）は開け放たれている。
+      向こうには「安全な廊下」が続いている。
+    conversations:
+      - speaker: you
+        text: "扉が開いた。さあ、ここを出よう。"
+      - speaker: chap
+        text: "了解しました。移動の準備はできています。"
+    lore: "deactivate → open の手順が正しかった。次は移動（move）だ。"
+
+  - match: { action: observe, requires_achievements: [alarm_deactivated], missing_achievements: [alarm_door_opened] }
+    situation: |
+      アラームが止まり、部屋に静寂が戻っている。
+      正面の扉（alarm_door）のロックランプが消え、開錠可能な状態になっている。
+    conversations:
+      - speaker: you
+        text: "ふう……やっと静かになったな。耳が痛い。"
+      - speaker: chap
+        text: "お疲れ様です。これで物理的なロックは解除されました。あとは扉の鍵を試すだけです。"
+      - speaker: you
+        text: "よし、さっさとこの扉を開けよう。"
+    lore: |
+      deactivate（停止）によってblocked_by_deviceの制約が解除された。
+      次は /rpg-try-keys スキルで、chapの持つ鍵を全て試してみよう。
+
+  - match: { action: observe, missing_achievements: [alarm_deactivated] }
     situation: |
       けたたましいアラームが部屋中に響き渡っている。
       セキュリティアラーム（alarm）が作動しており、出口のドア（alarm_door）を完全にロックしている。
       chapが立っているが、アラームが鳴っている間は扉に近づくこともできない。
+    conversations:
+      - speaker: you
+        text: "うるさい！何だこれは。"
+      - speaker: chap
+        text: "帝国軍のセキュリティアラームです。これが鳴っている間はドアが開きません。"
+      - speaker: you
+        text: "止められるか？"
+      - speaker: chap
+        text: "はい。deactivate で停止できます。"
+      - speaker: you
+        text: "やってくれ。"
     lore: |
+      【発見: 引き裂かれた日記の最後のページ — R の記録】
+      Aへ。wantの仕組みは君に任せる。
+      私の記録は——
+
+      ——アラームが鳴った。
+
+      最初から監視されていた。帝国軍は——キーメイカーズの全員が——
+
+      次に来た者へ。R・ここに在りき。
+
+      [記録終了]
+
       これがblocked_by_device——「デバイスが動いている間は開かないドア」だ。
       Stage 4では起動（activate）が必要だった。
       今回は停止（deactivate）が必要だ。
@@ -73,18 +122,35 @@ narrations:
     on_success: |
       アラームが止まった。静寂が戻る。
       alarm_doorのロックが解除され、赤いランプが消えた。
+    conversations:
+      - speaker: chap
+        text: "alarm、停止しました。ドアのロックが解除されました。"
+      - speaker: you
+        text: "助かった。（指示すれば動く——それが確信になってきた）"
     lore: |
       alarmがOFFになった。blocked_by_deviceの条件が解除された。
       次は /rpg-try-keys でドアを開けよう。
 
   - match: { actor: chap, action: open, target: alarm_door, result: ok }
     on_success: "alarm_doorが開く。"
+    conversations:
+      - speaker: chap
+        text: "alarm_door、開錠しました。"
+      - speaker: you
+        text: "いいぞ。"
     lore: "deactivate → open の順番が鍵だった。"
 
   - match: { actor: you, action: move, target: safe_corridor, result: ok }
     on_success: |
       安全な廊下へ踏み出した。
       アラームの余韻が耳に残るが、もう危険はない。
+    conversations:
+      - speaker: you
+        text: "静かになった。…chapが動いてくれた。それだけだ。"
+      - speaker: chap
+        text: "あなたが状況を判断して、正しい指示を出しました。"
+      - speaker: you
+        text: "（役割分担が、見えてきた気がする）"
     lore: |
       Stage 4: activate → ドアが開く（requires_device）
       Stage 5: deactivate → ドアが開く（blocked_by_device）

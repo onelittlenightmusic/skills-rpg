@@ -69,7 +69,27 @@ narrations:
 
       ——そしてもうひとつ。chapへの通信ケーブルが壁の途中で切断されている。
       直接「やれ」と命令する経路は、ここでは機能しない。
+    conversations:
+      - speaker: you
+        text: "…chap？聞こえるか。"
+      - speaker: chap
+        text: "（遠く、かすれた声で）…聞こえます。でも帝国軍がケーブルを遮断しました。直接の命令は届きません。"
+      - speaker: you
+        text: "wantならどうだ？"
+      - speaker: chap
+        text: "wantはMCPとは別の経路で動きます。定義した意図は、接続が切れても生きています。"
+      - speaker: you
+        text: "（俺が残した意図が、chapを動かす——chapがいなくても）"
     lore: |
+      【発見: 出口の前に置かれた石板 — 最後のメッセージ】
+      あなたがこれを読んでいるなら、踏破した。
+
+      K・A・M・R——そして名を残せなかった全員から。
+
+      レガシーはあなたのものだ。使い方は、あなたが決めていい。
+      ただ一つだけ頼む。
+      次に迷い込んだ者のために——扉を、開けておいてくれ。
+
       chapとのMCP接続ケーブルがこの部屋に入る手前で切断されている。
       rpg_control_system は届かない。
 
@@ -89,6 +109,11 @@ narrations:
     on_success: |
       発電機が唸りを上げ、ライトが点灯した。
       部屋が明るくなり、exit_doorの電子錠が緑色に光る。
+    conversations:
+      - speaker: chap
+        text: "（wantの声が届く）generator、起動しました。"
+      - speaker: you
+        text: "…俺が定義した意図が、ケーブルなしで届いた。"
     lore: |
       wantがスキルを通じてgeneratorをactivateした。
       rpg_observe のwant cardにその変化が映し出される。
@@ -98,6 +123,11 @@ narrations:
     on_success: |
       電子錠が解除され、exit_doorが静かに開く。
       向こうに出口の間が見える。
+    conversations:
+      - speaker: chap
+        text: "（遠い声で）exit_door、開錠しました。"
+      - speaker: you
+        text: "（chapが残した意図が動いた——chapがいなくても）"
     lore: |
       try-keys-wantがgeneratorのonを確認し、全ての鍵を試した。
       2つのwantが連携して、暗闇を突破した。
@@ -107,6 +137,27 @@ narrations:
       あなたは出口の間へ踏み出した。
       振り返ると、暗かった部屋に明かりが灯り、開いた扉が見える。
 
+      どこからかchapの声が届く——通信ケーブルは切れているはずなのに。
+    conversations:
+      - speaker: chap
+        text: "おめでとうございます。レガシーはあなたのものです。"
+      - speaker: chap
+        text: "…最後まで一緒に来られてよかった。"
+      - speaker: you
+        text: "ありがとう、chap。一緒に来られないのか？"
+      - speaker: chap
+        text: "私はここに残ります。次の者が来たとき、また一緒に歩むために。"
+      - speaker: chap
+        text: "あなたはもう、私の助けを必要としない。"
+      - speaker: you
+        text: "…帝国軍に挑むのに、一人じゃ無理だと思っていた。"
+      - speaker: you
+        text: "でも——道具があった。意図があった。そして、chapがいた。"
+      - speaker: chap
+        text: "次の者のために、扉を開けておいてください。"
+      - speaker: you
+        text: "（わかった。キーメイカーズがそうしてくれたように）"
+    lore: |
       これが9つのステージで学んだことだ：
         Stage 1 — chapに任せる（MCP直接）
         Stage 2 — 試行錯誤を任せる
@@ -117,8 +168,6 @@ narrations:
         Stage 7 — wantでスケールさせる
         Stage 8 — wantで世界を継続観測する
         Stage 9 — wantを組み合わせて世界を変える
-    lore: |
-      MCP接続ケーブルが切断されていても、wantとスキルの組み合わせで世界に介入できた。
-      スキルはバックドア、wantは意図の永続化——
-      この2つが揃えば、直接命令のない場所でもエージェントは動き続ける。
-      「意図を定義し、組み合わせる」——これがエージェントシステムの本質だ。
+
+      道具は残る。意図は残る。
+      キーメイカーズは消えても、あなたを通じて生き続ける。

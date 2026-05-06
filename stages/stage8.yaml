@@ -1,41 +1,52 @@
 id: stage8
-title: "The Watcher"
+title: "The Want Factory: Parallel"
 description: |
-  観測室。センサーと機器が並ぶ静かな部屋。
-  ここで何が起きているかを知るには、観測し続けるwantをデプロイする必要がある。
-  rpg_observe wantをデプロイして、部屋の状態をリアルタイムで観察しよう。
-initial_position: sensor_room
+  廊下にはまだ扉が残っている。
+  parallelize を使って、残りの扉をまとめて開けよう。
+initial_position: lab_room
 waypoints:
-  sensor_room:
-    label: "観測室"
-    adjacent: []
-devices:
-  sensor_a:
-    label: "温度センサー"
-    on: true
-  sensor_b:
-    label: "動体センサー"
-    on: false
+  corridor:
+    label: "長い廊下"
+    adjacent: [lab_room, exit_room]
+  exit_room:
+    label: "出口"
+    adjacent: [corridor]
+  lab_room:
+    label: "研究室（出発点）"
+    adjacent: [corridor]
+doors:
+  hall_door_06: { between: [corridor, exit_room], open: false, locked: true, key: key_sienna }
+  hall_door_07: { between: [corridor, exit_room], open: false, locked: true, key: key_violet }
+  hall_door_08: { between: [corridor, exit_room], open: false, locked: true, key: key_ochre }
+  hall_door_09: { between: [corridor, exit_room], open: false, locked: true, key: key_ebony }
+  hall_door_10: { between: [corridor, exit_room], open: false, locked: true, key: key_vermilion }
+items:
+  key_sienna: { held_by: chap }
+  key_violet: { held_by: chap }
+  key_ochre: { held_by: chap }
+  key_ebony: { held_by: chap }
+  key_vermilion: { held_by: chap }
 achievement_defs:
-  - id: observe_want_deployed
-    when: { action: observe }
+  - { id: observed_corridor, when: { action: observe } }
+  - { id: all_doors_opened, when: { actor: chap, action: open, target: hall_door_10, result: ok } }
+  - { id: escaped_corridor, when: { actor: you, action: move, target: exit_room, result: ok } }
 next_goal_rules:
-  - if_missing: observe_want_deployed
-    goal:
-      text: "rpg_observe wantをデプロイして観測室の状態を観察しよう"
-      hint: "mywant apply examples/stage8-observe.yaml"
-cleared_when: observe_want_deployed
-next_stage: stage9
+  - if_missing: observed_corridor
+    goal: { text: "残りの廊下を観察しよう", hint: "rpg_observe でステージを観察する" }
+  - if_missing: all_doors_opened
+    goal: { text: "parallelize で残り5枚をまとめて開けよう", hint: "/mywant-deploy に parallelize want を定義", required_skill: mywant-deploy }
+  - if_missing: escaped_corridor
+    goal: { text: "全ての扉が開いた。出口へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_room" }
 narrations:
   - match: { action: observe }
-    situation: |
-      観測室。壁一面に計器が並んでいる。
-      温度センサー（sensor_a）は稼働中、動体センサー（sensor_b）は停止している。
-      この部屋で何が起きているか、wantが継続的に報告してくれる。
-    lore: |
-      rpg_observe は一度デプロイすると、定期的にステージの状態を取得し続ける。
-      スキルやコントロールは「一回の命令」だが、
-      wantは「こうあり続けてほしい」という継続的な意図——
-      want cardがリアルタイムで部屋の様子を映し出すのはそのためだ。
-
-      観測室の次には、wantを組み合わせてより複雑な問題を解く部屋が待っている。
+    situation: "まだ廊下の先には5枚の扉が閉じている。"
+    conversations:
+      - speaker: you
+        text: "さっきの調子でいくぞ。今度はparallelizeでまとめて開ける。"
+  - match: { actor: chap, action: open, target: hall_door_10, result: ok }
+    on_success: "5枚全ての扉が開いた。"
+    conversations:
+      - speaker: chap
+        text: "全ての扉を並列で開錠しました。"
+cleared_when: escaped_corridor
+next_stage: stage9

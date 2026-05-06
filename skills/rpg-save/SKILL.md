@@ -38,3 +38,19 @@ python3 "${CLAUDE_SKILL_DIR}/main.py" $ARGUMENTS
 ```json
 { "error": "...", "ok": false }
 ```
+
+## mywant want としてデプロイする場合
+
+```yaml
+wants:
+  - metadata:
+      name: save-game
+      type: rpg_save
+    spec:
+      params:
+        slot: autosave
+        name: ""
+      requires:
+        - rpg_save
+      finalResultField: ok
+```

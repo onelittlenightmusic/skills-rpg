@@ -13,6 +13,7 @@ const (
 	ActionOpen       = "open"       // unlock+open folded into one
 	ActionActivate   = "activate"   // chap activates a device
 	ActionDeactivate = "deactivate" // chap deactivates a device
+	ActionState      = "state"      // chap checks device state
 	ActionAdvance    = "advance"    // you advances to the next stage after clearing
 )
 
@@ -33,7 +34,7 @@ func actorAllowed(actor, action string) bool {
 		}
 	case ActorChap:
 		switch action {
-		case ActionObserve, ActionOpen, ActionActivate, ActionDeactivate:
+		case ActionObserve, ActionOpen, ActionActivate, ActionDeactivate, ActionState:
 			return true
 		}
 	}
@@ -90,6 +91,8 @@ func applyControl(state *GameState, in ControlInput) (Event, ControlResult) {
 		changes, err = doActivate(state, stage, in)
 	case ActionDeactivate:
 		changes, err = doDeactivate(state, stage, in)
+	case ActionState:
+		changes, err = doState(state, stage, in)
 	case ActionAdvance:
 		changes, err = doAdvance(state, stage)
 	default:
@@ -98,7 +101,7 @@ func applyControl(state *GameState, in ControlInput) (Event, ControlResult) {
 
 	if err != nil {
 		res.Reason = err.Error()
-		ev.Reason = res.Reason
+		ev.Reason = err.Error()
 		return ev, finishResult(state, ev, res)
 	}
 
@@ -106,7 +109,16 @@ func applyControl(state *GameState, in ControlInput) (Event, ControlResult) {
 	res.OK = true
 	res.Changes = changes
 	return ev, finishResult(state, ev, res)
-}
+	}
+
+	func doState(state *GameState, stage *Stage, in ControlInput) (map[string]any, error) {
+	dev, ok := stage.Devices[in.Target]
+	if !ok {
+		return nil, fmt.Errorf("no such device %q", in.Target)
+	}
+	return map[string]any{"on": dev.On}, nil
+	}
+
 
 // finishResult records the event's achievements + recomputes next_goal,
 // then attaches them and any matching narration to res.
@@ -119,7 +131,7 @@ func finishResult(state *GameState, ev Event, res ControlResult) ControlResult {
 			state.Achievements = append(state.Achievements, newly...)
 			res.AchievementsUnlocked = newly
 		}
-		if n := findNarration(stage, ev); n != nil {
+		if n := findNarration(stage, ev, state.Achievements); n != nil {
 			cp := *n
 			res.Narration = &cp
 		}
@@ -130,17 +142,17 @@ func finishResult(state *GameState, ev Event, res ControlResult) ControlResult {
 	return res
 }
 
-// findNarration returns the first narration whose match matches ev, or nil.
-func findNarration(stage *Stage, ev Event) *Narration {
+// findNarration returns the first narration whose match matches ev and achievements, or nil.
+func findNarration(stage *Stage, ev Event, achievements []string) *Narration {
 	for i := range stage.Narrations {
-		if stage.Narrations[i].Match.matches(ev) {
+		if stage.Narrations[i].Match.matches(ev, achievements) {
 			return &stage.Narrations[i].Narration
 		}
 	}
 	return nil
 }
 
-func (m NarrationMatch) matches(ev Event) bool {
+func (m NarrationMatch) matches(ev Event, achievements []string) bool {
 	if m.Actor != "" && m.Actor != "any" && m.Actor != ev.Actor {
 		return false
 	}
@@ -159,6 +171,16 @@ func (m NarrationMatch) matches(ev Event) bool {
 	if m.Key != "" {
 		evKey, _ := ev.Args["key"].(string)
 		if m.Key != evKey {
+			return false
+		}
+	}
+	for _, a := range m.RequiresAchievements {
+		if !has(achievements, a) {
+			return false
+		}
+	}
+	for _, a := range m.MissingAchievements {
+		if has(achievements, a) {
 			return false
 		}
 	}

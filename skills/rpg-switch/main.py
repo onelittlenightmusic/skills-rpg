@@ -33,15 +33,19 @@ def main() -> None:
 
     target = arg.get("target", "")
     on = arg.get("on")
+
     if not target:
         error_out("target device is required")
         return
-    if on is None:
-        error_out("on (true/false) is required")
-        return
 
-    action = "activate" if on else "deactivate"
-    report_progress(20, f"chap → {action} {target}")
+    if on is None:
+        # State query mode
+        action = "state"
+        report_progress(50, f"chap → check state of {target}")
+    else:
+        # Control mode
+        action = "activate" if on else "deactivate"
+        report_progress(20, f"chap → {action} {target}")
 
     body = json.dumps({"actor": "chap", "action": action, "target": target}).encode()
     req = urllib.request.Request(

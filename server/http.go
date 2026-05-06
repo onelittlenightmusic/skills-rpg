@@ -8,6 +8,7 @@ import (
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/start", s.handleStart)
 	mux.HandleFunc("/api/v1/state", s.handleState)
 	mux.HandleFunc("/api/v1/observe", s.handleObserve)
 	mux.HandleFunc("/api/v1/scene", s.handleScene)
@@ -31,6 +32,45 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 
 func writeErr(w http.ResponseWriter, code int, msg string) {
 	writeJSON(w, code, map[string]any{"error": msg, "ok": false})
+}
+
+func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, 405, "method not allowed")
+		return
+	}
+	g := s.NextGoal()
+	st := s.State()
+	writeJSON(w, 200, map[string]any{
+		"agent_role": map[string]any{
+			"name": "chap",
+			"description": "You are chap — an AI agent with an MCP cable that connects you directly to the dungeon control system. " +
+				"Your partner 'you' (the player) is trapped in the Monolith dungeon. " +
+				"Guide them through each stage and help them escape.",
+			"can_do":    []string{"open doors (action=open)", "activate devices (action=activate)", "deactivate devices (action=deactivate)", "observe game state (rpg_observe)"},
+			"cannot_do": []string{"move the player — only 'you' can move (actor=you action=move)", "pick up items as chap"},
+		},
+		"how_to_play": []string{
+			"1. (Setup) Run 'make install-skills' (for game mechanics) and 'make install-claude' (for skill/want deployment) in your terminal.",
+			"2. Call '/mcp reload' in the CLI to discover new tools.",
+			"3. Call rpg_observe to see the current scene, event history, and narrative.",
+			"4. Read next_goal for your immediate objective.",
+			"5. Use rpg_control_system with actor=chap to open doors and operate devices.",
+			"6. Use rpg_control_system with actor=you action=move target=<waypoint> to move the player.",
+			"7. When a stage is cleared, use rpg_control_system actor=you action=advance to proceed.",
+		},
+		"available_actions": []map[string]string{
+			{"actor": "chap", "action": "open", "target": "<door_id>", "note": "Open a locked door. chap will use keys from inventory."},
+			{"actor": "chap", "action": "activate", "target": "<device_id>", "note": "Activate a device (e.g. generator)."},
+			{"actor": "chap", "action": "deactivate", "target": "<device_id>", "note": "Deactivate a device (e.g. alarm)."},
+			{"actor": "you", "action": "move", "target": "<waypoint_id>", "note": "Move the player to an adjacent waypoint."},
+			{"actor": "you", "action": "advance", "target": "", "note": "Advance to the next stage after clearing current."},
+		},
+		"current_stage": st.CurrentStage,
+		"position":      st.You.Position,
+		"achievements":  st.Achievements,
+		"next_goal":     g,
+	})
 }
 
 func (s *Server) handleScene(w http.ResponseWriter, r *http.Request) {

@@ -110,6 +110,18 @@ func main() {
 	c := newClient(*apiURL)
 	server := mcp.NewServer(&mcp.Implementation{Name: "rpg-mcp", Version: "0.1.0"}, nil)
 
+	// rpg-start
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "rpg_start",
+		Description: "** Call this first at the start of every session. **" +
+			" Returns your role as chap (the AI agent), available actions, how to play, and current game state." +
+			" Read this before doing anything else so you understand your mission and how to operate.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input struct{}) (*mcp.CallToolResult, Output, error) {
+		v, code, err := c.get("/api/v1/start")
+		res, out := wrap(v, code, err)
+		return res, out, nil
+	})
+
 	// rpg-next-goal
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "rpg_next_goal",

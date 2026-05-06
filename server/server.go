@@ -1,6 +1,8 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -97,8 +99,29 @@ func (s *Server) Observe(actor, target string) (any, *ControlResult, error) {
 	res := finishResult(s.state, ev, ControlResult{
 		OK: true, Actor: actor, Action: ActionObserve, Target: target,
 	})
-	if err := s.persistLocked(); err != nil {
-		return nil, nil, err
+	ev.Narration = res.Narration
+
+	// Compute hash of game-relevant state (excludes event_history to avoid self-invalidation).
+	stateHash := gameStateHash(s.state)
+	ev.Args = map[string]any{"state_hash": stateHash}
+
+	// Skip appending if the last observe has the same state hash,
+	// regardless of actor (chap/you are interchangeable for polling).
+	last := len(s.state.EventHistory) - 1
+	isDup := last >= 0 &&
+		s.state.EventHistory[last].Action == ActionObserve &&
+		s.state.EventHistory[last].Target == target &&
+		s.state.EventHistory[last].Args != nil &&
+		s.state.EventHistory[last].Args["state_hash"] == stateHash
+	if !isDup {
+		s.state.EventHistory = append(s.state.EventHistory, ev)
+		const maxHistory = 20
+		if len(s.state.EventHistory) > maxHistory {
+			s.state.EventHistory = s.state.EventHistory[len(s.state.EventHistory)-maxHistory:]
+		}
+		if err := s.persistLocked(); err != nil {
+			return nil, nil, err
+		}
 	}
 	return subtree, &res, nil
 }
@@ -108,6 +131,7 @@ func (s *Server) Control(in ControlInput) (ControlResult, int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	ev, res := applyControl(s.state, in)
+	ev.Narration = res.Narration
 	s.state.EventHistory = append(s.state.EventHistory, ev)
 	const maxHistory = 20
 	if len(s.state.EventHistory) > maxHistory {
@@ -253,4 +277,38 @@ func parseSegment(seg string) (key string, idx int, hasIdx bool) {
 		return seg, 0, false
 	}
 	return seg[:open], n, true
+}
+
+// gameStateHash hashes only game-world fields (position, doors, devices, achievements),
+// deliberately excluding EventHistory to avoid self-invalidation on each poll.
+func gameStateHash(gs *GameState) string {
+	type doorSnap struct{ Open, Locked bool }
+	type deviceSnap struct{ On bool }
+	type snap struct {
+		Stage        string
+		Position     string
+		Inventory    []string
+		Achievements []string
+		Doors        map[string]doorSnap
+		Devices      map[string]deviceSnap
+	}
+	s := snap{
+		Stage:        gs.CurrentStage,
+		Position:     gs.You.Position,
+		Inventory:    gs.You.Inventory,
+		Achievements: gs.Achievements,
+		Doors:        map[string]doorSnap{},
+		Devices:      map[string]deviceSnap{},
+	}
+	if stage, ok := gs.Stages[gs.CurrentStage]; ok {
+		for id, d := range stage.Doors {
+			s.Doors[id] = doorSnap{d.Open, d.Locked}
+		}
+		for id, d := range stage.Devices {
+			s.Devices[id] = deviceSnap{d.On}
+		}
+	}
+	b, _ := json.Marshal(s)
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:8])
 }

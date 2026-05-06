@@ -151,3 +151,22 @@ claude mcp remove rpg --scope user
 | `cannot reach rpg-server` from a tool | Make sure `./bin/rpg-server` is running and `RPG_SERVER_URL` matches its port |
 | `claude mcp list` shows the server but not "Connected" | Check stderr in Claude Code logs; rebuild with `make build` |
 | Tools missing in chat | Restart Claude Code after `claude mcp add` |
+| Stage YAML changes not reflected | Run `curl -X POST http://localhost:7100/api/v1/reset` to reload stage definitions and clear state |
+
+## Development
+
+### Reloading Stage YAMLs
+If you modify stage definitions in the `stages/` directory, the running `rpg-server` will not pick up the changes automatically. To force a reload and reset the game state to its initial state:
+
+```sh
+curl -X POST http://localhost:7100/api/v1/reset
+```
+
+If you only want to restart the server while keeping the current binary, use:
+```sh
+make stop-server && make run-server
+```
+Or use the convenience target to rebuild and restart:
+```sh
+make restart
+```

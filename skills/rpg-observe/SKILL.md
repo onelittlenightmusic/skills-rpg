@@ -59,3 +59,18 @@ python3 "${CLAUDE_SKILL_DIR}/main.py" '{"target":"stages.stage1.doors.door1"}'
 ```json
 { "error": "cannot reach rpg-server: ..." }
 ```
+
+## mywant want としてデプロイする場合
+
+```yaml
+wants:
+  - metadata:
+      name: observe-stage1
+      type: rpg_observe
+    spec:
+      params:
+        target: stages.stage1
+      requires:
+        - rpg_observe
+      finalResultField: value
+```

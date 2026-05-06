@@ -180,25 +180,46 @@ function RpgObserveSection({ want, isChild, isControl, isFocused }) {
       }),
     ),
 
-    // event history
-    event_history && event_history.length > 0 ? React.createElement('div', {
-      style: { borderTop: '1px solid #21262d' },
-    },
-      ...event_history.map((ev, i) => {
-        const ok = ev.result === 'ok';
-        const isLast = i === event_history.length - 1;
-        return React.createElement('div', {
-          key: i,
+    // event history — last event with conversations or on_success, fallback to last event
+    event_history && event_history.length > 0 ? (() => {
+      const lastMeaningful = [...event_history].reverse().find(e =>
+        e.narration?.conversations?.length > 0 || e.narration?.on_success
+      );
+      const ev = lastMeaningful || event_history[event_history.length - 1];
+      const ok = ev.result === 'ok';
+      const narr = ev.narration;
+      const narratext = narr ? (ok ? (narr.on_success || narr.lore) : narr.lore) : null;
+      return React.createElement('div', { style: { borderTop: '1px solid #21262d' } },
+        React.createElement('div', {
           className: 'px-3 py-0.5 text-xs font-mono flex items-baseline gap-1',
-          style: { color: isLast ? '#cdd9e5' : '#6e7681', opacity: 0.4 + 0.6 * ((i + 1) / event_history.length) },
+          style: { color: '#cdd9e5' },
         },
           React.createElement('span', { style: { color: ok ? '#3fb950' : '#f85149', flexShrink: 0 } }, ok ? '✓' : '✗'),
           React.createElement('span', null, `${ev.actor} ${ev.action}`),
           ev.target ? React.createElement('span', { style: { color: '#79c0ff' } }, ev.target) : null,
           ev.reason ? React.createElement('span', { style: { color: '#6e7681' } }, `(${ev.reason})`) : null,
-        );
-      }),
-    ) : null,
+        ),
+        narr?.conversations?.length > 0 ? React.createElement('div', {
+          className: 'px-3 pb-2 flex flex-col gap-0.5',
+        },
+          ...narr.conversations.map((line, j) => {
+            const speakerColor = line.speaker === 'you' ? '#58a6ff'
+              : line.speaker === 'chap' ? '#3fb950'
+              : '#8b949e';
+            return React.createElement('div', { key: j, className: 'flex gap-1.5 text-xs leading-snug' },
+              React.createElement('span', {
+                style: { color: speakerColor, flexShrink: 0, fontWeight: 'bold', minWidth: 28 },
+              }, line.speaker),
+              React.createElement('span', { style: { color: '#cdd9e5' } }, line.text),
+            );
+          }),
+        ) : null,
+        narratext ? React.createElement('div', {
+          className: 'px-4 pb-1 text-xs leading-snug whitespace-pre-wrap',
+          style: { color: '#8b949e' },
+        }, narratext.trim()) : null,
+      );
+    })() : null,
 
     // next goal
     next_goal ? React.createElement('div', {
