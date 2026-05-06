@@ -46,31 +46,31 @@ func validActor(actor string) bool { return actor == ActorYou || actor == ActorC
 // applyControl mutates state in-place per a control request, returning the
 // event that occurred and a result describing the outcome (including any
 // achievements newly unlocked and the recomputed next_goal).
-func applyControl(state *GameState, in ControlInput) (Event, ControlResult) {
+func applyControl(state *GameState, in ControlInput, locale *StageLocale) (Event, ControlResult) {
 	res := ControlResult{Actor: in.Actor, Action: in.Action, Target: in.Target}
 	ev := Event{Actor: in.Actor, Action: in.Action, Target: in.Target, Args: in.Args, Result: "rejected"}
 
 	if !validActor(in.Actor) {
 		res.Reason = fmt.Sprintf("unknown actor %q (must be 'you' or 'chap')", in.Actor)
 		ev.Reason = res.Reason
-		return ev, finishResult(state, ev, res)
+		return ev, finishResult(state, ev, res, locale)
 	}
 	if in.Action == "" {
 		res.Reason = "action is required"
 		ev.Reason = res.Reason
-		return ev, finishResult(state, ev, res)
+		return ev, finishResult(state, ev, res, locale)
 	}
 	if !actorAllowed(in.Actor, in.Action) {
 		res.Reason = fmt.Sprintf("%s cannot perform %q", in.Actor, in.Action)
 		ev.Reason = res.Reason
-		return ev, finishResult(state, ev, res)
+		return ev, finishResult(state, ev, res, locale)
 	}
 
 	stage := state.Stages[state.CurrentStage]
 	if stage == nil {
 		res.Reason = "no current stage"
 		ev.Reason = res.Reason
-		return ev, finishResult(state, ev, res)
+		return ev, finishResult(state, ev, res, locale)
 	}
 
 	var (
@@ -92,7 +92,7 @@ func applyControl(state *GameState, in ControlInput) (Event, ControlResult) {
 	case ActionDeactivate:
 		changes, err = doDeactivate(state, stage, in)
 	case ActionState:
-		changes, err = doState(state, stage, in)
+		changes, err = doState(stage, in)
 	case ActionAdvance:
 		changes, err = doAdvance(state, stage)
 	default:
@@ -102,28 +102,27 @@ func applyControl(state *GameState, in ControlInput) (Event, ControlResult) {
 	if err != nil {
 		res.Reason = err.Error()
 		ev.Reason = err.Error()
-		return ev, finishResult(state, ev, res)
+		return ev, finishResult(state, ev, res, locale)
 	}
 
 	ev.Result = "ok"
 	res.OK = true
 	res.Changes = changes
-	return ev, finishResult(state, ev, res)
-	}
+	return ev, finishResult(state, ev, res, locale)
+}
 
-	func doState(state *GameState, stage *Stage, in ControlInput) (map[string]any, error) {
+func doState(stage *Stage, in ControlInput) (map[string]any, error) {
 	dev, ok := stage.Devices[in.Target]
 	if !ok {
 		return nil, fmt.Errorf("no such device %q", in.Target)
 	}
 	return map[string]any{"on": dev.On}, nil
-	}
-
+}
 
 // finishResult records the event's achievements + recomputes next_goal,
 // then attaches them and any matching narration to res.
-// Always called, success or rejection.
-func finishResult(state *GameState, ev Event, res ControlResult) ControlResult {
+// locale is optional; when non-nil its text fields are applied to the output.
+func finishResult(state *GameState, ev Event, res ControlResult, locale *StageLocale) ControlResult {
 	stage := state.Stages[state.CurrentStage]
 	if stage != nil {
 		newly := evalAchievements(stage, ev, state.Achievements)
@@ -131,22 +130,26 @@ func finishResult(state *GameState, ev Event, res ControlResult) ControlResult {
 			state.Achievements = append(state.Achievements, newly...)
 			res.AchievementsUnlocked = newly
 		}
-		if n := findNarration(stage, ev, state.Achievements); n != nil {
+		if n := findNarration(stage, ev, state.Achievements, locale); n != nil {
 			cp := *n
 			res.Narration = &cp
 		}
 	}
-	g := computeNextGoal(state)
+	g := computeNextGoal(state, locale)
 	state.NextGoal = g
 	res.NextGoal = &g
 	return res
 }
 
-// findNarration returns the first narration whose match matches ev and achievements, or nil.
-func findNarration(stage *Stage, ev Event, achievements []string) *Narration {
-	for i := range stage.Narrations {
-		if stage.Narrations[i].Match.matches(ev, achievements) {
-			return &stage.Narrations[i].Narration
+// findNarration returns the first matching narration with locale overlay applied, or nil.
+func findNarration(stage *Stage, ev Event, achievements []string, locale *StageLocale) *Narration {
+	for i, nd := range stage.Narrations {
+		if nd.Match.matches(ev, achievements) {
+			n := nd.Narration
+			if locale != nil && i < len(locale.Narrations) {
+				n = mergeNarrationLocale(n, &locale.Narrations[i])
+			}
+			return &n
 		}
 	}
 	return nil

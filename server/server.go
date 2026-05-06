@@ -13,19 +13,32 @@ import (
 )
 
 type Config struct {
-	DataDir   string // ~/.mywant-rpg
-	StagesDir string // path to stages/ for bootstrap
-	Port      int    // 7100
+	DataDir      string // ~/.mywant-rpg
+	StagesDir    string // path to stages/ for bootstrap
+	Port         int    // 7100
+	SettingsPath string // default: ~/.skills-rpg.conf
 }
 
 type Server struct {
-	cfg   Config
-	mu    sync.Mutex
-	state *GameState
+	cfg          Config
+	mu           sync.Mutex
+	state        *GameState
+	settings     Settings
+	settingsPath string
+	locales      map[string]map[string]*StageLocale // stageID → lang → locale
 }
 
 func NewServer(cfg Config) (*Server, error) {
-	s := &Server{cfg: cfg}
+	settingsPath := cfg.SettingsPath
+	if settingsPath == "" {
+		settingsPath = defaultSettingsPath()
+	}
+	settings, err := loadSettings(settingsPath)
+	if err != nil {
+		return nil, fmt.Errorf("load settings: %w", err)
+	}
+
+	s := &Server{cfg: cfg, settingsPath: settingsPath, settings: settings}
 	if err := s.loadOrBootstrap(); err != nil {
 		return nil, err
 	}
@@ -38,6 +51,14 @@ func (s *Server) loadOrBootstrap() error {
 	if err := os.MkdirAll(s.cfg.DataDir, 0o755); err != nil {
 		return err
 	}
+
+	// Always load locale data fresh from stage YAMLs (not stored in current.yaml).
+	_, locales, _, err := loadStagesFromDir(s.cfg.StagesDir)
+	if err != nil {
+		return fmt.Errorf("load locales: %w", err)
+	}
+	s.locales = locales
+
 	var st GameState
 	if err := readYAML(s.currentPath(), &st); err == nil {
 		s.state = &st
@@ -45,9 +66,9 @@ func (s *Server) loadOrBootstrap() error {
 	} else if !os.IsNotExist(err) {
 		return err
 	}
-	gs, err := initialStateFromStages(s.cfg.StagesDir)
-	if err != nil {
-		return err
+	gs, _, err2 := initialStateFromStages(s.cfg.StagesDir)
+	if err2 != nil {
+		return err2
 	}
 	s.state = gs
 	return s.persistLocked()
@@ -57,16 +78,31 @@ func (s *Server) loadOrBootstrap() error {
 func (s *Server) Reset() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	gs, err := initialStateFromStages(s.cfg.StagesDir)
+	gs, locales, err := initialStateFromStages(s.cfg.StagesDir)
 	if err != nil {
 		return err
 	}
 	s.state = gs
+	s.locales = locales
 	return s.persistLocked()
 }
 
 func (s *Server) persistLocked() error {
 	return writeYAMLAtomic(s.currentPath(), s.state)
+}
+
+// currentLocaleLocked returns the StageLocale for the current stage and language.
+// Must be called with s.mu held.
+func (s *Server) currentLocaleLocked() *StageLocale {
+	lang := s.settings.Language
+	if lang == "" || lang == "en" {
+		return nil
+	}
+	langs := s.locales[s.state.CurrentStage]
+	if langs == nil {
+		return nil
+	}
+	return langs[lang]
 }
 
 // State returns a deep copy of the current state (via JSON round-trip) safe for
@@ -95,10 +131,11 @@ func (s *Server) Observe(actor, target string) (any, *ControlResult, error) {
 		return nil, nil, err
 	}
 
+	locale := s.currentLocaleLocked()
 	ev := Event{Actor: actor, Action: ActionObserve, Target: target, Result: "ok"}
 	res := finishResult(s.state, ev, ControlResult{
 		OK: true, Actor: actor, Action: ActionObserve, Target: target,
-	})
+	}, locale)
 	ev.Narration = res.Narration
 
 	// Compute hash of game-relevant state (excludes event_history to avoid self-invalidation).
@@ -151,7 +188,8 @@ func trimInactiveStages(subtree any, currentStage string) any {
 func (s *Server) Control(in ControlInput) (ControlResult, int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	ev, res := applyControl(s.state, in)
+	locale := s.currentLocaleLocked()
+	ev, res := applyControl(s.state, in, locale)
 	ev.Narration = res.Narration
 	s.state.EventHistory = append(s.state.EventHistory, ev)
 	const maxHistory = 20
@@ -172,7 +210,7 @@ func (s *Server) Control(in ControlInput) (ControlResult, int) {
 func (s *Server) NextGoal() Goal {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.state.NextGoal
+	return computeNextGoal(s.state, s.currentLocaleLocked())
 }
 
 // DebugJumpStage teleports the player to the start of the given stage,
@@ -189,8 +227,24 @@ func (s *Server) DebugJumpStage(stageID string) error {
 	s.state.You.Inventory = nil
 	s.state.Achievements = []string{}
 	s.state.EventHistory = nil
-	s.state.NextGoal = computeNextGoal(s.state)
+	s.state.NextGoal = computeNextGoal(s.state, s.currentLocaleLocked())
 	return s.persistLocked()
+}
+
+// --- settings ---
+
+func (s *Server) GetSettings() Settings {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.settings
+}
+
+func (s *Server) UpdateSettings(settings Settings) error {
+	settings.setDefaults()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.settings = settings
+	return saveSettings(s.settingsPath, settings)
 }
 
 // --- saves ---
@@ -209,7 +263,7 @@ func (s *Server) LoadFrom(slot string) (Goal, error) {
 		return Goal{}, err
 	}
 	s.state = st
-	g := computeNextGoal(s.state)
+	g := computeNextGoal(s.state, s.currentLocaleLocked())
 	s.state.NextGoal = g
 	if err := s.persistLocked(); err != nil {
 		return Goal{}, err

@@ -1,9 +1,8 @@
 package server
 
-
 // computeNextGoal returns the next goal for the current stage.
-// Stage advancement is no longer automatic; the player must call action=advance.
-func computeNextGoal(state *GameState) Goal {
+// locale is optional; when non-nil its text fields override the English defaults.
+func computeNextGoal(state *GameState, locale *StageLocale) Goal {
 	stage, ok := state.Stages[state.CurrentStage]
 	if !ok || stage == nil {
 		return Goal{Text: "(no current stage)"}
@@ -11,16 +10,20 @@ func computeNextGoal(state *GameState) Goal {
 	if stage.ClearedWhen != "" && has(state.Achievements, stage.ClearedWhen) {
 		if stage.NextStage != "" && state.Stages[stage.NextStage] != nil {
 			return Goal{
-				Text: "🎉 ステージクリア！次のステージへ進もう",
-				Hint: "rpg_control action=advance",
+				Text: "Stage cleared! Advance to the next stage",
+				Hint: "rpg_control_system actor=you action=advance",
 			}
 		}
-		return Goal{Text: "🎉 全ステージクリア", Cleared: true}
+		return Goal{Text: "All stages cleared!", Cleared: true}
 	}
-	for _, rule := range stage.NextGoalRules {
+	for i, rule := range stage.NextGoalRules {
 		if !has(state.Achievements, rule.IfMissing) {
-			return rule.Goal
+			g := rule.Goal
+			if locale != nil && i < len(locale.NextGoalRules) {
+				g = applyGoalLocale(g, &locale.NextGoalRules[i])
+			}
+			return g
 		}
 	}
-	return Goal{Text: "ステージ進行中", Cleared: false}
+	return Goal{Text: "Stage in progress", Cleared: false}
 }

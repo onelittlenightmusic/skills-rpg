@@ -18,6 +18,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/v1/debug/jump", s.handleDebugJump)
 	mux.HandleFunc("/api/v1/saves", s.handleSavesRoot)
 	mux.HandleFunc("/api/v1/saves/", s.handleSavesItem)
+	mux.HandleFunc("/api/v1/settings", s.handleSettings)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"ok": true})
 	})
@@ -236,5 +237,43 @@ func (s *Server) handleSavesItem(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"ok": true, "slot": slot, "next_goal": g})
 	default:
 		writeErr(w, 404, "unknown subresource: "+sub)
+	}
+}
+
+// handleSettings handles GET and PUT /api/v1/settings.
+//
+// GET  → returns current settings
+// PUT  → accepts JSON body {"language":"ja"} and persists to ~/.skills-rpg.conf
+func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		cfg := s.GetSettings()
+		writeJSON(w, 200, map[string]any{
+			"language":           cfg.Language,
+			"supported_languages": []string{"en", "ja"},
+		})
+
+	case http.MethodPut:
+		var body Settings
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			writeErr(w, 400, "invalid JSON: "+err.Error())
+			return
+		}
+		if body.Language != "" && body.Language != "en" && body.Language != "ja" {
+			writeErr(w, 400, "unsupported language: "+body.Language+" (supported: en, ja)")
+			return
+		}
+		if err := s.UpdateSettings(body); err != nil {
+			writeErr(w, 500, "failed to save settings: "+err.Error())
+			return
+		}
+		cfg := s.GetSettings()
+		writeJSON(w, 200, map[string]any{
+			"ok":       true,
+			"language": cfg.Language,
+		})
+
+	default:
+		writeErr(w, 405, "method not allowed")
 	}
 }

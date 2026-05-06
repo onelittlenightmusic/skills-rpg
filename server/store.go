@@ -45,45 +45,55 @@ func readYAML(path string, v any) error {
 	return yaml.Unmarshal(b, v)
 }
 
-// loadStagesFromDir reads every *.yaml file in dir as a Stage and returns them
-// keyed by Stage.ID.
-func loadStagesFromDir(dir string) (map[string]*Stage, []string, error) {
+// loadStagesFromDir reads every *.yaml file in dir (skipping *-jp.yaml locale files)
+// and returns stages keyed by Stage.ID, locale data keyed by stageID→lang, and load order.
+func loadStagesFromDir(dir string) (map[string]*Stage, map[string]map[string]*StageLocale, []string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	out := map[string]*Stage{}
+	locales := map[string]map[string]*StageLocale{}
 	var order []string
 	for _, e := range entries {
 		if e.IsDir() {
 			continue
 		}
 		name := e.Name()
-		if filepath.Ext(name) != ".yaml" && filepath.Ext(name) != ".yml" {
+		ext := filepath.Ext(name)
+		if ext != ".yaml" && ext != ".yml" {
 			continue
 		}
-		var s Stage
-		if err := readYAML(filepath.Join(dir, name), &s); err != nil {
-			return nil, nil, fmt.Errorf("read %s: %w", name, err)
+		// Skip locale-only files (e.g. stage1-jp.yaml).
+		base := name[:len(name)-len(ext)]
+		if len(base) > 3 && base[len(base)-3:] == "-jp" {
+			continue
 		}
-		if s.ID == "" {
-			return nil, nil, fmt.Errorf("%s: stage missing id", name)
+		var raw stageRaw
+		if err := readYAML(filepath.Join(dir, name), &raw); err != nil {
+			return nil, nil, nil, fmt.Errorf("read %s: %w", name, err)
 		}
-		out[s.ID] = &s
-		order = append(order, s.ID)
+		if raw.ID == "" {
+			return nil, nil, nil, fmt.Errorf("%s: stage missing id", name)
+		}
+		out[raw.ID] = &raw.Stage
+		if len(raw.Locales) > 0 {
+			locales[raw.ID] = raw.Locales
+		}
+		order = append(order, raw.ID)
 	}
-	return out, order, nil
+	return out, locales, order, nil
 }
 
 // initialStateFromStages builds a fresh GameState from a stages directory.
 // The first stage in lexical filename order is selected as the starting stage.
-func initialStateFromStages(dir string) (*GameState, error) {
-	stages, order, err := loadStagesFromDir(dir)
+func initialStateFromStages(dir string) (*GameState, map[string]map[string]*StageLocale, error) {
+	stages, locales, order, err := loadStagesFromDir(dir)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(stages) == 0 {
-		return nil, fmt.Errorf("no stages found in %s", dir)
+		return nil, nil, fmt.Errorf("no stages found in %s", dir)
 	}
 	first := order[0]
 	gs := &GameState{
@@ -95,6 +105,6 @@ func initialStateFromStages(dir string) (*GameState, error) {
 	if init := stages[first].InitialPosition; init != "" {
 		gs.You.Position = init
 	}
-	gs.NextGoal = computeNextGoal(gs)
-	return gs, nil
+	gs.NextGoal = computeNextGoal(gs, nil)
+	return gs, locales, nil
 }

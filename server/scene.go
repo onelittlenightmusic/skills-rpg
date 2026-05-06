@@ -42,9 +42,13 @@ type Scene struct {
 	ChapItems    []string      `json:"chap_items,omitempty"`
 }
 
-// BuildScene computes a Scene from the current game state.
+// BuildScene computes a Scene from the current game state with locale overlay applied.
 func (s *Server) BuildScene() Scene {
-	gs := s.State()
+	s.mu.Lock()
+	gs := cloneState(s.state)
+	locale := s.currentLocaleLocked()
+	s.mu.Unlock()
+
 	stageID := gs.CurrentStage
 	stage := gs.Stages[stageID]
 	if stage == nil {
@@ -62,6 +66,11 @@ func (s *Server) BuildScene() Scene {
 		label := id
 		if wp != nil && wp.Label != "" {
 			label = wp.Label
+		}
+		if locale != nil {
+			if wl, ok := locale.Waypoints[id]; ok && wl.Label != "" {
+				label = wl.Label
+			}
 		}
 		nodes = append(nodes, SceneNode{
 			ID:     id,
@@ -91,9 +100,15 @@ func (s *Server) BuildScene() Scene {
 
 	devices := make([]SceneDevice, 0, len(stage.Devices))
 	for id, d := range stage.Devices {
+		dlabel := d.Label
+		if locale != nil {
+			if dl, ok := locale.Devices[id]; ok && dl.Label != "" {
+				dlabel = dl.Label
+			}
+		}
 		devices = append(devices, SceneDevice{
 			ID:    id,
-			Label: d.Label,
+			Label: dlabel,
 			On:    d.On,
 		})
 	}
@@ -106,13 +121,20 @@ func (s *Server) BuildScene() Scene {
 	}
 	sort.Strings(chapItems)
 
+	title := stage.Title
+	if locale != nil && locale.Title != "" {
+		title = locale.Title
+	}
+
+	nextGoalText := computeNextGoal(gs, locale).Text
+
 	return Scene{
 		StageID:      stageID,
-		Title:        stage.Title,
+		Title:        title,
 		Nodes:        nodes,
 		Edges:        edges,
 		Devices:      devices,
-		NextGoal:     gs.NextGoal.Text,
+		NextGoal:     nextGoalText,
 		EventHistory: gs.EventHistory,
 		ChapItems:    chapItems,
 	}
