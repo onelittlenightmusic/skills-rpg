@@ -1,4 +1,4 @@
-.PHONY: all build build-server build-mcp install-skills uninstall-skills install-claude uninstall-claude clean run-server stop-server restart-server restart reset smoke reload-go rebuild-frontend
+.PHONY: all build build-server build-mcp build-plugin install-skills uninstall-skills install-claude uninstall-claude clean run-server stop-server restart-server restart reset smoke reload-go rebuild-frontend
 
 BIN_DIR := bin
 SKILL_DST ?= $(HOME)/.mywant/custom-types
@@ -6,7 +6,7 @@ DATA_DIR ?= $(HOME)/.mywant-rpg
 
 all: build
 
-build: build-server build-mcp
+build: build-server build-mcp build-plugin
 
 build-server:
 	@mkdir -p $(BIN_DIR)
@@ -15,6 +15,10 @@ build-server:
 build-mcp:
 	@mkdir -p $(BIN_DIR)
 	go build -o $(BIN_DIR)/rpg-mcp ./cmd/rpg-mcp
+
+build-plugin:
+	@mkdir -p $(BIN_DIR)
+	go build -o $(BIN_DIR)/mywant-rpg ./cmd/mywant-rpg
 
 run-server: build-server
 	$(BIN_DIR)/rpg-server

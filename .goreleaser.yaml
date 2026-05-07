@@ -1,0 +1,59 @@
+version: 2
+
+project_name: mywant-rpg
+
+builds:
+  - id: mywant-rpg
+    main: ./cmd/mywant-rpg
+    binary: mywant-rpg
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: mywant-rpg
+    name_template: "mywant-rpg_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    files:
+      - none*
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+
+brews:
+  - name: mywant-rpg
+    repository:
+      owner: onelittlenightmusic
+      name: homebrew-mywant
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    homepage: https://github.com/onelittlenightmusic/skills-rpg
+    description: "MyWant RPG plugin - CLI interface to the skills-rpg game server"
+    license: "MIT"
+    dependencies:
+      - name: mywant
+    install: |
+      bin.install "mywant-rpg"
+    test: |
+      system "#{bin}/mywant-rpg", "--version"
