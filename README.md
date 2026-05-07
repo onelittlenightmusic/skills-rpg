@@ -1,6 +1,6 @@
 # Skills RPG
 
-> *An interactive RPG to learn MCP, Agent Skills, and Wants — by playing through them.*
+> *An interactive RPG to learn [MCP](https://modelcontextprotocol.io/), [Agent Skills](https://docs.anthropic.com/en/docs/claude-code/skills), and [Wants](https://github.com/onelittlenightmusic/mywant) — by playing through them.*
 
 ---
 
@@ -10,7 +10,7 @@ The **Monolith** controls all of society's infrastructure — administration, he
 
 **You** are an engineer. Watching citizens suffer, you set out to fix the Monolith. The Imperial Army captured you at the fortress gates and threw you into their dungeon.
 
-When you woke up, a strange AI agent named **chap** was waiting. A single cable runs from its back — an **MCP (Model Context Protocol)** connection cable that links it directly to the dungeon control system.
+When you woke up, a strange AI agent named **chap** was waiting. A single cable runs from its back — an **[MCP (Model Context Protocol)](https://modelcontextprotocol.io/)** connection cable that links it directly to the dungeon control system.
 
 You don't know if you can trust it yet. But right now, you have no other choice.
 
@@ -25,6 +25,8 @@ This game is designed to give you **hands-on experience with three escalating me
 ```
 MCP (direct command) → Agent Skills (automation) → Wants (intent definition & scaling)
 ```
+
+> [MCP](https://modelcontextprotocol.io/) · [Agent Skills](https://docs.anthropic.com/en/docs/claude-code/skills) · [Wants / mywant](https://github.com/onelittlenightmusic/mywant)
 
 Each stage teaches one concept. By the time you escape, you will have used all three layers in real code — not just read about them.
 
