@@ -2,11 +2,11 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/onelittlenightmusic/skills-rpg/server"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +32,7 @@ type rpgClient struct {
 	http *http.Client
 }
 
-func newRPGClient(base string) *rpgClient {
+func newClient(base string) *rpgClient {
 	return &rpgClient{base: base, http: &http.Client{Timeout: 15 * time.Second}}
 }
 
@@ -71,6 +72,14 @@ func (c *rpgClient) send(method, path string, payload any) (any, int, error) {
 	return v, resp.StatusCode, nil
 }
 
+func formatJSON(v any) string {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Sprintf("%v", v)
+	}
+	return string(b)
+}
+
 func printResult(v any, status int, err error) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -78,67 +87,40 @@ func printResult(v any, status int, err error) {
 	}
 	if status >= 400 {
 		fmt.Fprintf(os.Stderr, "server error (HTTP %d):\n", status)
-		printJSON(v)
+		fmt.Println(formatJSON(v))
 		os.Exit(1)
 	}
-	printJSON(v)
-}
-
-func printJSON(v any) {
-	b, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		fmt.Println(v)
-		return
-	}
-	fmt.Println(string(b))
+	fmt.Println(formatJSON(v))
 }
 
 func client() *rpgClient {
-	return newRPGClient(serverURL)
+	return newClient(serverURL)
 }
 
 var rootCmd = &cobra.Command{
 	Use:     "mywant-rpg",
 	Version: version,
 	Short:   "MyWant RPG plugin - control the skills-rpg game server",
-	Long: `mywant-rpg is a CLI plugin for MyWant that lets you control the skills-rpg game server.
-
-The plugin connects to rpg-server (default: http://localhost:7100).
-Set RPG_SERVER_URL environment variable or use --server-url to override.
-
-Usage via mywant:
-  mywant rpg start
-  mywant rpg goal
-  mywant rpg observe you
-  mywant rpg saves
-  mywant rpg save quicksave`,
 }
 
-// start: GET /api/v1/start
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Show role, rules, and current game state (call first each session)",
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().get("/api/v1/start")
 		printResult(v, status, err)
 	},
 }
 
-// goal: GET /api/v1/next-goal
 var goalCmd = &cobra.Command{
 	Use:   "goal",
-	Short: "Get the next suggested goal (text + hint + recommended skill)",
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().get("/api/v1/next-goal")
 		printResult(v, status, err)
 	},
 }
 
-// observe [path]: GET /api/v1/observe
 var observeCmd = &cobra.Command{
 	Use:   "observe [path]",
-	Short: "Read current game state (empty = full, or dot-path like 'you')",
-	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path := "/api/v1/observe?actor=chap"
 		if len(args) > 0 && args[0] != "" {
@@ -149,7 +131,6 @@ var observeCmd = &cobra.Command{
 	},
 }
 
-// control <action> [target]: POST /api/v1/control
 var (
 	controlActor string
 	controlArgs  []string
@@ -157,8 +138,6 @@ var (
 
 var controlCmd = &cobra.Command{
 	Use:   "control <action> [target]",
-	Short: "Perform a game action (open, move, pickup, observe, ...)",
-	Args:  cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		actor := controlActor
 		if actor == "" {
@@ -171,38 +150,22 @@ var controlCmd = &cobra.Command{
 		if len(args) > 1 {
 			payload["target"] = args[1]
 		}
-		if len(controlArgs) > 0 {
-			extra := map[string]any{}
-			for _, kv := range controlArgs {
-				parts := strings.SplitN(kv, "=", 2)
-				if len(parts) == 2 {
-					extra[parts[0]] = parts[1]
-				}
-			}
-			payload["args"] = extra
-		}
 		v, status, err := client().send("POST", "/api/v1/control", payload)
 		printResult(v, status, err)
 	},
 }
 
-// saves: GET /api/v1/saves
 var savesCmd = &cobra.Command{
 	Use:   "saves",
-	Short: "List all save slots",
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().get("/api/v1/saves")
 		printResult(v, status, err)
 	},
 }
 
-// save <slot> [--name label]: POST /api/v1/saves/{slot}
 var saveLabel string
-
 var saveCmd = &cobra.Command{
 	Use:   "save <slot>",
-	Short: "Save current game to a slot (e.g. quicksave, autosave, or custom name)",
-	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		payload := map[string]any{"name": saveLabel}
 		v, status, err := client().send("POST", "/api/v1/saves/"+args[0], payload)
@@ -210,52 +173,33 @@ var saveCmd = &cobra.Command{
 	},
 }
 
-// load <slot>: POST /api/v1/saves/{slot}/load
 var loadCmd = &cobra.Command{
 	Use:   "load <slot>",
-	Short: "Load game from a save slot",
-	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().send("POST", "/api/v1/saves/"+args[0]+"/load", nil)
 		printResult(v, status, err)
 	},
 }
 
-// rm <slot>: DELETE /api/v1/saves/{slot}
 var rmCmd = &cobra.Command{
-	Use:     "rm <slot>",
-	Aliases: []string{"delete"},
-	Short:   "Delete a save slot",
-	Args:    cobra.ExactArgs(1),
+	Use:   "rm <slot>",
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().send("DELETE", "/api/v1/saves/"+args[0], nil)
 		printResult(v, status, err)
 	},
 }
 
-// debug subcommand group
-var debugCmd = &cobra.Command{
-	Use:   "debug",
-	Short: "Debug commands (testing only)",
-}
+var debugCmd = &cobra.Command{Use: "debug"}
 
 var debugJumpCmd = &cobra.Command{
 	Use:   "jump <stage>",
-	Short: "Teleport to the start of a stage (clears achievements and inventory)",
-	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().send("POST", "/api/v1/debug/jump", map[string]any{"stage": args[0]})
 		printResult(v, status, err)
 	},
 }
 
-// server subcommand group
-var serverCmd = &cobra.Command{
-	Use:   "server",
-	Short: "Manage the rpg-server process",
-}
-
-var serverBin string
+var serverCmd = &cobra.Command{Use: "server"}
 var serverPort int
 var serverDataDir string
 var serverStagesDir string
@@ -263,295 +207,23 @@ var serverReset bool
 
 var serverStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Start the rpg-server process in the background",
 	Run: func(cmd *cobra.Command, args []string) {
-		exe, err := os.Executable()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "failed to get executable path:", err)
-			os.Exit(1)
-		}
-
+		exe, _ := os.Executable()
 		cmdArgs := []string{"_serve"}
 		if serverPort != 7100 {
 			cmdArgs = append(cmdArgs, "--port", strconv.Itoa(serverPort))
 		}
-		if serverDataDir != "" {
-			cmdArgs = append(cmdArgs, "--data-dir", serverDataDir)
-		}
-		if serverStagesDir != "" {
-			cmdArgs = append(cmdArgs, "--stages-dir", serverStagesDir)
-		}
-		if serverReset {
-			cmdArgs = append(cmdArgs, "--reset")
-		}
-
-		pidFile := rpgPIDFile()
-		logFile := rpgLogFile()
-
-		if pid := readPID(pidFile); pid > 0 {
-			if isRunning(pid) {
-				fmt.Printf("rpg-server is already running (PID %d)\n", pid)
-				return
-			}
-		}
-
-		logF, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "cannot open log file:", err)
-			os.Exit(1)
-		}
-		defer logF.Close()
-
-		// Start itself in the background with the hidden _serve command
 		proc := exec.Command(exe, cmdArgs...)
+		logF, _ := os.OpenFile(rpgLogFile(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		proc.Stdout = logF
 		proc.Stderr = logF
-		if err := proc.Start(); err != nil {
-			fmt.Fprintln(os.Stderr, "failed to start server process:", err)
-			os.Exit(1)
-		}
-
-		pid := proc.Process.Pid
-		if err := os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644); err != nil {
-			fmt.Fprintln(os.Stderr, "warning: could not write PID file:", err)
-		}
-
-		fmt.Printf("rpg-server started (PID %d), log: %s\n", pid, logFile)
+		proc.Start()
+		fmt.Printf("rpg-server started (PID %d)\n", proc.Process.Pid)
 	},
-}
-
-var serveCmd = &cobra.Command{
-	Use:    "_serve",
-	Short:  "Internal: Run the RPG server (foreground)",
-	Hidden: true,
-	Run: func(cmd *cobra.Command, args []string) {
-		home, _ := os.UserHomeDir()
-		dataDir := serverDataDir
-		if dataDir == "" {
-			dataDir = filepath.Join(home, ".mywant-rpg")
-		}
-		stagesDir := serverStagesDir
-		// If stagesDir is empty, the server.NewServer will use the embedded DefaultStagesFS.
-		// No need for complex discovery logic here.
-
-		cfg := server.Config{
-			DataDir:   dataDir,
-			StagesDir: stagesDir,
-			Port:      serverPort,
-		}
-		s, err := server.NewServer(cfg)
-		if err != nil {
-			log.Fatalf("server init: %v", err)
-		}
-		if serverReset {
-			if err := s.Reset(); err != nil {
-				log.Fatalf("reset: %v", err)
-			}
-		}
-
-		addr := fmt.Sprintf(":%d", serverPort)
-		log.Printf("rpg-server listening on %s, data=%s stages=%s", addr, dataDir, stagesDir)
-		if err := http.ListenAndServe(addr, s.Handler()); err != nil {
-			log.Fatal(err)
-		}
-	},
-}
-
-// install subcommand group
-var installCmd = &cobra.Command{
-	Use:   "install",
-	Short: "Install game skills to agent directories",
-}
-
-var installMyWantCmd = &cobra.Command{
-	Use:   "mywant",
-	Short: "Install skills to MyWant (~/.mywant/custom-types)",
-	Run: func(cmd *cobra.Command, args []string) {
-		runInstall("mywant")
-	},
-}
-
-var installClaudeCmd = &cobra.Command{
-	Use:   "claude",
-	Short: "Install skills to Claude Code (~/.claude/skills)",
-	Run: func(cmd *cobra.Command, args []string) {
-		runInstall("claude")
-	},
-}
-
-var installGeminiCmd = &cobra.Command{
-	Use:   "gemini",
-	Short: "Install skills to Gemini CLI (~/.gemini/skills)",
-	Run: func(cmd *cobra.Command, args []string) {
-		runInstall("gemini")
-	},
-}
-
-var installCodexCmd = &cobra.Command{
-	Use:   "codex",
-	Short: "Install skills to Codex (~/.codex/skills)",
-	Run: func(cmd *cobra.Command, args []string) {
-		runInstall("codex")
-	},
-}
-
-// uninstall subcommand group
-var uninstallCmd = &cobra.Command{
-	Use:   "uninstall",
-	Short: "Remove game skills from agent directories",
-}
-
-var uninstallMyWantCmd = &cobra.Command{
-	Use:   "mywant",
-	Short: "Uninstall skills from MyWant",
-	Run: func(cmd *cobra.Command, args []string) {
-		runUninstall("mywant")
-	},
-}
-
-var uninstallClaudeCmd = &cobra.Command{
-	Use:   "claude",
-	Short: "Uninstall skills from Claude Code",
-	Run: func(cmd *cobra.Command, args []string) {
-		runUninstall("claude")
-	},
-}
-
-var uninstallGeminiCmd = &cobra.Command{
-	Use:   "gemini",
-	Short: "Uninstall skills from Gemini CLI",
-	Run: func(cmd *cobra.Command, args []string) {
-		runUninstall("gemini")
-	},
-}
-
-var uninstallCodexCmd = &cobra.Command{
-	Use:   "codex",
-	Short: "Uninstall skills from Codex",
-	Run: func(cmd *cobra.Command, args []string) {
-		runUninstall("codex")
-	},
-}
-
-func getSkillPath(target string) string {
-	home, _ := os.UserHomeDir()
-	switch target {
-	case "mywant":
-		return filepath.Join(home, ".mywant", "custom-types")
-	case "claude":
-		return filepath.Join(home, ".claude", "skills")
-	case "gemini":
-		return filepath.Join(home, ".gemini", "skills")
-	case "codex":
-		return filepath.Join(home, ".codex", "skills")
-	default:
-		return ""
-	}
-}
-
-func runInstall(target string) {
-	dst := getSkillPath(target)
-	if dst == "" {
-		fmt.Fprintf(os.Stderr, "unknown target: %s\n", target)
-		os.Exit(1)
-	}
-	if err := installSkillsTo(dst); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to install to %s: %v\n", target, err)
-		os.Exit(1)
-	}
-	fmt.Printf("Successfully installed skills to %s\n", dst)
-}
-
-func runUninstall(target string) {
-	dstBase := getSkillPath(target)
-	if dstBase == "" {
-		fmt.Fprintf(os.Stderr, "unknown target: %s\n", target)
-		os.Exit(1)
-	}
-
-	entries, err := fs.ReadDir(server.DefaultDataFS, "skills")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read embedded skills: %v\n", err)
-		os.Exit(1)
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		skillName := entry.Name()
-		dstDir := filepath.Join(dstBase, skillName)
-		if _, err := os.Stat(dstDir); err == nil {
-			fmt.Printf("  removing %s...\n", skillName)
-			if err := os.RemoveAll(dstDir); err != nil {
-				fmt.Fprintf(os.Stderr, "warning: failed to remove %s: %v\n", dstDir, err)
-			}
-		}
-	}
-	fmt.Printf("Successfully uninstalled skills from %s\n", dstBase)
-}
-
-func installSkillsTo(dstBase string) error {
-	// Root of skills in embedded FS is "skills"
-	entries, err := fs.ReadDir(server.DefaultDataFS, "skills")
-	if err != nil {
-		return fmt.Errorf("read embedded skills: %w", err)
-	}
-
-	if err := os.MkdirAll(dstBase, 0755); err != nil {
-		return fmt.Errorf("create directory %s: %w", dstBase, err)
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		skillName := entry.Name()
-		srcDir := filepath.Join("skills", skillName)
-		dstDir := filepath.Join(dstBase, skillName)
-
-		fmt.Printf("  installing %s...\n", skillName)
-		if err := os.RemoveAll(dstDir); err != nil {
-			return fmt.Errorf("remove old %s: %w", dstDir, err)
-		}
-
-		if err := copyFS(server.DefaultDataFS, srcDir, dstDir); err != nil {
-			return fmt.Errorf("copy skill %s: %w", skillName, err)
-		}
-	}
-	return nil
-}
-
-func copyFS(srcFS fs.FS, srcDir, dstDir string) error {
-	return fs.WalkDir(srcFS, srcDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		// Calculate destination path
-		rel, err := filepath.Rel(srcDir, path)
-		if err != nil {
-			return err
-		}
-		dstPath := filepath.Join(dstDir, rel)
-
-		if d.IsDir() {
-			return os.MkdirAll(dstPath, 0755)
-		}
-
-		// Read file from FS
-		data, err := fs.ReadFile(srcFS, path)
-		if err != nil {
-			return err
-		}
-
-		// Write file to disk
-		return os.WriteFile(dstPath, data, 0644)
-	})
 }
 
 var serverStopCmd = &cobra.Command{
 	Use:   "stop",
-	Short: "Stop the rpg-server process",
 	Run: func(cmd *cobra.Command, args []string) {
 		pidFile := rpgPIDFile()
 		pid := readPID(pidFile)
@@ -559,15 +231,8 @@ var serverStopCmd = &cobra.Command{
 			fmt.Println("rpg-server is not running (no PID file)")
 			return
 		}
-		proc, err := os.FindProcess(pid)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "cannot find process:", err)
-			os.Exit(1)
-		}
-		if err := proc.Signal(os.Interrupt); err != nil {
-			fmt.Fprintln(os.Stderr, "cannot signal process:", err)
-			os.Exit(1)
-		}
+		proc, _ := os.FindProcess(pid)
+		proc.Signal(os.Interrupt)
 		_ = os.Remove(pidFile)
 		fmt.Printf("rpg-server stopped (PID %d)\n", pid)
 	},
@@ -575,7 +240,6 @@ var serverStopCmd = &cobra.Command{
 
 var serverStatusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Check if rpg-server is running",
 	Run: func(cmd *cobra.Command, args []string) {
 		pidFile := rpgPIDFile()
 		pid := readPID(pidFile)
@@ -592,54 +256,175 @@ var serverStatusCmd = &cobra.Command{
 	},
 }
 
-func rpgPIDFile() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".mywant", "rpg-server.pid")
+var serveCmd = &cobra.Command{
+	Use:    "_serve",
+	Hidden: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg := server.Config{
+			DataDir:   serverDataDir,
+			StagesDir: serverStagesDir,
+			Port:      serverPort,
+		}
+		s, _ := server.NewServer(cfg)
+		addr := fmt.Sprintf(":%d", serverPort)
+		http.ListenAndServe(addr, s.Handler())
+	},
 }
 
-func rpgLogFile() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".mywant", "rpg-server.log")
+var mcpCmd = &cobra.Command{Use: "mcp"}
+
+var mcpServeCmd = &cobra.Command{
+	Use:   "serve",
+	Run: func(cmd *cobra.Command, args []string) {
+		runMCPServer(serverURL)
+	},
 }
 
-func readPID(path string) int {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return 0
+func runMCPServer(apiURL string) {
+	c := newClient(apiURL)
+	serverInstance := mcp.NewServer(&mcp.Implementation{Name: "rpg-mcp", Version: "0.1.0"}, nil)
+
+	mcp.AddTool(serverInstance, &mcp.Tool{Name: "rpg_start"}, func(ctx context.Context, req *mcp.CallToolRequest, input struct{}) (*mcp.CallToolResult, any, error) {
+		v, code, err := c.get("/api/v1/start")
+		res, out := wrap(v, code, err)
+		return res, out, nil
+	})
+
+	mcp.AddTool(serverInstance, &mcp.Tool{Name: "rpg_observe"}, func(ctx context.Context, req *mcp.CallToolRequest, input struct {
+		Target string `json:"target,omitempty"`
+	}) (*mcp.CallToolResult, any, error) {
+		path := "/api/v1/observe?actor=chap"
+		if input.Target != "" {
+			path += "&target=" + urlEscape(input.Target)
+		}
+		v, code, err := c.get(path)
+		res, out := wrap(v, code, err)
+		return res, out, nil
+	})
+
+	mcp.AddTool(serverInstance, &mcp.Tool{Name: "rpg_control_system"}, func(ctx context.Context, req *mcp.CallToolRequest, input struct {
+		Action string         `json:"action"`
+		Target string         `json:"target,omitempty"`
+		Actor  string         `json:"actor,omitempty"`
+		Args   map[string]any `json:"args,omitempty"`
+	}) (*mcp.CallToolResult, any, error) {
+		actor := input.Actor
+		if actor == "" {
+			actor = "chap"
+		}
+		v, code, err := c.send("POST", "/api/v1/control", map[string]any{
+			"actor": actor, "action": input.Action, "target": input.Target, "args": input.Args,
+		})
+		res, out := wrap(v, code, err)
+		return res, out, nil
+	})
+
+	serverInstance.Run(context.Background(), &mcp.StdioTransport{})
+}
+
+func wrap(v any, status int, err error) (*mcp.CallToolResult, any) {
+	out := make(map[string]any)
+	if m, ok := v.(map[string]any); ok {
+		out = m
+	} else if v != nil {
+		out["data"] = v
 	}
-	pid, _ := strconv.Atoi(strings.TrimSpace(string(b)))
-	return pid
-}
-
-func isRunning(pid int) bool {
-	proc, err := os.FindProcess(pid)
 	if err != nil {
-		return false
+		out["error"] = err.Error()
+		return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: err.Error()}}}, out
 	}
-	return proc.Signal(syscall.Signal(0)) == nil
+	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: formatJSON(v)}}}, out
 }
 
+var installCmd = &cobra.Command{Use: "install"}
+var installMyWantCmd = &cobra.Command{Use: "mywant", Run: func(cmd *cobra.Command, args []string) { runInstall("mywant") }}
+var installClaudeCmd = &cobra.Command{Use: "claude", Run: func(cmd *cobra.Command, args []string) { runInstall("claude") }}
+var installGeminiCmd = &cobra.Command{Use: "gemini", Run: func(cmd *cobra.Command, args []string) { runInstall("gemini") }}
+var installCodexCmd = &cobra.Command{Use: "codex", Run: func(cmd *cobra.Command, args []string) { runInstall("codex") }}
+
+var uninstallCmd = &cobra.Command{Use: "uninstall"}
+var uninstallMyWantCmd = &cobra.Command{Use: "mywant", Run: func(cmd *cobra.Command, args []string) { runUninstall("mywant") }}
+var uninstallClaudeCmd = &cobra.Command{Use: "claude", Run: func(cmd *cobra.Command, args []string) { runUninstall("claude") }}
+var uninstallGeminiCmd = &cobra.Command{Use: "gemini", Run: func(cmd *cobra.Command, args []string) { runUninstall("gemini") }}
+var uninstallCodexCmd = &cobra.Command{Use: "codex", Run: func(cmd *cobra.Command, args []string) { runUninstall("codex") }}
+
+func runInstall(target string) {
+	dst := getSkillPath(target)
+	installSkillsTo(dst)
+	fmt.Printf("Installed to %s\n", dst)
+}
+
+func runUninstall(target string) {
+	dstBase := getSkillPath(target)
+	entries, _ := fs.ReadDir(server.DefaultDataFS, "skills")
+	for _, entry := range entries {
+		if entry.IsDir() {
+			os.RemoveAll(filepath.Join(dstBase, entry.Name()))
+		}
+	}
+	fmt.Printf("Uninstalled from %s\n", dstBase)
+}
+
+func getSkillPath(target string) string {
+	home, _ := os.UserHomeDir()
+	switch target {
+	case "mywant": return filepath.Join(home, ".mywant", "custom-types")
+	case "claude": return filepath.Join(home, ".claude", "skills")
+	case "gemini": return filepath.Join(home, ".gemini", "skills")
+	case "codex": return filepath.Join(home, ".codex", "skills")
+	default: return ""
+	}
+}
+
+func installSkillsTo(dstBase string) error {
+	entries, _ := fs.ReadDir(server.DefaultDataFS, "skills")
+	os.MkdirAll(dstBase, 0755)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			dst := filepath.Join(dstBase, entry.Name())
+			os.RemoveAll(dst)
+			os.MkdirAll(dst, 0755)
+			copyFS(server.DefaultDataFS, filepath.Join("skills", entry.Name()), dst)
+		}
+	}
+	return nil
+}
+
+func copyFS(srcFS fs.FS, srcDir, dstDir string) error {
+	return fs.WalkDir(srcFS, srcDir, func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() {
+			data, _ := fs.ReadFile(srcFS, path)
+			rel, _ := filepath.Rel(srcDir, path)
+			os.WriteFile(filepath.Join(dstDir, rel), data, 0644)
+		}
+		return nil
+	})
+}
+
+func rpgPIDFile() string { home, _ := os.UserHomeDir(); return filepath.Join(home, ".mywant", "rpg-server.pid") }
+func rpgLogFile() string { home, _ := os.UserHomeDir(); return filepath.Join(home, ".mywant", "rpg-server.log") }
+func readPID(path string) int { b, _ := os.ReadFile(path); pid, _ := strconv.Atoi(strings.TrimSpace(string(b))); return pid }
+func isRunning(pid int) bool { proc, _ := os.FindProcess(pid); return proc.Signal(syscall.Signal(0)) == nil }
 func urlEscape(s string) string {
 	const hex = "0123456789ABCDEF"
 	out := make([]byte, 0, len(s))
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 		switch {
-		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9',
-			c == '-', c == '_', c == '.', c == '~':
-			out = append(out, c)
-		default:
-			out = append(out, '%', hex[c>>4], hex[c&15])
+		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9', c == '-', c == '_', c == '.', c == '~': out = append(out, c)
+		default: out = append(out, '%', hex[c>>4], hex[c&15])
 		}
 	}
 	return string(out)
 }
 
 func main() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	rootCmd.AddCommand(startCmd, goalCmd, observeCmd, controlCmd, savesCmd, saveCmd, loadCmd, rmCmd, debugCmd, serverCmd, serveCmd, installCmd, uninstallCmd, mcpCmd)
+	serverCmd.AddCommand(serverStartCmd, serverStopCmd, serverStatusCmd)
+	installCmd.AddCommand(installMyWantCmd, installClaudeCmd, installGeminiCmd, installCodexCmd)
+	uninstallCmd.AddCommand(uninstallMyWantCmd, uninstallClaudeCmd, uninstallGeminiCmd, uninstallCodexCmd)
+	mcpCmd.AddCommand(mcpServeCmd)
+	rootCmd.Execute()
 }
 
 func init() {
@@ -647,44 +432,5 @@ func init() {
 	if v := os.Getenv("RPG_SERVER_URL"); v != "" {
 		defaultURL = v
 	}
-
-	rootCmd.PersistentFlags().StringVar(&serverURL, "server-url", defaultURL, "rpg-server base URL ($RPG_SERVER_URL)")
-	rootCmd.PersistentFlags().BoolVar(&jsonOut, "json", false, "output raw JSON")
-
-	controlCmd.Flags().StringVar(&controlActor, "actor", "chap", "actor: 'chap' (AI agent) or 'you' (player)")
-	controlCmd.Flags().StringArrayVar(&controlArgs, "arg", nil, "extra args as key=value pairs")
-
-	saveCmd.Flags().StringVar(&saveLabel, "name", "", "human-readable label for the save slot")
-
-	serverStartCmd.Flags().IntVar(&serverPort, "port", 7100, "port to listen on")
-	serverStartCmd.Flags().StringVar(&serverDataDir, "data-dir", "", "data directory override")
-	serverStartCmd.Flags().StringVar(&serverStagesDir, "stages-dir", "", "stages directory override")
-	serverStartCmd.Flags().BoolVar(&serverReset, "reset", false, "reset game state on start")
-
-	// Same flags for the internal serve command
-	serveCmd.Flags().IntVar(&serverPort, "port", 7100, "port to listen on")
-	serveCmd.Flags().StringVar(&serverDataDir, "data-dir", "", "data directory override")
-	serveCmd.Flags().StringVar(&serverStagesDir, "stages-dir", "", "stages directory override")
-	serveCmd.Flags().BoolVar(&serverReset, "reset", false, "reset game state on start")
-
-	debugCmd.AddCommand(debugJumpCmd)
-	serverCmd.AddCommand(serverStartCmd, serverStopCmd, serverStatusCmd)
-	installCmd.AddCommand(installMyWantCmd, installClaudeCmd, installGeminiCmd, installCodexCmd)
-	uninstallCmd.AddCommand(uninstallMyWantCmd, uninstallClaudeCmd, uninstallGeminiCmd, uninstallCodexCmd)
-
-	rootCmd.AddCommand(
-		startCmd,
-		goalCmd,
-		observeCmd,
-		controlCmd,
-		savesCmd,
-		saveCmd,
-		loadCmd,
-		rmCmd,
-		debugCmd,
-		serverCmd,
-		serveCmd,
-		installCmd,
-		uninstallCmd,
-	)
+	rootCmd.PersistentFlags().StringVar(&serverURL, "server-url", defaultURL, "rpg-server base URL")
 }
