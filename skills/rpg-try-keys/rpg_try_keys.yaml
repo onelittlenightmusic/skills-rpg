@@ -25,6 +25,8 @@ wantType:
     - { name: error,                 description: error message if failed, type: string, label: current, persistent: true, initialValue: "" }
     - { name: summary,               description: summary text, type: string, label: current, persistent: true, initialValue: "" }
     - { name: achieving_percentage,  description: 0-100 progress, type: int, label: current, persistent: false, initialValue: 0 }
+    - { name: scene,                description: scene descriptor JSON, type: object, label: current, persistent: true, initialValue: null }
+    - { name: tried,                description: list of tried keys, type: array, label: current, persistent: true, initialValue: [] }
 
   finalizeWhen:
     achieved:

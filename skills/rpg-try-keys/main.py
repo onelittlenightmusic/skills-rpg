@@ -67,19 +67,44 @@ def main() -> None:
         error_out("could not determine current stage")
         return
 
-    items = state.get("value", {}).get("stages", {}).get(current_stage, {}).get("items", {})
+    stage_data = state.get("value", {}).get("stages", {}).get(current_stage, {})
+    items = stage_data.get("items", {})
     chap_keys = [item_id for item_id, item in items.items() if item.get("held_by") == "chap"]
+    doors = stage_data.get("doors", {})
+    door_info = doors.get(target, {})
+
+    # scene contains only what the UI needs: target door ID and all keys chap holds
+    scene_data = {
+        "target": target,
+        "all_keys": chap_keys,
+    }
 
     if not chap_keys:
-        error_out(f"chap holds no keys in stage {current_stage}")
+        error_out(f"chap holds no keys in stage {current_stage}", scene=scene_data)
+        return
+
+    # If the door is already open, report success using the server's known correct key.
+    # This avoids falsely recording whichever key happened to be tried first.
+    if door_info.get("open"):
+        correct_key = door_info.get("key", "")
+        report_progress(100, f"{target} is already open")
+        print(json.dumps({
+            "ok": True,
+            "target": target,
+            "tried": [correct_key] if correct_key else [],
+            "scene": scene_data,
+            "summary": f"{target} was already open (key: {correct_key})" if correct_key else f"{target} was already open",
+        }, ensure_ascii=False), flush=True)
         return
 
     report_progress(20, f"chap holds {len(chap_keys)} key(s): {', '.join(chap_keys)}")
 
+    tried_keys = []
     total = len(chap_keys)
     for i, key_id in enumerate(chap_keys):
+        tried_keys.append(key_id)
         progress = 20 + int(70 * i / total)
-        report_progress(progress, f"trying {key_id} on {target}...")
+        report_progress(progress, f"trying {key_id}...")
 
         data, status = post("/api/v1/control", {
             "actor": "chap",
@@ -89,19 +114,20 @@ def main() -> None:
         })
 
         if data.get("ok"):
-            report_progress(100, f"opened {target} with {key_id}")
-            print(json.dumps(data, ensure_ascii=False), flush=True)
+            report_progress(100, f"opened with {key_id}")
+            print(json.dumps({
+                "ok": True,
+                "target": target,
+                "tried": tried_keys,
+                "scene": scene_data,
+                "summary": f"Opened {target} with {key_id}",
+            }, ensure_ascii=False), flush=True)
             return
 
         reason = data.get("reason", "rejected")
         report_progress(progress, f"{key_id}: {reason}")
 
-        if "already open" in reason:
-            report_progress(100, f"{target} is already open")
-            print(json.dumps(data, ensure_ascii=False), flush=True)
-            return
-
-    error_out(f"no key opened {target}", tried=chap_keys)
+    error_out(f"no key opened {target}", tried=tried_keys, scene=scene_data)
 
 
 if __name__ == "__main__":

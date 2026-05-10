@@ -31,18 +31,19 @@ wantType:
     - { name: target,                description: target device (mirror), type: string, label: current, persistent: true, initialValue: "" }
     - { name: error,                 description: error message, type: string, label: current, persistent: true, initialValue: "" }
     - { name: summary,               description: last action summary, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: scene,                description: scene descriptor JSON, type: object, label: current, persistent: true, initialValue: null }
     - { name: webhook_payload,       description: webhook payload, type: object, label: current }
     - { name: webhook_received_at,   description: webhook timestamp, type: string, label: current }
 
-  finalizeWhen:
-    achieved:
-      field: error
-      operator: "=="
-      value: ""
-    failed:
-      field: error
-      operator: "!="
-      value: ""
+  onInitialize:
+    current:
+      skill_json_arg: '{"action":"{{ if .on }}activate{{ else }}deactivate{{ end }}","target":"${target}"}'
+
+  onWebhook:
+    current:
+      on: "{{ if eq .action \"on\" }}true{{ else }}false{{ end }}"
+      webhook_payload: "{{ . }}"
+      webhook_received_at: "{{ now }}"
 
   requires:
     - rpg_control
