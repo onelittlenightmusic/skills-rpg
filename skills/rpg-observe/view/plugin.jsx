@@ -50,6 +50,8 @@ function ChapCorner({ chapItems, usedKeys }) {
       fill: '#0d2018', stroke: '#3fb950', strokeWidth: 1,
     }),
     React.createElement('circle', { cx, cy, r, fill: '#132d1a', stroke: '#3fb950', strokeWidth: 1.5 }),
+    React.createElement('ellipse', { cx: cx - 2, cy: cy - 0.5, rx: 1.1, ry: 1.9, fill: '#3fb950' }),
+    React.createElement('ellipse', { cx: cx + 2, cy: cy - 0.5, rx: 1.1, ry: 1.9, fill: '#3fb950' }),
     React.createElement('text', { x: cx, y: cy + r + 7, textAnchor: 'middle', fontSize: 6.5, fill: '#3fb950' }, 'chap'),
     ...(chapItems || []).map((key, i) =>
       React.createElement(KeyIcon, {
