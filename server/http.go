@@ -54,7 +54,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		"how_to_play": []string{
 			"1. (Setup) Run 'mywant rpg install mywant' (for Gemini CLI) and 'mywant rpg install claude' (for Claude Code) in your terminal.",
 			"2. Call '/mcp reload' in the CLI to discover new tools.",
-			"3. Call rpg_observe to see the current scene, event history, and narrative.",
+			"3. Use 'rpg_observe' without a target to see the full scene (e.g. rpg_observe target=\"\"). To inspect specific items, use dot-notation (e.g. target=\"stages.stage9.doors.door_01\").",
 			"4. Read next_goal for your immediate objective.",
 			"5. Use rpg_control_system with actor=chap to open doors and operate devices.",
 			"6. Use rpg_control_system with actor=you action=move target=<waypoint> to move the player.",
