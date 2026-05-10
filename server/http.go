@@ -60,6 +60,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 			"6. Use rpg_control_system with actor=you action=move target=<waypoint> to move the player.",
 			"7. When a stage is cleared, use rpg_control_system actor=you action=advance to proceed.",
 			"8. (Reset) Call 'mywant-rpg control reset' to restart the current stage from scratch.",
+			"9. (Debug) Call 'mywant-rpg debug jump <stage_id>' to jump to a specific stage (e.g., stage1).",
 		},
 		"available_actions": []map[string]string{
 			{"actor": "chap", "action": "open", "target": "<door_id>", "note": "Open a locked door. chap will use keys from inventory."},
