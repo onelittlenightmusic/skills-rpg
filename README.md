@@ -50,6 +50,8 @@ Each stage teaches one concept. By the time you escape, you will have used all t
 
 ## Prerequisites
 
+> **Note**: For Stages 7–9, you will need the configuration files located in the `examples/` directory of this repository. If you installed via Homebrew, please clone the [skills-rpg repository](https://github.com/onelittlenightmusic/skills-rpg) to access them.
+
 | Requirement | Notes |
 |-------------|-------|
 | [Claude Code](https://claude.ai/code) | The CLI / IDE extension |
