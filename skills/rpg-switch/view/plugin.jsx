@@ -102,7 +102,7 @@ window.__mywant.registerPlugin({
 });
 
 // ── RPG Activate — Generator line-art ────────────────────────────────────────
-function Generator({ status }) {
+function Generator({ status, label }) {
   // status: 'stopped' | 'starting' | 'running' | 'failed'
   const isRunning = status === 'running';
   const isStarting = status === 'starting';
@@ -162,7 +162,7 @@ function Generator({ status }) {
   ] : [];
 
   return React.createElement('svg', {
-    width: 132, height: 70,
+    width: 132, height: 78,
     style: { display: 'block', overflow: 'visible' },
   },
     // smoke
@@ -199,6 +199,13 @@ function Generator({ status }) {
     ),
     // power lines
     ...powerLines,
+    // device name label below body
+    label && React.createElement('text', {
+      x: BX + BW / 2, y: BY + BH + 18,
+      textAnchor: 'middle', fontSize: 8,
+      fontFamily: 'ui-monospace,monospace',
+      fill: bodyStroke,
+    }, label),
   );
 }
 
@@ -243,7 +250,7 @@ function RpgActivateSection({ want, isChild, isControl, isFocused }) {
     ),
     // generator scene
     React.createElement('div', { style: { padding: '10px 12px' } },
-      React.createElement(Generator, { status: genStatus }),
+      React.createElement(Generator, { status: genStatus, label: target }),
     ),
   );
 }

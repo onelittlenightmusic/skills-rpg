@@ -21,16 +21,23 @@ function You({ cx, cy }) {
   );
 }
 
-// ── Key icon ──────────────────────────────────────────────────────────────────
+// ── Key line-art (small) ──────────────────────────────────────────────────────
 function KeyIcon({ x, y, label, used }) {
-  const color = used ? '#6e7681' : '#e3b341';
-  const short = label.replace(/^key_/, '').slice(0, 6);
-  return React.createElement('g', null,
-    React.createElement('rect', { x, y, width: 28, height: 11, rx: 2,
-      fill: used ? '#161b22' : '#2d1f00',
-      stroke: color, strokeWidth: 0.8,
-    }),
-    React.createElement('text', { x: x + 14, y: y + 8, textAnchor: 'middle', fontSize: 6.5, fill: color }, short),
+  const sc = used ? '#4a5568' : '#c9971a';
+  const R = 3.5, HR = 1.4, SX = 8, SL = 18, SY = 3.5;
+  const short = label.replace(/^key_/, '').slice(0, 7);
+  return React.createElement('g', { transform: `translate(${x},${y})`, opacity: used ? 0.45 : 1 },
+    React.createElement('circle', { cx: R, cy: SY, r: R,  fill: 'none', stroke: sc, strokeWidth: 1 }),
+    React.createElement('circle', { cx: R, cy: SY, r: HR, fill: 'none', stroke: sc, strokeWidth: 0.7 }),
+    React.createElement('line', { x1: SX, y1: SY, x2: SX+SL, y2: SY, stroke: sc, strokeWidth: 1.4 }),
+    React.createElement('line', { x1: SX+SL-8, y1: SY, x2: SX+SL-8, y2: SY+4, stroke: sc, strokeWidth: 1.4 }),
+    React.createElement('line', { x1: SX+SL-4, y1: SY, x2: SX+SL-4, y2: SY+3, stroke: sc, strokeWidth: 1.4 }),
+    React.createElement('line', { x1: SX+SL,   y1: SY, x2: SX+SL,   y2: SY+5, stroke: sc, strokeWidth: 1.4 }),
+    React.createElement('text', {
+      x: (SX + SX+SL) / 2, y: SY*2 + 9,
+      textAnchor: 'middle', fontSize: 6,
+      fontFamily: 'ui-monospace,monospace', fill: sc,
+    }, short),
   );
 }
 
