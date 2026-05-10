@@ -104,13 +104,14 @@ func (s *Server) handleObserve(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, err.Error())
 		return
 	}
+	scene := s.BuildScene()
 	writeJSON(w, 200, map[string]any{
 		"target":                target,
 		"actor":                 res.Actor,
-		"value":                 trimInactiveStages(subtree, s.state.CurrentStage),
+		"value":                 trimInactiveStages(subtree, scene.StageID),
 		"achievements_unlocked": res.AchievementsUnlocked,
 		"next_goal":             res.NextGoal,
-		"scene":                 s.BuildScene(),
+		"scene":                 scene,
 	})
 }
 
@@ -168,7 +169,14 @@ func (s *Server) handleDebugJump(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, err.Error())
 		return
 	}
-	writeJSON(w, 200, map[string]any{"ok": true, "stage": body.Stage, "next_goal": s.NextGoal()})
+	st := s.State()
+	writeJSON(w, 200, map[string]any{
+		"ok":              true,
+		"requested_stage": body.Stage,
+		"current_stage":   st.CurrentStage,
+		"position":        st.You.Position,
+		"next_goal":       st.NextGoal,
+	})
 }
 
 func (s *Server) handleSavesRoot(w http.ResponseWriter, r *http.Request) {
@@ -251,7 +259,7 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		cfg := s.GetSettings()
 		writeJSON(w, 200, map[string]any{
-			"language":           cfg.Language,
+			"language":            cfg.Language,
 			"supported_languages": []string{"en", "ja"},
 		})
 
