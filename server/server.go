@@ -2,9 +2,11 @@ package server
 
 import (
 	"crypto/sha256"
+	"embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -12,9 +14,12 @@ import (
 	"sync"
 )
 
+//go:embed stages/*.yaml
+var DefaultStagesFS embed.FS
+
 type Config struct {
 	DataDir      string // ~/.mywant-rpg
-	StagesDir    string // path to stages/ for bootstrap
+	StagesDir    string // path to stages/ for bootstrap (empty means use embedded)
 	Port         int    // 7100
 	SettingsPath string // default: ~/.skills-rpg.conf
 }
@@ -53,7 +58,15 @@ func (s *Server) loadOrBootstrap() error {
 	}
 
 	// Always load locale data fresh from stage YAMLs (not stored in current.yaml).
-	_, locales, _, err := loadStagesFromDir(s.cfg.StagesDir)
+	var locales map[string]map[string]*StageLocale
+	var err error
+
+	if s.cfg.StagesDir == "" {
+		embedded, _ := fs.Sub(DefaultStagesFS, "stages")
+		_, locales, _, err = loadStagesFromFS(embedded, ".")
+	} else {
+		_, locales, _, err = loadStagesFromDir(s.cfg.StagesDir)
+	}
 	if err != nil {
 		return fmt.Errorf("load locales: %w", err)
 	}
@@ -66,9 +79,16 @@ func (s *Server) loadOrBootstrap() error {
 	} else if !os.IsNotExist(err) {
 		return err
 	}
-	gs, _, err2 := initialStateFromStages(s.cfg.StagesDir)
-	if err2 != nil {
-		return err2
+
+	var gs *GameState
+	if s.cfg.StagesDir == "" {
+		embedded, _ := fs.Sub(DefaultStagesFS, "stages")
+		gs, _, err = initialStateFromFS(embedded, ".")
+	} else {
+		gs, _, err = initialStateFromStages(s.cfg.StagesDir)
+	}
+	if err != nil {
+		return err
 	}
 	s.state = gs
 	return s.persistLocked()
@@ -78,7 +98,18 @@ func (s *Server) loadOrBootstrap() error {
 func (s *Server) Reset() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	gs, locales, err := initialStateFromStages(s.cfg.StagesDir)
+
+	var gs *GameState
+	var locales map[string]map[string]*StageLocale
+	var err error
+
+	if s.cfg.StagesDir == "" {
+		embedded, _ := fs.Sub(DefaultStagesFS, "stages")
+		gs, locales, err = initialStateFromFS(embedded, ".")
+	} else {
+		gs, locales, err = initialStateFromStages(s.cfg.StagesDir)
+	}
+
 	if err != nil {
 		return err
 	}

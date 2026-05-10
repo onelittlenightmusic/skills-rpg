@@ -330,31 +330,8 @@ var serveCmd = &cobra.Command{
 			dataDir = filepath.Join(home, ".mywant-rpg")
 		}
 		stagesDir := serverStagesDir
-		if stagesDir == "" {
-			// Search for stages directory
-			candidates := []string{
-				"stages", // current dir
-			}
-			// Add directory near executable (for brew/installed setups)
-			if exe, err := os.Executable(); err == nil {
-				candidates = append(candidates, filepath.Join(filepath.Dir(exe), "stages"))
-				// Homebrew share path fallback
-				// e.g., /opt/homebrew/Cellar/mywant-rpg/0.1.2/bin/mywant-rpg
-				// stages might be in /opt/homebrew/share/mywant-rpg/stages
-				candidates = append(candidates, filepath.Join(filepath.Dir(filepath.Dir(exe)), "share", "mywant-rpg", "stages"))
-			}
-
-			for _, c := range candidates {
-				if fi, err := os.Stat(c); err == nil && fi.IsDir() {
-					stagesDir = c
-					break
-				}
-			}
-
-			if stagesDir == "" {
-				stagesDir = "stages" // fallback to original default
-			}
-		}
+		// If stagesDir is empty, the server.NewServer will use the embedded DefaultStagesFS.
+		// No need for complex discovery logic here.
 
 		cfg := server.Config{
 			DataDir:   dataDir,

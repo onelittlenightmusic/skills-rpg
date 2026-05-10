@@ -2,6 +2,8 @@ package server
 
 import (
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -45,10 +47,28 @@ func readYAML(path string, v any) error {
 	return yaml.Unmarshal(b, v)
 }
 
+func readYAMLFromFS(f fs.FS, path string, v any) error {
+	file, err := f.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	b, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	return yaml.Unmarshal(b, v)
+}
+
 // loadStagesFromDir reads every *.yaml file in dir (skipping *-jp.yaml locale files)
 // and returns stages keyed by Stage.ID, locale data keyed by stageID→lang, and load order.
 func loadStagesFromDir(dir string) (map[string]*Stage, map[string]map[string]*StageLocale, []string, error) {
-	entries, err := os.ReadDir(dir)
+	return loadStagesFromFS(os.DirFS(dir), ".")
+}
+
+// loadStagesFromFS is a more general version of loadStagesFromDir.
+func loadStagesFromFS(f fs.FS, root string) (map[string]*Stage, map[string]map[string]*StageLocale, []string, error) {
+	entries, err := fs.ReadDir(f, root)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -70,7 +90,11 @@ func loadStagesFromDir(dir string) (map[string]*Stage, map[string]map[string]*St
 			continue
 		}
 		var raw stageRaw
-		if err := readYAML(filepath.Join(dir, name), &raw); err != nil {
+		path := filepath.Join(root, name)
+		if root == "." {
+			path = name
+		}
+		if err := readYAMLFromFS(f, path, &raw); err != nil {
 			return nil, nil, nil, fmt.Errorf("read %s: %w", name, err)
 		}
 		if raw.ID == "" {
@@ -86,14 +110,17 @@ func loadStagesFromDir(dir string) (map[string]*Stage, map[string]map[string]*St
 }
 
 // initialStateFromStages builds a fresh GameState from a stages directory.
-// The first stage in lexical filename order is selected as the starting stage.
 func initialStateFromStages(dir string) (*GameState, map[string]map[string]*StageLocale, error) {
-	stages, locales, order, err := loadStagesFromDir(dir)
+	return initialStateFromFS(os.DirFS(dir), ".")
+}
+
+func initialStateFromFS(f fs.FS, root string) (*GameState, map[string]map[string]*StageLocale, error) {
+	stages, locales, order, err := loadStagesFromFS(f, root)
 	if err != nil {
 		return nil, nil, err
 	}
 	if len(stages) == 0 {
-		return nil, nil, fmt.Errorf("no stages found in %s", dir)
+		return nil, nil, fmt.Errorf("no stages found")
 	}
 	first := order[0]
 	gs := &GameState{
