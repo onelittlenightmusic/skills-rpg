@@ -331,9 +331,29 @@ var serveCmd = &cobra.Command{
 		}
 		stagesDir := serverStagesDir
 		if stagesDir == "" {
-			// In brew environment, we might need a better default or it must be provided.
-			// For now, assume current dir or fallback.
-			stagesDir = "stages"
+			// Search for stages directory
+			candidates := []string{
+				"stages", // current dir
+			}
+			// Add directory near executable (for brew/installed setups)
+			if exe, err := os.Executable(); err == nil {
+				candidates = append(candidates, filepath.Join(filepath.Dir(exe), "stages"))
+				// Homebrew share path fallback
+				// e.g., /opt/homebrew/Cellar/mywant-rpg/0.1.2/bin/mywant-rpg
+				// stages might be in /opt/homebrew/share/mywant-rpg/stages
+				candidates = append(candidates, filepath.Join(filepath.Dir(filepath.Dir(exe)), "share", "mywant-rpg", "stages"))
+			}
+
+			for _, c := range candidates {
+				if fi, err := os.Stat(c); err == nil && fi.IsDir() {
+					stagesDir = c
+					break
+				}
+			}
+
+			if stagesDir == "" {
+				stagesDir = "stages" // fallback to original default
+			}
 		}
 
 		cfg := server.Config{
