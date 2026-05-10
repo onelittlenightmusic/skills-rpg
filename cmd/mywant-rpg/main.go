@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -14,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/onelittlenightmusic/skills-rpg/server"
 	"github.com/spf13/cobra"
 )
 
@@ -262,31 +264,13 @@ var serverStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the rpg-server process in the background",
 	Run: func(cmd *cobra.Command, args []string) {
-		bin := serverBin
-		if bin == "" {
-			var err error
-			bin, err = exec.LookPath("rpg-server")
-			if err != nil {
-				// Try skills-rpg bin directory
-				home, _ := os.UserHomeDir()
-				candidates := []string{
-					filepath.Join(home, "work", "skills-rpg", "bin", "rpg-server"),
-					"/usr/local/bin/rpg-server",
-				}
-				for _, c := range candidates {
-					if _, err2 := os.Stat(c); err2 == nil {
-						bin = c
-						break
-					}
-				}
-			}
-			if bin == "" {
-				fmt.Fprintln(os.Stderr, "rpg-server not found in PATH. Use --bin to specify the path.")
-				os.Exit(1)
-			}
+		exe, err := os.Executable()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "failed to get executable path:", err)
+			os.Exit(1)
 		}
 
-		cmdArgs := []string{}
+		cmdArgs := []string{"_serve"}
 		if serverPort != 7100 {
 			cmdArgs = append(cmdArgs, "--port", strconv.Itoa(serverPort))
 		}
@@ -317,11 +301,12 @@ var serverStartCmd = &cobra.Command{
 		}
 		defer logF.Close()
 
-		proc := exec.Command(bin, cmdArgs...)
+		// Start itself in the background with the hidden _serve command
+		proc := exec.Command(exe, cmdArgs...)
 		proc.Stdout = logF
 		proc.Stderr = logF
 		if err := proc.Start(); err != nil {
-			fmt.Fprintln(os.Stderr, "failed to start rpg-server:", err)
+			fmt.Fprintln(os.Stderr, "failed to start server process:", err)
 			os.Exit(1)
 		}
 
@@ -331,6 +316,46 @@ var serverStartCmd = &cobra.Command{
 		}
 
 		fmt.Printf("rpg-server started (PID %d), log: %s\n", pid, logFile)
+	},
+}
+
+var serveCmd = &cobra.Command{
+	Use:    "_serve",
+	Short:  "Internal: Run the RPG server (foreground)",
+	Hidden: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		home, _ := os.UserHomeDir()
+		dataDir := serverDataDir
+		if dataDir == "" {
+			dataDir = filepath.Join(home, ".mywant-rpg")
+		}
+		stagesDir := serverStagesDir
+		if stagesDir == "" {
+			// In brew environment, we might need a better default or it must be provided.
+			// For now, assume current dir or fallback.
+			stagesDir = "stages"
+		}
+
+		cfg := server.Config{
+			DataDir:   dataDir,
+			StagesDir: stagesDir,
+			Port:      serverPort,
+		}
+		s, err := server.NewServer(cfg)
+		if err != nil {
+			log.Fatalf("server init: %v", err)
+		}
+		if serverReset {
+			if err := s.Reset(); err != nil {
+				log.Fatalf("reset: %v", err)
+			}
+		}
+
+		addr := fmt.Sprintf(":%d", serverPort)
+		log.Printf("rpg-server listening on %s, data=%s stages=%s", addr, dataDir, stagesDir)
+		if err := http.ListenAndServe(addr, s.Handler()); err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 
@@ -441,11 +466,16 @@ func init() {
 
 	saveCmd.Flags().StringVar(&saveLabel, "name", "", "human-readable label for the save slot")
 
-	serverStartCmd.Flags().StringVar(&serverBin, "bin", "", "path to rpg-server binary (auto-detected if not set)")
 	serverStartCmd.Flags().IntVar(&serverPort, "port", 7100, "port to listen on")
 	serverStartCmd.Flags().StringVar(&serverDataDir, "data-dir", "", "data directory override")
 	serverStartCmd.Flags().StringVar(&serverStagesDir, "stages-dir", "", "stages directory override")
 	serverStartCmd.Flags().BoolVar(&serverReset, "reset", false, "reset game state on start")
+
+	// Same flags for the internal serve command
+	serveCmd.Flags().IntVar(&serverPort, "port", 7100, "port to listen on")
+	serveCmd.Flags().StringVar(&serverDataDir, "data-dir", "", "data directory override")
+	serveCmd.Flags().StringVar(&serverStagesDir, "stages-dir", "", "stages directory override")
+	serveCmd.Flags().BoolVar(&serverReset, "reset", false, "reset game state on start")
 
 	debugCmd.AddCommand(debugJumpCmd)
 	serverCmd.AddCommand(serverStartCmd, serverStopCmd, serverStatusCmd)
@@ -461,5 +491,6 @@ func init() {
 		rmCmd,
 		debugCmd,
 		serverCmd,
+		serveCmd,
 	)
 }
