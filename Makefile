@@ -6,22 +6,12 @@ DATA_DIR ?= $(HOME)/.mywant-rpg
 
 all: build
 
-build: build-server build-mcp build-plugin
-
-build-server:
-	@mkdir -p $(BIN_DIR)
-	go build -o $(BIN_DIR)/rpg-server ./cmd/rpg-server
-
-build-mcp:
-	@mkdir -p $(BIN_DIR)
-	go build -o $(BIN_DIR)/rpg-mcp ./cmd/rpg-mcp
+# Always ensure full rebuild when YAML assets change
+build: build-plugin
 
 build-plugin:
 	@mkdir -p $(BIN_DIR)
-	go build -o $(BIN_DIR)/mywant-rpg ./cmd/mywant-rpg
-
-run-server: build-server
-	$(BIN_DIR)/rpg-server
+	go build -o $(BIN_DIR)/mywant-rpg ./cmd/mywant-rpg  # Ensure CLI is built
 
 install-skills:
 	@mkdir -p $(SKILL_DST)
