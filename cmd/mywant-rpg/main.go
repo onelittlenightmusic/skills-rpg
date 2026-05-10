@@ -103,7 +103,7 @@ var rootCmd = &cobra.Command{
 }
 
 var startCmd = &cobra.Command{
-	Use:   "start",
+	Use: "start",
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().get("/api/v1/start")
 		printResult(v, status, err)
@@ -111,7 +111,7 @@ var startCmd = &cobra.Command{
 }
 
 var goalCmd = &cobra.Command{
-	Use:   "goal",
+	Use: "goal",
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().get("/api/v1/next-goal")
 		printResult(v, status, err)
@@ -119,7 +119,7 @@ var goalCmd = &cobra.Command{
 }
 
 var observeCmd = &cobra.Command{
-	Use:   "observe [path]",
+	Use: "observe [path]",
 	Run: func(cmd *cobra.Command, args []string) {
 		path := "/api/v1/observe?actor=chap"
 		if len(args) > 0 && args[0] != "" {
@@ -136,7 +136,7 @@ var (
 )
 
 var controlCmd = &cobra.Command{
-	Use:   "control <action> [target]",
+	Use: "control <action> [target]",
 	Run: func(cmd *cobra.Command, args []string) {
 		actor := controlActor
 		if actor == "" {
@@ -155,7 +155,7 @@ var controlCmd = &cobra.Command{
 }
 
 var savesCmd = &cobra.Command{
-	Use:   "saves",
+	Use: "saves",
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().get("/api/v1/saves")
 		printResult(v, status, err)
@@ -164,7 +164,7 @@ var savesCmd = &cobra.Command{
 
 var saveLabel string
 var saveCmd = &cobra.Command{
-	Use:   "save <slot>",
+	Use: "save <slot>",
 	Run: func(cmd *cobra.Command, args []string) {
 		payload := map[string]any{"name": saveLabel}
 		v, status, err := client().send("POST", "/api/v1/saves/"+args[0], payload)
@@ -173,7 +173,7 @@ var saveCmd = &cobra.Command{
 }
 
 var loadCmd = &cobra.Command{
-	Use:   "load <slot>",
+	Use: "load <slot>",
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().send("POST", "/api/v1/saves/"+args[0]+"/load", nil)
 		printResult(v, status, err)
@@ -181,7 +181,7 @@ var loadCmd = &cobra.Command{
 }
 
 var rmCmd = &cobra.Command{
-	Use:   "rm <slot>",
+	Use: "rm <slot>",
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().send("DELETE", "/api/v1/saves/"+args[0], nil)
 		printResult(v, status, err)
@@ -191,7 +191,7 @@ var rmCmd = &cobra.Command{
 var debugCmd = &cobra.Command{Use: "debug"}
 
 var debugJumpCmd = &cobra.Command{
-	Use:   "jump <stage>",
+	Use: "jump <stage>",
 	Run: func(cmd *cobra.Command, args []string) {
 		v, status, err := client().send("POST", "/api/v1/debug/jump", map[string]any{"stage": args[0]})
 		printResult(v, status, err)
@@ -205,7 +205,7 @@ var serverStagesDir string
 var serverReset bool
 
 var serverStartCmd = &cobra.Command{
-	Use:   "start",
+	Use: "start",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := server.Config{
 			DataDir:   serverDataDir,
@@ -220,9 +220,9 @@ var serverStartCmd = &cobra.Command{
 
 		// Write PID file for the current process
 		os.WriteFile(rpgPIDFile(), []byte(strconv.Itoa(os.Getpid())), 0644)
-		
+
 		fmt.Printf("rpg-server started (PID %d) on port %d\n", os.Getpid(), serverPort)
-		
+
 		// Run server in blocking mode
 		addr := fmt.Sprintf(":%d", serverPort)
 		if err := http.ListenAndServe(addr, s.Handler()); err != nil {
@@ -232,7 +232,7 @@ var serverStartCmd = &cobra.Command{
 }
 
 var serverStopCmd = &cobra.Command{
-	Use:   "stop",
+	Use: "stop",
 	Run: func(cmd *cobra.Command, args []string) {
 		pidFile := rpgPIDFile()
 		pid := readPID(pidFile)
@@ -248,7 +248,7 @@ var serverStopCmd = &cobra.Command{
 }
 
 var serverStatusCmd = &cobra.Command{
-	Use:   "status",
+	Use: "status",
 	Run: func(cmd *cobra.Command, args []string) {
 		pidFile := rpgPIDFile()
 		pid := readPID(pidFile)
@@ -289,7 +289,7 @@ func init() {
 var mcpCmd = &cobra.Command{Use: "mcp"}
 
 var mcpServeCmd = &cobra.Command{
-	Use:   "serve",
+	Use: "serve",
 	Run: func(cmd *cobra.Command, args []string) {
 		runMCPServer(serverURL)
 	},
@@ -299,14 +299,31 @@ func runMCPServer(apiURL string) {
 	c := newClient(apiURL)
 	serverInstance := mcp.NewServer(&mcp.Implementation{Name: "rpg-mcp", Version: "0.1.0"}, nil)
 
-	mcp.AddTool(serverInstance, &mcp.Tool{Name: "rpg_start"}, func(ctx context.Context, req *mcp.CallToolRequest, input struct{}) (*mcp.CallToolResult, any, error) {
+	mcp.AddTool(serverInstance, &mcp.Tool{
+		Name: "rpg_start",
+		Description: "** Call this first at the start of every session. **" +
+			" Returns your role as chap (the AI agent), available actions, how to play, and current game state." +
+			" Read this before doing anything else so you understand your mission and how to operate.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input struct{}) (*mcp.CallToolResult, any, error) {
 		v, code, err := c.get("/api/v1/start")
 		res, out := wrap(v, code, err)
 		return res, out, nil
 	})
 
-	mcp.AddTool(serverInstance, &mcp.Tool{Name: "rpg_observe"}, func(ctx context.Context, req *mcp.CallToolRequest, input struct {
-		Target string `json:"target,omitempty"`
+	mcp.AddTool(serverInstance, &mcp.Tool{
+		Name:        "rpg_next_goal",
+		Description: "Return the player's next suggested goal (text + hint + recommended skill).",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input struct{}) (*mcp.CallToolResult, any, error) {
+		v, code, err := c.get("/api/v1/next-goal")
+		res, out := wrap(v, code, err)
+		return res, out, nil
+	})
+
+	mcp.AddTool(serverInstance, &mcp.Tool{
+		Name:        "rpg_observe",
+		Description: "Read a subtree of the game state by dot-path (e.g. 'you', 'stages.stage1.doors.door1'). Empty = full state. Records an observe event so look-style achievements fire.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input struct {
+		Target string `json:"target,omitempty" jsonschema:"Dot-path target (omit or empty for full state)"`
 	}) (*mcp.CallToolResult, any, error) {
 		path := "/api/v1/observe?actor=chap"
 		if input.Target != "" {
@@ -317,11 +334,14 @@ func runMCPServer(apiURL string) {
 		return res, out, nil
 	})
 
-	mcp.AddTool(serverInstance, &mcp.Tool{Name: "rpg_control_system"}, func(ctx context.Context, req *mcp.CallToolRequest, input struct {
-		Action string         `json:"action"`
-		Target string         `json:"target,omitempty"`
-		Actor  string         `json:"actor,omitempty"`
-		Args   map[string]any `json:"args,omitempty"`
+	mcp.AddTool(serverInstance, &mcp.Tool{
+		Name:        "rpg_control_system",
+		Description: "Perform a game action. Use actor=\"you\" for player actions (move, observe) or actor=\"chap\" for AI agent actions (open doors, etc.). Defaults to \"chap\".",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input struct {
+		Action string         `json:"action" jsonschema:"e.g. observe, move, pickup, open"`
+		Target string         `json:"target,omitempty" jsonschema:"action target (waypoint, item, door, ...)"`
+		Actor  string         `json:"actor,omitempty" jsonschema:"'you' or 'chap' (default: chap)"`
+		Args   map[string]any `json:"args,omitempty" jsonschema:"optional extra arguments"`
 	}) (*mcp.CallToolResult, any, error) {
 		actor := input.Actor
 		if actor == "" {
@@ -330,6 +350,60 @@ func runMCPServer(apiURL string) {
 		v, code, err := c.send("POST", "/api/v1/control", map[string]any{
 			"actor": actor, "action": input.Action, "target": input.Target, "args": input.Args,
 		})
+		res, out := wrap(v, code, err)
+		return res, out, nil
+	})
+
+	mcp.AddTool(serverInstance, &mcp.Tool{
+		Name:        "rpg_save_list",
+		Description: "List existing save slots with metadata.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input struct{}) (*mcp.CallToolResult, any, error) {
+		v, code, err := c.get("/api/v1/saves")
+		res, out := wrap(v, code, err)
+		return res, out, nil
+	})
+
+	mcp.AddTool(serverInstance, &mcp.Tool{
+		Name:        "rpg_save",
+		Description: "Save current game state to a slot. Slot name is alphanumeric+_- (max 32 chars). Reserved names: autosave, quicksave.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input struct {
+		Slot string `json:"slot" jsonschema:"Slot identifier"`
+		Name string `json:"name,omitempty" jsonschema:"Optional human-readable label"`
+	}) (*mcp.CallToolResult, any, error) {
+		v, code, err := c.send("POST", "/api/v1/saves/"+input.Slot, map[string]any{"name": input.Name})
+		res, out := wrap(v, code, err)
+		return res, out, nil
+	})
+
+	mcp.AddTool(serverInstance, &mcp.Tool{
+		Name:        "rpg_load",
+		Description: "Restore game state from a save slot. Returns the new next_goal.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input struct {
+		Slot string `json:"slot" jsonschema:"Slot identifier"`
+	}) (*mcp.CallToolResult, any, error) {
+		v, code, err := c.send("POST", "/api/v1/saves/"+input.Slot+"/load", nil)
+		res, out := wrap(v, code, err)
+		return res, out, nil
+	})
+
+	mcp.AddTool(serverInstance, &mcp.Tool{
+		Name:        "rpg_save_delete",
+		Description: "Delete a save slot.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input struct {
+		Slot string `json:"slot" jsonschema:"Slot identifier"`
+	}) (*mcp.CallToolResult, any, error) {
+		v, code, err := c.send("DELETE", "/api/v1/saves/"+input.Slot, nil)
+		res, out := wrap(v, code, err)
+		return res, out, nil
+	})
+
+	mcp.AddTool(serverInstance, &mcp.Tool{
+		Name:        "rpg_debug_jump_stage",
+		Description: "[DEBUG] Operator/test-only tool. Teleport to the start of any stage, clearing achievements and inventory. This is not an in-world chap action.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input struct {
+		Stage string `json:"stage" jsonschema:"Stage ID to jump to (e.g. stage4)"`
+	}) (*mcp.CallToolResult, any, error) {
+		v, code, err := c.send("POST", "/api/v1/debug/jump", map[string]any{"stage": input.Stage})
 		res, out := wrap(v, code, err)
 		return res, out, nil
 	})
@@ -347,6 +421,10 @@ func wrap(v any, status int, err error) (*mcp.CallToolResult, any) {
 	if err != nil {
 		out["error"] = err.Error()
 		return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: err.Error()}}}, out
+	}
+	if status >= 400 {
+		out["http_status"] = status
+		return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: formatJSON(v)}}}, out
 	}
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: formatJSON(v)}}}, out
 }
@@ -383,11 +461,16 @@ func runUninstall(target string) {
 func getSkillPath(target string) string {
 	home, _ := os.UserHomeDir()
 	switch target {
-	case "mywant": return filepath.Join(home, ".mywant", "custom-types")
-	case "claude": return filepath.Join(home, ".claude", "skills")
-	case "gemini": return filepath.Join(home, ".gemini", "skills")
-	case "codex": return filepath.Join(home, ".codex", "skills")
-	default: return ""
+	case "mywant":
+		return filepath.Join(home, ".mywant", "custom-types")
+	case "claude":
+		return filepath.Join(home, ".claude", "skills")
+	case "gemini":
+		return filepath.Join(home, ".gemini", "skills")
+	case "codex":
+		return filepath.Join(home, ".codex", "skills")
+	default:
+		return ""
 	}
 }
 
@@ -416,18 +499,33 @@ func copyFS(srcFS fs.FS, srcDir, dstDir string) error {
 	})
 }
 
-func rpgPIDFile() string { home, _ := os.UserHomeDir(); return filepath.Join(home, ".mywant", "rpg-server.pid") }
-func rpgLogFile() string { home, _ := os.UserHomeDir(); return filepath.Join(home, ".mywant", "rpg-server.log") }
-func readPID(path string) int { b, _ := os.ReadFile(path); pid, _ := strconv.Atoi(strings.TrimSpace(string(b))); return pid }
-func isRunning(pid int) bool { proc, _ := os.FindProcess(pid); return proc.Signal(syscall.Signal(0)) == nil }
+func rpgPIDFile() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".mywant", "rpg-server.pid")
+}
+func rpgLogFile() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".mywant", "rpg-server.log")
+}
+func readPID(path string) int {
+	b, _ := os.ReadFile(path)
+	pid, _ := strconv.Atoi(strings.TrimSpace(string(b)))
+	return pid
+}
+func isRunning(pid int) bool {
+	proc, _ := os.FindProcess(pid)
+	return proc.Signal(syscall.Signal(0)) == nil
+}
 func urlEscape(s string) string {
 	const hex = "0123456789ABCDEF"
 	out := make([]byte, 0, len(s))
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 		switch {
-		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9', c == '-', c == '_', c == '.', c == '~': out = append(out, c)
-		default: out = append(out, '%', hex[c>>4], hex[c&15])
+		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9', c == '-', c == '_', c == '.', c == '~':
+			out = append(out, c)
+		default:
+			out = append(out, '%', hex[c>>4], hex[c&15])
 		}
 	}
 	return string(out)
@@ -436,6 +534,7 @@ func urlEscape(s string) string {
 func main() {
 	rootCmd.AddCommand(startCmd, goalCmd, observeCmd, controlCmd, savesCmd, saveCmd, loadCmd, rmCmd, debugCmd, serverCmd, serveCmd, installCmd, uninstallCmd, mcpCmd)
 	serverCmd.AddCommand(serverStartCmd, serverStopCmd, serverStatusCmd)
+	debugCmd.AddCommand(debugJumpCmd)
 	installCmd.AddCommand(installMyWantCmd, installClaudeCmd, installGeminiCmd, installCodexCmd)
 	uninstallCmd.AddCommand(uninstallMyWantCmd, uninstallClaudeCmd, uninstallGeminiCmd, uninstallCodexCmd)
 	mcpCmd.AddCommand(mcpServeCmd)
