@@ -38,9 +38,27 @@ next_goal_rules:
   - if_missing: observed_dark_room
     goal: { text: "暗い部屋を観察しよう", hint: "rpg_observe でステージを観察する" }
   - if_missing: generator_activated
-    goal: { text: "発電機（generator）を起動するwantをデプロイしよう", hint: "mywant apply examples/stage9-generator.yaml", required_skill: mywant-deploy }
+    goal:
+      text: "発電機（generator）を起動するwantをデプロイしよう"
+      required_skill: mywant-deploy
+      hint: |
+        Want type: rpg_activate  |  パラメータ: target = generator
+        GUI: Add Want → "rpg_activate" を選択 → target に generator を入力
+        YAML deploy:
+          wants:
+            - metadata: { name: start-generator, type: rpg_activate }
+              spec: { params: { target: generator } }
   - if_missing: exit_door_opened
-    goal: { text: "exit_doorに鍵を試すwantをデプロイしよう", hint: "mywant apply examples/stage9-try-keys.yaml", required_skill: mywant-deploy }
+    goal:
+      text: "exit_doorに鍵を試すwantをデプロイしよう"
+      required_skill: mywant-deploy
+      hint: |
+        Want type: rpg_try_keys  |  パラメータ: target = exit_door
+        GUI: Add Want → "rpg_try_keys" を選択 → target に exit_door を入力
+        YAML deploy:
+          wants:
+            - metadata: { name: open-exit-door, type: rpg_try_keys }
+              spec: { params: { target: exit_door } }
   - if_missing: escaped_darkness
     goal: { text: "扉が開いた。出口の間へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_hall" }
 narrations:
@@ -95,10 +113,15 @@ narrations:
       wantはchapへの命令ではなく、「こうあるべき」という定義だから、
       接続が切れていても実行し続ける。
 
-      mywant-deploy スキルを使って2つのwantをデプロイし、暗闇を抜け出そう：
+      2つのwantをデプロイして暗闇を抜け出そう：
 
-        1. examples/stage9-generator.yaml — 発電機を起動する
-        2. examples/stage9-try-keys.yaml — 電源が入ったら扉に鍵を試す
+        1. 発電機を起動する
+           Want type: rpg_activate  /  パラメータ → target: generator
+           GUI: Add Want → "rpg_activate" を選択 → target = generator を入力
+
+        2. exit_door に鍵を試す
+           Want type: rpg_try_keys  /  パラメータ → target: exit_door
+           GUI: Add Want → "rpg_try_keys" を選択 → target = exit_door を入力
     conversations:
       - speaker: you
         text: "…chap？聞こえるか。"

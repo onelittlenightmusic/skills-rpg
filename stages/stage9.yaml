@@ -38,9 +38,27 @@ next_goal_rules:
   - if_missing: observed_dark_room
     goal: { text: "Observe the dark room", hint: "Observe the stage with rpg_observe" }
   - if_missing: generator_activated
-    goal: { text: "Deploy a want to start the generator", hint: "mywant apply examples/stage9-generator.yaml", required_skill: mywant-deploy }
+    goal:
+      text: "Deploy a want to start the generator"
+      required_skill: mywant-deploy
+      hint: |
+        Want type: rpg_activate  |  param: target = generator
+        GUI: Add Want → type "rpg_activate" → target: generator
+        YAML deploy:
+          wants:
+            - metadata: { name: start-generator, type: rpg_activate }
+              spec: { params: { target: generator } }
   - if_missing: exit_door_opened
-    goal: { text: "Deploy a want to try keys on exit_door", hint: "mywant apply examples/stage9-try-keys.yaml", required_skill: mywant-deploy }
+    goal:
+      text: "Deploy a want to try keys on exit_door"
+      required_skill: mywant-deploy
+      hint: |
+        Want type: rpg_try_keys  |  param: target = exit_door
+        GUI: Add Want → type "rpg_try_keys" → target: exit_door
+        YAML deploy:
+          wants:
+            - metadata: { name: open-exit-door, type: rpg_try_keys }
+              spec: { params: { target: exit_door } }
   - if_missing: escaped_darkness
     goal: { text: "The door is open. Head to the exit chamber", hint: "rpg_control_system actor=you action=move target=exit_hall" }
 narrations:
@@ -95,10 +113,15 @@ narrations:
       A want is not a command to chap, but a definition of "how things should be,"
       so it keeps running even if the connection is severed.
 
-      Use the mywant-deploy skill to deploy two wants and escape the darkness:
+      Deploy two wants to escape the darkness:
 
-        1. examples/stage9-generator.yaml — start the generator
-        2. examples/stage9-try-keys.yaml — try keys on the door once power is on
+        1. Start the generator
+           Want type: rpg_activate  /  param → target: generator
+           GUI: Add Want → select "rpg_activate" → set target = generator
+
+        2. Try keys on exit_door
+           Want type: rpg_try_keys  /  param → target: exit_door
+           GUI: Add Want → select "rpg_try_keys" → set target = exit_door
     conversations:
       - speaker: you
         text: "...chap? Can you hear me?"
@@ -192,8 +215,24 @@ locales:
       generator: { label: "非常用発電機" }
     next_goal_rules:
       - goal: { text: "暗い部屋を観察しよう", hint: "rpg_observe でステージを観察する" }
-      - goal: { text: "発電機（generator）を起動するwantをデプロイしよう", hint: "mywant apply examples/stage9-generator.yaml" }
-      - goal: { text: "exit_doorに鍵を試すwantをデプロイしよう", hint: "mywant apply examples/stage9-try-keys.yaml" }
+      - goal:
+          text: "発電機（generator）を起動するwantをデプロイしよう"
+          hint: |
+            Want type: rpg_activate  |  パラメータ: target = generator
+            GUI: Add Want → "rpg_activate" を選択 → target に generator を入力
+            YAML deploy:
+              wants:
+                - metadata: { name: start-generator, type: rpg_activate }
+                  spec: { params: { target: generator } }
+      - goal:
+          text: "exit_doorに鍵を試すwantをデプロイしよう"
+          hint: |
+            Want type: rpg_try_keys  |  パラメータ: target = exit_door
+            GUI: Add Want → "rpg_try_keys" を選択 → target に exit_door を入力
+            YAML deploy:
+              wants:
+                - metadata: { name: open-exit-door, type: rpg_try_keys }
+                  spec: { params: { target: exit_door } }
       - goal: { text: "扉が開いた。出口の間へ向かおう", hint: "rpg_control_system actor=you action=move target=exit_hall" }
     narrations:
       - situation: |
@@ -242,10 +281,15 @@ locales:
           wantはchapへの命令ではなく、「こうあるべき」という定義だから、
           接続が切れていても実行し続ける。
 
-          mywant-deploy スキルを使って2つのwantをデプロイし、暗闇を抜け出そう：
+          2つのwantをデプロイして暗闇を抜け出そう：
 
-            1. examples/stage9-generator.yaml — 発電機を起動する
-            2. examples/stage9-try-keys.yaml — 電源が入ったら扉に鍵を試す
+            1. 発電機を起動する
+               Want type: rpg_activate  /  パラメータ → target: generator
+               GUI: Add Want → "rpg_activate" を選択 → target = generator を入力
+
+            2. exit_door に鍵を試す
+               Want type: rpg_try_keys  /  パラメータ → target: exit_door
+               GUI: Add Want → "rpg_try_keys" を選択 → target = exit_door を入力
         conversations:
           - speaker: you
             text: "…chap？聞こえるか。"
