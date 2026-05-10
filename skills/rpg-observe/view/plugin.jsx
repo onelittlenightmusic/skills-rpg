@@ -131,7 +131,15 @@ function RpgObserveSection({ want, isChild, isControl, isFocused }) {
         const edge = edgeMap.get(`${prev.id}|${node.id}`);
         return React.createElement('g', { key: `e${i}` },
           React.createElement('line', { x1, y1: ly, x2, y2: ly, stroke: '#30363d', strokeWidth: 1 }),
-          edge?.door ? React.createElement(DoorIcon, { cx: mx, cy: ly, door: edge.door }) : null,
+          edge?.door ? React.createElement('g', null,
+            React.createElement(DoorIcon, { cx: mx, cy: ly, door: edge.door }),
+            React.createElement('text', {
+              x: mx, y: ly + 19,
+              textAnchor: 'middle', fontSize: 7,
+              fontFamily: 'ui-monospace,monospace',
+              fill: edge.door.open ? '#3fb950' : edge.door.locked ? '#f85149' : '#6e7681',
+            }, edge.door.id),
+          ) : null,
         );
       }),
 
