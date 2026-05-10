@@ -9,7 +9,6 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -208,17 +207,27 @@ var serverReset bool
 var serverStartCmd = &cobra.Command{
 	Use:   "start",
 	Run: func(cmd *cobra.Command, args []string) {
-		exe, _ := os.Executable()
-		cmdArgs := []string{"_serve"}
-		if serverPort != 7100 {
-			cmdArgs = append(cmdArgs, "--port", strconv.Itoa(serverPort))
+		cfg := server.Config{
+			DataDir:   serverDataDir,
+			StagesDir: serverStagesDir,
+			Port:      serverPort,
 		}
-		proc := exec.Command(exe, cmdArgs...)
-		logF, _ := os.OpenFile(rpgLogFile(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-		proc.Stdout = logF
-		proc.Stderr = logF
-		proc.Start()
-		fmt.Printf("rpg-server started (PID %d)\n", proc.Process.Pid)
+		s, err := server.NewServer(cfg)
+		if err != nil {
+			fmt.Printf("failed to init server: %v\n", err)
+			return
+		}
+
+		// Write PID file for the current process
+		os.WriteFile(rpgPIDFile(), []byte(strconv.Itoa(os.Getpid())), 0644)
+		
+		fmt.Printf("rpg-server started (PID %d) on port %d\n", os.Getpid(), serverPort)
+		
+		// Run server in blocking mode
+		addr := fmt.Sprintf(":%d", serverPort)
+		if err := http.ListenAndServe(addr, s.Handler()); err != nil {
+			fmt.Printf("server error: %v\n", err)
+		}
 	},
 }
 
@@ -269,6 +278,12 @@ var serveCmd = &cobra.Command{
 		addr := fmt.Sprintf(":%d", serverPort)
 		http.ListenAndServe(addr, s.Handler())
 	},
+}
+
+func init() {
+	serveCmd.Flags().IntVar(&serverPort, "port", 7100, "server port")
+	serveCmd.Flags().StringVar(&serverDataDir, "data-dir", os.ExpandEnv("$HOME/.mywant-rpg"), "data directory")
+	serveCmd.Flags().StringVar(&serverStagesDir, "stages-dir", "", "stages directory")
 }
 
 var mcpCmd = &cobra.Command{Use: "mcp"}
@@ -433,4 +448,9 @@ func init() {
 		defaultURL = v
 	}
 	rootCmd.PersistentFlags().StringVar(&serverURL, "server-url", defaultURL, "rpg-server base URL")
+
+	// Use PersistentFlags on rootCmd so all subcommands (including hidden ones) can access them.
+	rootCmd.PersistentFlags().IntVar(&serverPort, "port", 7100, "server port")
+	rootCmd.PersistentFlags().StringVar(&serverDataDir, "data-dir", os.ExpandEnv("$HOME/.mywant-rpg"), "data directory")
+	rootCmd.PersistentFlags().StringVar(&serverStagesDir, "stages-dir", "", "stages directory")
 }
