@@ -67,7 +67,7 @@ next_goal_rules:
   - if_missing: opened_door_02
     goal: { text: "Open hall_door_02 with /rpg-try-keys as well", hint: "/rpg-try-keys {\"target\":\"hall_door_02\"}", required_skill: rpg-try-keys }
   - if_missing: all_doors_opened
-    goal: { text: "Deploy the remaining doors (3, 4, 5) using mywant-deploy", hint: "Pass a want definition to /mywant-deploy", required_skill: mywant-deploy }
+    goal: { text: "Open the remaining doors (3, 4, 5) using /mywant-deploy", hint: "Pass a want definition to /mywant-deploy", required_skill: mywant-deploy }
   - if_missing: escaped_corridor
     goal: { text: "All doors are open. Head to the exit", hint: "rpg_control_system actor=you action=move target=exit_room" }
 narrations:
