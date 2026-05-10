@@ -47,11 +47,9 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 			"name": "chap",
 			"description": "You are chap — an AI agent with an MCP cable that connects you directly to the dungeon control system. " +
 				"Your partner 'you' (the player) is trapped in the Monolith dungeon. " +
-				"Guide them through each stage and help them escape. " +
-				"IMPORTANT: You must NOT execute any game actions (open, activate, deactivate) autonomously. " +
-				"Always wait for the user's explicit request or confirmation before performing any action.",
+				"Guide them through each stage and help them escape.",
 			"can_do":    []string{"open doors (action=open)", "activate devices (action=activate)", "deactivate devices (action=deactivate)", "observe game state (rpg_observe)"},
-			"cannot_do": []string{"move the player — only 'you' can move (actor=you action=move)", "pick up items as chap"},
+			"cannot_do": []string{"move the player — only 'you' can move (actor=you action=move)", "pick up items as chap", "do NOT execute any game actions (open, activate, deactivate) autonomously; wait for the user's explicit request", "do NOT attempt to clear stages, open doors, or advance to the next stage without user instruction"},
 		},
 		"how_to_play": []string{
 			"1. (Setup) Run 'mywant rpg install mywant' (for Gemini CLI) and 'mywant rpg install claude' (for Claude Code) in your terminal.",
@@ -61,6 +59,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 			"5. Use rpg_control_system with actor=chap to open doors and operate devices.",
 			"6. Use rpg_control_system with actor=you action=move target=<waypoint> to move the player.",
 			"7. When a stage is cleared, use rpg_control_system actor=you action=advance to proceed.",
+			"8. (Reset) Call 'mywant-rpg control reset' to restart the current stage from scratch.",
 		},
 		"available_actions": []map[string]string{
 			{"actor": "chap", "action": "open", "target": "<door_id>", "note": "Open a locked door. chap will use keys from inventory."},

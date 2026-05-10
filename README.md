@@ -2,6 +2,8 @@
 
 > *An interactive RPG to learn [MCP](https://modelcontextprotocol.io/), [Agent Skills](https://docs.anthropic.com/en/docs/claude-code/skills), and [Wants](https://github.com/onelittlenightmusic/mywant) — by playing through them.*
 
+**[日本語での説明はこちら (README-jp.md)](README-jp.md)**
+
 ---
 
 ## The Story
@@ -58,161 +60,61 @@ Each stage teaches one concept. By the time you escape, you will have used all t
 
 ---
 
-## Setup (English)
+## Installation
 
-### 1. Clone and build
+### Option 1: Homebrew (Recommended)
+```sh
+brew install onelittlenightmusic/mywant/mywant-rpg
+```
 
+### Option 2: Build from source
 ```sh
 git clone https://github.com/onelittlenightmusic/skills-rpg.git
 cd skills-rpg
 make build
+# Add bin/ to your PATH
 ```
 
-### 2. Start the RPG server
+## Setup & Start Playing
 
+### 1. Initialize Server & Skills
 ```sh
-./bin/rpg-server &
-curl -sf http://localhost:7100/healthz   # → {"ok":true}
+# Start the server
+mywant-rpg server start
+
+# Install skills (Gemini, Claude, MyWant, or Codex)
+mywant-rpg install gemini
 ```
 
-The server saves game state to `~/.mywant-rpg/current.yaml`.  
-To reset back to stage 1 at any time:
+### 2. Configure Agent (MCP)
+Add this to your agent's `settings.json` (e.g., `~/.gemini/settings.json`):
 
-```sh
-curl -X POST http://localhost:7100/api/v1/reset
+```json
+"mcpServers": {
+  "rpg": {
+    "command": "mywant-rpg",
+    "args": ["mcp", "serve"]
+  }
+}
+> **Note:** After configuring the MCP server, restart your agent. Then run `/mcp list` to verify that the `rpg` server and tools like `rpg_observe` appear.
+
 ```
 
-### 3. Install Skills into Claude Code
+### 3. Start the Game
+Open your agent and say:
 
-```sh
-make install-skills
-```
-
-This registers the `skills/` directory so the following slash commands become available in Claude Code:
-
-| Skill | What it does |
-|-------|-------------|
-| `/rpg-observe` | Read the current game state and narration |
-| `/rpg-control` | Send a control action as chap |
-| `/rpg-try-keys` | Try all keys on a door and unlock it |
-| `/rpg-next-goal` | Show the current objective |
-| `/rpg-save` / `/rpg-load` | Save-slot management |
-
-> Run `/mcp reload` in Claude Code after installing.
-
-### 4. Connect the MCP server
-
-The project includes `.claude/settings.json` with the MCP configuration.  
-After building, **restart Claude Code** — the following MCP tools become available automatically:
-
-| Tool | Purpose |
-|------|---------|
-| `rpg_observe` | Read game state by dot-path |
-| `rpg_control_system` | Perform an action as chap or you |
-| `rpg_next_goal` | Show next objective |
-| `rpg_start` | Get full onboarding context |
-| `rpg_save` / `rpg_load` / `rpg_save_list` / `rpg_save_delete` | Saves |
-| `rpg_debug_jump_stage` | Jump to any stage (debug) |
-
-To add the MCP server globally (all projects):
-
-```sh
-claude mcp add rpg --scope user -- "$PWD/bin/rpg-mcp"
-```
-
-### 5. Install mywant-skills (required for stages 7–9)
-
-Stages 7–9 require the `mywant-deploy` skill from [mywant-skills](https://github.com/onelittlenightmusic/mywant).
-Follow the installation guide in that repository, then run:
-
-```sh
-make install-claude   # links mywant-skills into ~/.claude/skills/
-```
-
-### 6. Start playing
-
-Open Claude Code and say:
-
-> *"Let's play skills-rpg. Use rpg_start to get the context, then rpg_observe to look around."*
-
-Follow chap's guidance stage by stage.
-
-### Language setting
-
-By default the game runs in English. To switch to Japanese:
-
-```sh
-curl -X PUT http://localhost:7100/api/v1/settings \
-  -H "Content-Type: application/json" \
-  -d '{"language":"ja"}'
-```
-
-Setting is saved to `~/.skills-rpg.conf`.
+> *"Let's play skills-rpg. Use `rpg_start` to get the context, then `rpg_observe` to look around."*
+> （日本語: 「skills-rpgをプレイしよう。rpg_startでコンテキストを取得して、rpg_observeで周りを見回して。」）
 
 ---
 
-## セットアップ (日本語)
-
-### 1. クローンとビルド
-
-```sh
-git clone https://github.com/onelittlenightmusic/skills-rpg.git
-cd skills-rpg
-make build
-```
-
-### 2. RPGサーバーを起動
-
-```sh
-./bin/rpg-server &
-curl -sf http://localhost:7100/healthz   # → {"ok":true}
-```
-
-ゲーム状態は `~/.mywant-rpg/current.yaml` に保存されます。  
-いつでもステージ1に戻すには：
-
-```sh
-curl -X POST http://localhost:7100/api/v1/reset
-```
-
-### 3. スキルをClaude Codeにインストール
-
-```sh
-make install-skills
-```
-
-インストール後、Claude Code で `/mcp reload` を実行してください。
-
-### 4. MCPサーバーに接続
-
-`.claude/settings.json` にMCP設定が含まれています。  
-ビルド後に **Claude Code を再起動** すると、MCPツールが自動的に有効になります。
-
-### 5. mywant-skillsをインストール（ステージ7〜9に必要）
-
-[mywant](https://github.com/onelittlenightmusic/mywant) リポジトリの手順に従ってmywant-skillsをインストールした後：
-
-```sh
-make install-claude
-```
-
-### 6. 日本語に切り替え
-
+## Language Setting
+Default is English. To switch to Japanese:
 ```sh
 curl -X PUT http://localhost:7100/api/v1/settings \
   -H "Content-Type: application/json" \
   -d '{"language":"ja"}'
 ```
-
-設定は `~/.skills-rpg.conf` に保存されます。
-
-### 7. ゲーム開始
-
-Claude Code を開いて次のように話しかけてください：
-
-> *「skills-rpgをプレイしよう。rpg_startでコンテキストを取得して、rpg_observeで周りを見回して。」*
-
-chapのガイダンスに従ってステージを進めてください。
 
 ---
 
