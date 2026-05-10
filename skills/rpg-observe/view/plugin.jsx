@@ -197,12 +197,15 @@ function RpgObserveSection({ want, isChild, isControl, isFocused }) {
       }),
     ),
 
-    // event history — last event with conversations or on_success, fallback to last event
+    // event history — prefer last non-observe action event (story beats) over observe polling
     event_history && event_history.length > 0 ? (() => {
-      const lastMeaningful = [...event_history].reverse().find(e =>
-        e.narration?.conversations?.length > 0 || e.narration?.on_success
+      const lastAction = [...event_history].reverse().find(e =>
+        e.action !== 'observe' && (e.narration?.conversations?.length > 0 || e.narration?.on_success)
       );
-      const ev = lastMeaningful || event_history[event_history.length - 1];
+      const lastObserve = [...event_history].reverse().find(e =>
+        e.action === 'observe' && e.narration?.conversations?.length > 0
+      );
+      const ev = lastAction || lastObserve || event_history[event_history.length - 1];
       const ok = ev.result === 'ok';
       const narr = ev.narration;
       const narratext = narr ? (ok ? (narr.on_success || narr.lore) : narr.lore) : null;
