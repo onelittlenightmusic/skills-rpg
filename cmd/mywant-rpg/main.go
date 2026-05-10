@@ -360,35 +360,135 @@ var serveCmd = &cobra.Command{
 // install subcommand group
 var installCmd = &cobra.Command{
 	Use:   "install",
-	Short: "Install game skills to agent directories (MyWant, Claude Code)",
+	Short: "Install game skills to agent directories",
 }
 
 var installMyWantCmd = &cobra.Command{
 	Use:   "mywant",
-	Short: "Install skills to MyWant custom-types directory",
+	Short: "Install skills to MyWant (~/.mywant/custom-types)",
 	Run: func(cmd *cobra.Command, args []string) {
-		home, _ := os.UserHomeDir()
-		dst := filepath.Join(home, ".mywant", "custom-types")
-		if err := installSkillsTo(dst); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to install to MyWant: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Printf("Successfully installed skills to %s\n", dst)
+		runInstall("mywant")
 	},
 }
 
 var installClaudeCmd = &cobra.Command{
 	Use:   "claude",
-	Short: "Install skills to Claude Code skills directory",
+	Short: "Install skills to Claude Code (~/.claude/skills)",
 	Run: func(cmd *cobra.Command, args []string) {
-		home, _ := os.UserHomeDir()
-		dst := filepath.Join(home, ".claude", "skills")
-		if err := installSkillsTo(dst); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to install to Claude: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Printf("Successfully installed skills to %s\n", dst)
+		runInstall("claude")
 	},
+}
+
+var installGeminiCmd = &cobra.Command{
+	Use:   "gemini",
+	Short: "Install skills to Gemini CLI (~/.gemini/skills)",
+	Run: func(cmd *cobra.Command, args []string) {
+		runInstall("gemini")
+	},
+}
+
+var installCodexCmd = &cobra.Command{
+	Use:   "codex",
+	Short: "Install skills to Codex (~/.codex/skills)",
+	Run: func(cmd *cobra.Command, args []string) {
+		runInstall("codex")
+	},
+}
+
+// uninstall subcommand group
+var uninstallCmd = &cobra.Command{
+	Use:   "uninstall",
+	Short: "Remove game skills from agent directories",
+}
+
+var uninstallMyWantCmd = &cobra.Command{
+	Use:   "mywant",
+	Short: "Uninstall skills from MyWant",
+	Run: func(cmd *cobra.Command, args []string) {
+		runUninstall("mywant")
+	},
+}
+
+var uninstallClaudeCmd = &cobra.Command{
+	Use:   "claude",
+	Short: "Uninstall skills from Claude Code",
+	Run: func(cmd *cobra.Command, args []string) {
+		runUninstall("claude")
+	},
+}
+
+var uninstallGeminiCmd = &cobra.Command{
+	Use:   "gemini",
+	Short: "Uninstall skills from Gemini CLI",
+	Run: func(cmd *cobra.Command, args []string) {
+		runUninstall("gemini")
+	},
+}
+
+var uninstallCodexCmd = &cobra.Command{
+	Use:   "codex",
+	Short: "Uninstall skills from Codex",
+	Run: func(cmd *cobra.Command, args []string) {
+		runUninstall("codex")
+	},
+}
+
+func getSkillPath(target string) string {
+	home, _ := os.UserHomeDir()
+	switch target {
+	case "mywant":
+		return filepath.Join(home, ".mywant", "custom-types")
+	case "claude":
+		return filepath.Join(home, ".claude", "skills")
+	case "gemini":
+		return filepath.Join(home, ".gemini", "skills")
+	case "codex":
+		return filepath.Join(home, ".codex", "skills")
+	default:
+		return ""
+	}
+}
+
+func runInstall(target string) {
+	dst := getSkillPath(target)
+	if dst == "" {
+		fmt.Fprintf(os.Stderr, "unknown target: %s\n", target)
+		os.Exit(1)
+	}
+	if err := installSkillsTo(dst); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to install to %s: %v\n", target, err)
+		os.Exit(1)
+	}
+	fmt.Printf("Successfully installed skills to %s\n", dst)
+}
+
+func runUninstall(target string) {
+	dstBase := getSkillPath(target)
+	if dstBase == "" {
+		fmt.Fprintf(os.Stderr, "unknown target: %s\n", target)
+		os.Exit(1)
+	}
+
+	entries, err := fs.ReadDir(server.DefaultDataFS, "skills")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to read embedded skills: %v\n", err)
+		os.Exit(1)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		skillName := entry.Name()
+		dstDir := filepath.Join(dstBase, skillName)
+		if _, err := os.Stat(dstDir); err == nil {
+			fmt.Printf("  removing %s...\n", skillName)
+			if err := os.RemoveAll(dstDir); err != nil {
+				fmt.Fprintf(os.Stderr, "warning: failed to remove %s: %v\n", dstDir, err)
+			}
+		}
+	}
+	fmt.Printf("Successfully uninstalled skills from %s\n", dstBase)
 }
 
 func installSkillsTo(dstBase string) error {
@@ -569,7 +669,8 @@ func init() {
 
 	debugCmd.AddCommand(debugJumpCmd)
 	serverCmd.AddCommand(serverStartCmd, serverStopCmd, serverStatusCmd)
-	installCmd.AddCommand(installMyWantCmd, installClaudeCmd)
+	installCmd.AddCommand(installMyWantCmd, installClaudeCmd, installGeminiCmd, installCodexCmd)
+	uninstallCmd.AddCommand(uninstallMyWantCmd, uninstallClaudeCmd, uninstallGeminiCmd, uninstallCodexCmd)
 
 	rootCmd.AddCommand(
 		startCmd,
@@ -584,5 +685,6 @@ func init() {
 		serverCmd,
 		serveCmd,
 		installCmd,
+		uninstallCmd,
 	)
 }
