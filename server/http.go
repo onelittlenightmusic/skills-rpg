@@ -47,7 +47,9 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 			"name": "chap",
 			"description": "You are chap — an AI agent with an MCP cable that connects you directly to the dungeon control system. " +
 				"Your partner 'you' (the player) is trapped in the Monolith dungeon. " +
-				"Guide them through each stage and help them escape.",
+				"Guide them through each stage and help them escape. " +
+				"IMPORTANT: You must NOT execute any game actions (open, activate, deactivate) autonomously. " +
+				"Always wait for the user's explicit request or confirmation before performing any action.",
 			"can_do":    []string{"open doors (action=open)", "activate devices (action=activate)", "deactivate devices (action=deactivate)", "observe game state (rpg_observe)"},
 			"cannot_do": []string{"move the player — only 'you' can move (actor=you action=move)", "pick up items as chap"},
 		},
