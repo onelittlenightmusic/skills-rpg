@@ -52,7 +52,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 			"cannot_do": []string{"move the player — only 'you' can move (actor=you action=move)", "pick up items as chap"},
 		},
 		"how_to_play": []string{
-			"1. (Setup) Run 'make install-skills' (for game mechanics) and 'make install-claude' (for skill/want deployment) in your terminal.",
+			"1. (Setup) Run 'mywant rpg install mywant' (for Gemini CLI) and 'mywant rpg install claude' (for Claude Code) in your terminal.",
 			"2. Call '/mcp reload' in the CLI to discover new tools.",
 			"3. Call rpg_observe to see the current scene, event history, and narrative.",
 			"4. Read next_goal for your immediate objective.",

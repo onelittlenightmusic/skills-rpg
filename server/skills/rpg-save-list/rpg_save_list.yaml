@@ -1,0 +1,24 @@
+wantType:
+  metadata:
+    name: rpg_save_list
+    title: RPG Save List
+    description: 保存されているセーブスロット一覧を継続取得する。
+    version: '1.0'
+    category: rpg
+    pattern: independent
+    labels:
+      child-role: monitor
+
+  finalResultField: slots
+
+  state:
+    - { name: error,                description: error, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: summary,              description: summary, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: achieving_percentage, description: 0-100, type: int, label: current, persistent: false, initialValue: 0 }
+
+  finalizeWhen:
+    achieved: { field: mrs_raw_output, operator: "!=", value: null }
+    failed:   { field: error, operator: "!=", value: "" }
+
+  requires:
+    - rpg_save_list

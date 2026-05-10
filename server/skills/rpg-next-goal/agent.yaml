@@ -1,0 +1,13 @@
+agent:
+  metadata:
+    name: rpg_next_goal_agent
+    capability: rpg_next_goal
+    type: monitor
+  script:
+    path: ./main.py
+    timeout_seconds: 30
+  state_updates:
+    - { name: text,            type: string, label: current, persistent: true, onFetchData: "text" }
+    - { name: hint,            type: string, label: current, persistent: true, onFetchData: "hint" }
+    - { name: required_skill,  type: string, label: current, persistent: true, onFetchData: "required_skill" }
+    - { name: cleared,         type: bool,   label: current, persistent: true, onFetchData: "cleared" }

@@ -1,0 +1,24 @@
+wantType:
+  metadata:
+    name: rpg_next_goal
+    title: RPG Next Goal
+    description: 次にやるべきこと（text/hint/required_skill）を rpg-server から継続取得する。
+    version: '1.0'
+    category: rpg
+    pattern: independent
+    labels:
+      child-role: monitor
+
+  finalResultField: text
+
+  state:
+    - { name: error,                description: error, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: summary,              description: summary, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: achieving_percentage, description: 0-100, type: int, label: current, persistent: false, initialValue: 0 }
+
+  finalizeWhen:
+    achieved: { field: cleared, operator: "==", value: true }
+    failed:   { field: error, operator: "!=", value: "" }
+
+  requires:
+    - rpg_next_goal

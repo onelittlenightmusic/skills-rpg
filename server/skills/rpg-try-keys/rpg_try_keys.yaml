@@ -1,0 +1,54 @@
+wantType:
+  metadata:
+    name: rpg_try_keys
+    title: RPG Try Keys
+    description: |
+      chap が持つ全ての鍵を指定したドアに順番に試し、開く鍵を自動で見つけて開錠する。
+    version: '1.0'
+    category: rpg
+    pattern: independent
+    labels:
+      child-role: doer
+
+  finalResultField: summary
+
+  parameters:
+    - name: target
+      description: 開けたいドアの ID
+      type: string
+      required: true
+
+  state:
+    - { name: skill_json_arg,        description: JSON arg passed to main.py, type: string, label: current, persistent: false, initialValue: "" }
+    - { name: target,                description: target door (mirror), type: string, label: current, persistent: false, initialValue: "" }
+    - { name: ok,                    description: true if door was opened, type: bool, label: current, persistent: true, initialValue: false }
+    - { name: error,                 description: error message if failed, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: summary,               description: summary text, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: achieving_percentage,  description: 0-100 progress, type: int, label: current, persistent: false, initialValue: 0 }
+    - { name: scene,                description: scene descriptor JSON, type: object, label: current, persistent: true, initialValue: null }
+    - { name: tried,                description: list of tried keys, type: array, label: current, persistent: true, initialValue: [] }
+
+  finalizeWhen:
+    achieved:
+      field: ok
+      operator: "=="
+      value: true
+    failed:
+      field: error
+      operator: "!="
+      value: ""
+
+  onInitialize:
+    current:
+      skill_json_arg: '{"target":"${target}"}'
+
+  requires:
+    - rpg_try_keys
+
+  examples:
+    - name: try keys on lab_door
+      description: chapが持つ全鍵をlab_doorに試す
+      want:
+        metadata: { name: try-keys-lab-door, type: rpg_try_keys }
+        spec:
+          params: { target: lab_door }

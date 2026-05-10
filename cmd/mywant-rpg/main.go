@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -356,6 +357,98 @@ var serveCmd = &cobra.Command{
 	},
 }
 
+// install subcommand group
+var installCmd = &cobra.Command{
+	Use:   "install",
+	Short: "Install game skills to agent directories (MyWant, Claude Code)",
+}
+
+var installMyWantCmd = &cobra.Command{
+	Use:   "mywant",
+	Short: "Install skills to MyWant custom-types directory",
+	Run: func(cmd *cobra.Command, args []string) {
+		home, _ := os.UserHomeDir()
+		dst := filepath.Join(home, ".mywant", "custom-types")
+		if err := installSkillsTo(dst); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to install to MyWant: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Successfully installed skills to %s\n", dst)
+	},
+}
+
+var installClaudeCmd = &cobra.Command{
+	Use:   "claude",
+	Short: "Install skills to Claude Code skills directory",
+	Run: func(cmd *cobra.Command, args []string) {
+		home, _ := os.UserHomeDir()
+		dst := filepath.Join(home, ".claude", "skills")
+		if err := installSkillsTo(dst); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to install to Claude: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Successfully installed skills to %s\n", dst)
+	},
+}
+
+func installSkillsTo(dstBase string) error {
+	// Root of skills in embedded FS is "skills"
+	entries, err := fs.ReadDir(server.DefaultDataFS, "skills")
+	if err != nil {
+		return fmt.Errorf("read embedded skills: %w", err)
+	}
+
+	if err := os.MkdirAll(dstBase, 0755); err != nil {
+		return fmt.Errorf("create directory %s: %w", dstBase, err)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		skillName := entry.Name()
+		srcDir := filepath.Join("skills", skillName)
+		dstDir := filepath.Join(dstBase, skillName)
+
+		fmt.Printf("  installing %s...\n", skillName)
+		if err := os.RemoveAll(dstDir); err != nil {
+			return fmt.Errorf("remove old %s: %w", dstDir, err)
+		}
+
+		if err := copyFS(server.DefaultDataFS, srcDir, dstDir); err != nil {
+			return fmt.Errorf("copy skill %s: %w", skillName, err)
+		}
+	}
+	return nil
+}
+
+func copyFS(srcFS fs.FS, srcDir, dstDir string) error {
+	return fs.WalkDir(srcFS, srcDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		// Calculate destination path
+		rel, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+		dstPath := filepath.Join(dstDir, rel)
+
+		if d.IsDir() {
+			return os.MkdirAll(dstPath, 0755)
+		}
+
+		// Read file from FS
+		data, err := fs.ReadFile(srcFS, path)
+		if err != nil {
+			return err
+		}
+
+		// Write file to disk
+		return os.WriteFile(dstPath, data, 0644)
+	})
+}
+
 var serverStopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stop the rpg-server process",
@@ -476,6 +569,7 @@ func init() {
 
 	debugCmd.AddCommand(debugJumpCmd)
 	serverCmd.AddCommand(serverStartCmd, serverStopCmd, serverStatusCmd)
+	installCmd.AddCommand(installMyWantCmd, installClaudeCmd)
 
 	rootCmd.AddCommand(
 		startCmd,
@@ -489,5 +583,6 @@ func init() {
 		debugCmd,
 		serverCmd,
 		serveCmd,
+		installCmd,
 	)
 }

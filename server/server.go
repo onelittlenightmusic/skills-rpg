@@ -14,8 +14,11 @@ import (
 	"sync"
 )
 
-//go:embed stages/*.yaml
-var DefaultStagesFS embed.FS
+//go:embed stages/*.yaml skills/*
+var DefaultDataFS embed.FS
+
+// DefaultStagesFS is a convenience alias for the embedded stages.
+var DefaultStagesFS = DefaultDataFS
 
 type Config struct {
 	DataDir      string // ~/.mywant-rpg
