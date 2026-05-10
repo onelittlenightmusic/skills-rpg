@@ -165,12 +165,6 @@ narrations:
             /rpg-control {"action":"open","target":"door1"}
           Internally, skills/rpg-control/main.py is invoked with actor=chap,
           which reaches rpg-server. The fastest route you can fire from chat.
-      - title: Want Route — deploy a want into mywant
-        body: |
-          Load examples/ask-chap-unlock.yaml into mywant:
-            mywant apply examples/ask-chap-unlock.yaml
-          The rpg_control want type fires the same skill via agent.yaml.
-          Use this when you want a persistent, declarative expression.
 
   # --- chap's successful open ---
   - match: { actor: chap, action: open, result: ok, target: door1 }
