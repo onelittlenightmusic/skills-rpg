@@ -89,7 +89,27 @@ mywant-rpg install gemini
 ```
 
 ### 2. Configure Agent (MCP)
-Add this to your agent's `settings.json` (e.g., `~/.gemini/settings.json`):
+
+#### Claude Code
+
+Use the `update-config` skill inside Claude Code:
+
+> *"Use the update-config skill to add rpg MCP server to mcpServers in ~/.claude/settings.json: `{"rpg": {"command": "/path/to/skills-rpg/bin/rpg-mcp", "args": []}}`"*
+
+Or add manually to `~/.claude/settings.json`:
+
+```json
+"mcpServers": {
+  "rpg": {
+    "command": "/path/to/skills-rpg/bin/rpg-mcp",
+    "args": []
+  }
+}
+```
+
+#### Gemini
+
+Add manually to `~/.gemini/settings.json`:
 
 ```json
 "mcpServers": {
@@ -98,9 +118,9 @@ Add this to your agent's `settings.json` (e.g., `~/.gemini/settings.json`):
     "args": ["mcp", "serve"]
   }
 }
-> **Note:** After configuring the MCP server, restart your agent. Then run `/mcp list` to verify that the `rpg` server and tools like `rpg_observe` appear.
-
 ```
+
+> **Note:** After configuring the MCP server, restart your agent. Then run `/mcp list` to verify that the `rpg` server and tools like `rpg_observe` appear.
 
 ### 3. Start the Game
 Open your agent and say:

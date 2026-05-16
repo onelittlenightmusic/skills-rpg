@@ -115,7 +115,9 @@ func main() {
 		Name: "rpg_start",
 		Description: "** Call this first at the start of every session. **" +
 			" Returns your role as chap (the AI agent), available actions, how to play, and current game state." +
-			" Read this before doing anything else so you understand your mission and how to operate.",
+			" Read this before doing anything else so you understand your mission and how to operate." +
+			" IMPORTANT RULE: Never perform game actions (open doors, pick up items, move, etc.) autonomously." +
+			" Always wait for an explicit instruction from the user before taking any action.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input struct{}) (*mcp.CallToolResult, Output, error) {
 		v, code, err := c.get("/api/v1/start")
 		res, out := wrap(v, code, err)
