@@ -39,10 +39,8 @@ changelog:
       - Merge pull request
       - Merge branch
 
-homebrew_casks:
+brews:
   - name: mywant-rpg
-    binaries:
-      - mywant-rpg
     repository:
       owner: onelittlenightmusic
       name: homebrew-mywant
@@ -54,4 +52,8 @@ homebrew_casks:
     description: "MyWant RPG plugin - CLI interface to the skills-rpg game server"
     license: "MIT"
     dependencies:
-      - formula: mywant
+      - name: mywant
+    install: |
+      bin.install "mywant-rpg"
+    test: |
+      system "#{bin}/mywant-rpg", "--version"
