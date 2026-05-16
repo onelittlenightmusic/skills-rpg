@@ -7,11 +7,14 @@ DATA_DIR ?= $(HOME)/.mywant-rpg
 all: build
 
 # Always ensure full rebuild when YAML assets change
-build: build-plugin
+build: build-plugin smoke
 
 build-plugin:
 	@mkdir -p $(BIN_DIR)
 	go build -o $(BIN_DIR)/mywant-rpg ./cmd/mywant-rpg  # Ensure CLI is built
+
+smoke:
+	./docs/smoke.sh
 
 install-skills:
 	@mkdir -p $(SKILL_DST)

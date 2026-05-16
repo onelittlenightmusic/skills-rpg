@@ -1,0 +1,7 @@
+wants:
+  - metadata: { id: open-door-03, name: open-door-03, type: rpg_try_keys }
+    spec: { params: { target: hall_door_03 } }
+  - metadata: { id: open-door-04, name: open-door-04, type: rpg_try_keys }
+    spec: { params: { target: hall_door_04 } }
+  - metadata: { id: open-door-05, name: open-door-05, type: rpg_try_keys }
+    spec: { params: { target: hall_door_05 } }
