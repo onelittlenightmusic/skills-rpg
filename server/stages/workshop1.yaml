@@ -1,0 +1,301 @@
+id: workshop1
+title: "Family Rescue"
+description: |
+  Your family needs you — and the tools are already here.
+
+  Your wife is heading out. Rain is coming, and she doesn't know.
+  Your daughter wants to visit Hakone — but nothing is planned.
+
+  Two targets. Two chains of capability.
+  Connect the right tools to the right people.
+  When the wiring is complete, the wants will run — and the results will speak.
+
+  This stage is played on the mywant Want Canvas.
+  A bridge agent watches the canvas and mirrors your wiring work
+  into this stage as the family's needs get met.
+initial_position: workshop
+waypoints:
+  workshop:
+    label: "Family Hub"
+    adjacent: []
+devices:
+  wife_weather_wiring:
+    label: "weather-check → wife target"
+    on: false
+  wife_remind_wiring:
+    label: "remind-wife → wife target"
+    on: false
+  daughter_route_wiring:
+    label: "route-search → daughter target"
+    on: false
+  daughter_hotel_wiring:
+    label: "book-hotel → daughter target"
+    on: false
+  wife_target:
+    label: "Wife's goal: umbrella reminder"
+    on: false
+  daughter_target:
+    label: "Daughter's goal: Hakone trip"
+    on: false
+  family_hub:
+    label: "Family united"
+    on: false
+achievement_defs:
+  - id: looked_around
+    when: { action: observe }
+  - id: wife_weather_connected
+    when: { actor: chap, action: activate, target: wife_weather_wiring, result: ok }
+  - id: wife_remind_connected
+    when: { actor: chap, action: activate, target: wife_remind_wiring, result: ok }
+  - id: daughter_route_connected
+    when: { actor: chap, action: activate, target: daughter_route_wiring, result: ok }
+  - id: daughter_hotel_connected
+    when: { actor: chap, action: activate, target: daughter_hotel_wiring, result: ok }
+  - id: wife_rescued
+    when: { actor: chap, action: activate, target: wife_target, result: ok }
+  - id: daughter_rescued
+    when: { actor: chap, action: activate, target: daughter_target, result: ok }
+  - id: family_rescued
+    when: { actor: chap, action: activate, target: family_hub, result: ok }
+next_goal_rules:
+  - if_missing: looked_around
+    goal:
+      text: "Observe the family canvas"
+      hint: |
+        Open the Want Canvas and expand the children of 'wife-target' and 'daughter-target'
+        (click the count badge on each tile).
+        Then observe: rpg-observe target=stages.workshop1
+      required_skill: rpg-observe
+
+  - if_missing: wife_weather_connected
+    goal:
+      text: "Connect weather-check to wife's target"
+      hint: |
+        On the Want Canvas, find 'weather-check' and connect it to 'wife-target'.
+        The weather monitor needs to feed into the wife's goal chain.
+        The bridge agent will confirm the connection.
+
+  - if_missing: wife_remind_connected
+    goal:
+      text: "Connect remind-wife to wife's target"
+      hint: |
+        Connect 'remind-wife' to 'wife-target' on the canvas.
+        The reminder needs to know about the rain before it can act.
+        Wire the output of weather into the wife's reminder.
+
+  - if_missing: daughter_route_connected
+    goal:
+      text: "Connect route-search to daughter's target"
+      hint: |
+        Find 'route-search' on the canvas and connect it to 'daughter-target'.
+        The Hakone route needs to be planned before booking can begin.
+
+  - if_missing: daughter_hotel_connected
+    goal:
+      text: "Connect book-hotel to daughter's target"
+      hint: |
+        Connect 'book-hotel' to 'daughter-target'.
+        Once the route is known, the hotel can be booked.
+
+  - if_missing: wife_rescued
+    goal:
+      text: "Wife's chain is complete — watch it execute"
+      hint: |
+        Both weather-check and remind-wife are connected to wife-target.
+        The bridge agent will fire the chain. Watch the wife-target's Final Result tab.
+
+  - if_missing: daughter_rescued
+    goal:
+      text: "Daughter's chain is complete — watch it execute"
+      hint: |
+        Both route-search and book-hotel are connected to daughter-target.
+        The bridge agent will fire the chain. Watch the daughter-target's Final Result tab.
+
+  - if_missing: family_rescued
+    goal:
+      text: "Both chains ran — the family is taken care of"
+      hint: |
+        Wife's reminder was sent. Daughter's trip is booked.
+        The bridge agent will unite the family hub. The stage is nearly complete.
+
+cleared_when: family_rescued
+narrations:
+  # --- observe: fully rescued ---
+  - match:
+      action: observe
+      requires_achievements: [family_rescued]
+    conversations:
+      - speaker: you
+        text: "She has an umbrella. The trip is booked. I did this."
+      - speaker: chap
+        text: "The tools were always here. You just had to connect them."
+      - speaker: you
+        text: "That's what I do. I'm CursorMan. I traverse. I connect. I restore."
+
+  # --- observe: both chains complete, hub not yet ---
+  - match:
+      action: observe
+      requires_achievements: [wife_rescued, daughter_rescued]
+      missing_achievements: [family_rescued]
+    conversations:
+      - speaker: you
+        text: "Both results are in. The family is covered."
+      - speaker: chap
+        text: "The hub remembers what you've done. It's almost over."
+
+  # --- observe: wife done, daughter not yet ---
+  - match:
+      action: observe
+      requires_achievements: [wife_rescued]
+      missing_achievements: [daughter_rescued]
+    conversations:
+      - speaker: you
+        text: "The reminder went out. She'll have her umbrella."
+      - speaker: chap
+        text: "Now your daughter. The route and the room — she's still waiting."
+
+  # --- observe: daughter done, wife not yet ---
+  - match:
+      action: observe
+      requires_achievements: [daughter_rescued]
+      missing_achievements: [wife_rescued]
+    conversations:
+      - speaker: you
+        text: "Hakone is booked. She'll have her trip."
+      - speaker: chap
+        text: "Your wife still needs you. The rain is coming."
+
+  # --- observe: wiring in progress ---
+  - match:
+      action: observe
+      requires_achievements: [looked_around]
+      missing_achievements: [wife_rescued, daughter_rescued]
+    conversations:
+      - speaker: you
+        text: "The tools are here. The connections aren't."
+      - speaker: chap
+        text: "Connect each capability to its target. When the chain is complete, it will run."
+
+  # --- observe: initial ---
+  - match:
+      action: observe
+    situation: |
+      The canvas shows two unfinished chains.
+      On one side: a weather monitor and a reminder waiting to be connected.
+      On the other: a route finder and a hotel booker, both idle.
+      Two people need help. The tools exist. Only the wiring is missing.
+    conversations:
+      - speaker: chap
+        text: "Your wife is going out today. Your daughter wants to go to Hakone. Both need you."
+      - speaker: you
+        text: "The capabilities are here — weather, reminders, routes, hotels. They're just not connected."
+      - speaker: chap
+        text: "Connect them to the right targets. When the chain runs, the final result will appear."
+
+locales:
+  ja:
+    title: "家族を救え"
+    description: |
+      家族がCursorManを必要としている。ツールはすでにそろっている。
+
+      妻が外出しようとしている。雨が来るのに、彼女は知らない。
+      娘は箱根に行きたがっている。でも何も手配されていない。
+
+      2つのターゲット。2本の能力の連鎖。
+      正しいツールを正しい人に繋げ。
+      配線が完成すれば、wantが動き——結果が語る。
+
+      このステージはmywantのWant Canvas上でプレイする。
+      ブリッジエージェントがcanvasを監視し、配線の作業を
+      このステージに反映する。
+    waypoints:
+      workshop: { label: "家族のハブ" }
+    devices:
+      wife_weather_wiring:   { label: "天気チェック → 妻のターゲット" }
+      wife_remind_wiring:    { label: "リマインド → 妻のターゲット" }
+      daughter_route_wiring: { label: "経路検索 → 娘のターゲット" }
+      daughter_hotel_wiring: { label: "ホテル予約 → 娘のターゲット" }
+      wife_target:           { label: "妻のゴール: 傘リマインド" }
+      daughter_target:       { label: "娘のゴール: 箱根旅行" }
+      family_hub:            { label: "家族が揃った" }
+    next_goal_rules:
+      - goal:
+          text: "家族のcanvasを観察しよう"
+          hint: |
+            Want Canvasで 'wife-target' と 'daughter-target' のchildを展開しよう。
+            次に観測: rpg-observe target=stages.workshop1
+      - goal:
+          text: "weather-checkを妻のターゲットに繋ごう"
+          hint: |
+            Want Canvas上で 'weather-check' を 'wife-target' に接続しよう。
+            天気の情報が妻のゴール連鎖に流れ込む必要がある。
+      - goal:
+          text: "remind-wifeを妻のターゲットに繋ごう"
+          hint: |
+            'remind-wife' を 'wife-target' に接続しよう。
+            天気情報が揃えば、リマインダーが動ける。
+      - goal:
+          text: "route-searchを娘のターゲットに繋ごう"
+          hint: |
+            'route-search' を 'daughter-target' に接続しよう。
+            箱根への経路が決まれば、次のステップに進める。
+      - goal:
+          text: "book-hotelを娘のターゲットに繋ごう"
+          hint: |
+            'book-hotel' を 'daughter-target' に接続しよう。
+            経路が確定したら、ホテルが予約できる。
+      - goal:
+          text: "妻の連鎖が完成——実行を見守ろう"
+          hint: |
+            weather-checkとremind-wifeが両方wife-targetに繋がった。
+            ブリッジが連鎖を起動する。wife-targetのFinal Resultタブを確認しよう。
+      - goal:
+          text: "娘の連鎖が完成——実行を見守ろう"
+          hint: |
+            route-searchとbook-hotelが両方daughter-targetに繋がった。
+            ブリッジが連鎖を起動する。daughter-targetのFinal Resultタブを確認しよう。
+      - goal:
+          text: "2本の連鎖が走った——家族の手配が完了した"
+          hint: |
+            妻へのリマインドは送信済み。娘の旅行は予約済み。
+            ブリッジがファミリーハブを点火する。
+    narrations:
+      - conversations:
+          - speaker: you
+            text: "彼女は傘を持って出た。旅行も予約した。俺がやった。"
+          - speaker: chap
+            text: "ツールは最初からそこにあった。あなたが繋いだだけです。"
+          - speaker: you
+            text: "それが私の仕事だ。CursorMan——繋ぎ、渡り、修復する。"
+      - conversations:
+          - speaker: you
+            text: "両方の結果が出た。家族の手配が整った。"
+          - speaker: chap
+            text: "ハブが覚えています。もうすぐ終わります。"
+      - conversations:
+          - speaker: you
+            text: "リマインドは届いた。彼女は傘を持って行く。"
+          - speaker: chap
+            text: "次は娘です。経路とホテル——まだ待っています。"
+      - conversations:
+          - speaker: you
+            text: "箱根は予約した。娘は旅行に行ける。"
+          - speaker: chap
+            text: "奥さんにはまだあなたが必要です。雨が来ています。"
+      - conversations:
+          - speaker: you
+            text: "ツールはある。接続がない。"
+          - speaker: chap
+            text: "各能力をターゲットに繋いでください。連鎖が完成すれば動き出します。"
+      - situation: |
+          canvasに2本の未完成な連鎖が見える。
+          片側には: 天気モニターとリマインダーが、繋がれるのを待っている。
+          もう片側には: 経路検索とホテル予約が、アイドル状態のまま。
+          2人が助けを必要としている。ツールはある。配線だけが足りない。
+        conversations:
+          - speaker: chap
+            text: "奥さんが今日外出します。娘さんは箱根に行きたがっています。2人ともあなたを必要としています。"
+          - speaker: you
+            text: "能力はここにある——天気、リマインド、経路、ホテル。ただ繋がっていないだけだ。"
+          - speaker: chap
+            text: "正しいターゲットに繋いでください。連鎖が走れば、Final Resultに結果が現れます。"
