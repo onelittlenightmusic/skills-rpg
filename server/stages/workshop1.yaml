@@ -115,7 +115,7 @@ cleared_when: family_rescued
 # ── mywant lifecycle hooks ────────────────────────────────────────────────────
 # mywant POSTs to /api/v1/hooks/mywant whenever a want is created.
 # The RPG server matches these rules and fires achievements + guidance commands.
-# mywant_hooks section removed — hooks are now deployed as rpg_hook wants in mywant_setup below.
+# mywant_hooks section removed — hooks are now deployed as lifecycle_hook wants in mywant_setup below.
 
 narrations:
   # --- observe: fully rescued ---
@@ -380,9 +380,9 @@ mywant_setup:
         from: 新宿
         to: 小田原
 
-    # ── rpg_hook want: registers all lifecycle rules for this stage in one want ──
+    # ── lifecycle_hook want: registers all lifecycle rules for this stage in one want ──
     - name: workshop1-hooks
-      type: rpg_hook
+      type: lifecycle_hook
       labels:
         game: workshop1
         "mywant.io/canvas-x": "12"
