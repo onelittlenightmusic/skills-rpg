@@ -113,15 +113,15 @@ narrations:
       A want is not a command to chap, but a definition of "how things should be,"
       so it keeps running even if the connection is severed.
 
-      Deploy two wants to escape the darkness:
+      The MCP cable has been cut — rpg_control_system cannot reach here.
+      But skills and previously deployed wants remain active.
 
-        1. Start the generator
-           Want type: rpg_activate  /  param → target: generator
-           GUI: Add Want → select "rpg_activate" → set target = generator
+      Available approaches:
+      - Deploy a want of type: rpg_activate
+      - Deploy a want of type: rpg_try_keys
+      - move: exit_hall
 
-        2. Try keys on exit_door
-           Want type: rpg_try_keys  /  param → target: exit_door
-           GUI: Add Want → select "rpg_try_keys" → set target = exit_door
+      Hint: The generator is stopped and exit_door needs power — which want type could address that?
     conversations:
       - speaker: you
         text: "...chap? Can you hear me?"
@@ -281,15 +281,15 @@ locales:
           wantはchapへの命令ではなく、「こうあるべき」という定義だから、
           接続が切れていても実行し続ける。
 
-          2つのwantをデプロイして暗闇を抜け出そう：
+          MCPケーブルが切断された——rpg_control_systemはここに届かない。
+          しかしスキルと過去にデプロイしたwantは生きている。
 
-            1. 発電機を起動する
-               Want type: rpg_activate  /  パラメータ → target: generator
-               GUI: Add Want → "rpg_activate" を選択 → target = generator を入力
+          取れるアプローチ：
+          - want type: rpg_activate をデプロイする
+          - want type: rpg_try_keys をデプロイする
+          - move: exit_hall
 
-            2. exit_door に鍵を試す
-               Want type: rpg_try_keys  /  パラメータ → target: exit_door
-               GUI: Add Want → "rpg_try_keys" を選択 → target = exit_door を入力
+          ヒント：generatorが止まっており、exit_doorは電源がないと開かない——どのwant typeで対処できるだろう？
         conversations:
           - speaker: you
             text: "…chap？聞こえるか。"

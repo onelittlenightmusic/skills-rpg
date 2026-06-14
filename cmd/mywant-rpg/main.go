@@ -202,15 +202,17 @@ var serverCmd = &cobra.Command{Use: "server"}
 var serverPort int
 var serverDataDir string
 var serverStagesDir string
+var serverMywantURL string
 var serverReset bool
 
 var serverStartCmd = &cobra.Command{
 	Use: "start",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := server.Config{
-			DataDir:   serverDataDir,
-			StagesDir: serverStagesDir,
-			Port:      serverPort,
+			DataDir:    serverDataDir,
+			StagesDir:  serverStagesDir,
+			Port:       serverPort,
+			MywantURL:  serverMywantURL,
 		}
 		s, err := server.NewServer(cfg)
 		if err != nil {
@@ -273,6 +275,7 @@ var serveCmd = &cobra.Command{
 			DataDir:   serverDataDir,
 			StagesDir: serverStagesDir,
 			Port:      serverPort,
+			MywantURL: serverMywantURL,
 		}
 		s, _ := server.NewServer(cfg)
 		addr := fmt.Sprintf(":%d", serverPort)
@@ -284,6 +287,8 @@ func init() {
 	serveCmd.Flags().IntVar(&serverPort, "port", 7100, "server port")
 	serveCmd.Flags().StringVar(&serverDataDir, "data-dir", os.ExpandEnv("$HOME/.mywant-rpg"), "data directory")
 	serveCmd.Flags().StringVar(&serverStagesDir, "stages-dir", "", "stages directory")
+	serveCmd.Flags().StringVar(&serverMywantURL, "mywant-url", "http://localhost:8080", "mywant server URL")
+	serverStartCmd.Flags().StringVar(&serverMywantURL, "mywant-url", "http://localhost:8080", "mywant server URL")
 }
 
 var mcpCmd = &cobra.Command{Use: "mcp"}

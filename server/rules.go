@@ -350,7 +350,8 @@ func doActivate(state *GameState, stage *Stage, in ControlInput) (map[string]any
 		return nil, fmt.Errorf("device %q not in stage", id)
 	}
 	if dev.On {
-		return nil, fmt.Errorf("device %q is already active", id)
+		// Idempotent: device already in desired state — treat as success so achievements fire.
+		return map[string]any{"devices." + id + ".on": true}, nil
 	}
 	if dev.BlockedByDevice != "" {
 		blocker, ok := stage.Devices[dev.BlockedByDevice]
@@ -372,7 +373,8 @@ func doDeactivate(state *GameState, stage *Stage, in ControlInput) (map[string]a
 		return nil, fmt.Errorf("device %q not in stage", id)
 	}
 	if !dev.On {
-		return nil, fmt.Errorf("device %q is already inactive", id)
+		// Idempotent: device already in desired state — treat as success so achievements fire.
+		return map[string]any{"devices." + id + ".on": false}, nil
 	}
 	dev.On = false
 	return map[string]any{"devices." + id + ".on": false}, nil

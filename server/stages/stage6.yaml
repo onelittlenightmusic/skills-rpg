@@ -142,11 +142,15 @@ narrations:
 
       — The Keymakers
 
-      As long as the alarm is sounding, the generator cannot be started (blocked_by_device).
-      Without the generator running, the door won't open (requires_device).
-      There is an order: deactivate → activate → open first.
-      The rpg-switch skill can operate both on and off.
-      Try using the /rpg-switch skill.
+      The room has two devices and one locked door.
+
+      Available actions:
+      - deactivate: alarm_system
+      - activate: main_generator
+      - open vault_door with /rpg-try-keys
+      - move: exit_vault
+
+      Hint: The alarm_system is active — what constraints might that impose on other devices?
   - match: { actor: chap, action: deactivate, target: alarm_system, result: ok }
     on_success: |
       The alarm fell silent. The control room grew quiet.
@@ -281,11 +285,15 @@ ja:
 
         ——キーメイカーズ一同
 
-        アラームが鳴っている限り、発電機は起動できない（blocked_by_device）。
-        発電機が動いていなければ、ドアは開かない（requires_device）。
-        順番がある：まずdeactivate → activate → open。
-        rpg-switchスキルを使えば on/off どちらも操作できる。
-        /rpg-switch スキルを使ってみよう。
+        部屋には2つのデバイスと1枚の施錠されたドアがある。
+
+        取れるアクション：
+        - deactivate: alarm_system
+        - activate: main_generator
+        - vault_doorを /rpg-try-keys で開ける
+        - move: exit_vault
+
+        ヒント：alarm_systemが稼働中——これは他のデバイスにどんな制約をもたらすだろう？
     - on_success: |
         アラームが沈黙した。制御室が静かになる。
         メイン発電機の起動ボタンのランプが点灯した——起動可能になった。

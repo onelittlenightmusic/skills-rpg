@@ -1,35 +1,30 @@
 id: workshop1
 title: "Family Rescue"
 description: |
-  Your family needs you — and the tools are already here.
+  Your family needs you — but each setup is missing a piece.
 
   Your wife is heading out. Rain is coming, and she doesn't know.
-  Your daughter wants to visit Hakone — but nothing is planned.
+  A weather monitor watches the sky. Something must carry that warning to her.
 
-  Two targets. Two chains of capability.
-  Connect the right tools to the right people.
-  When the wiring is complete, the wants will run — and the results will speak.
+  Your daughter wants to visit Hakone — the route is found, but no room is booked.
+  One want is missing from each setup.
+
+  Build the missing pieces. The robot will guide you.
+  When the right want is added, the setup will run.
 
   This stage is played on the mywant Want Canvas.
-  A bridge agent watches the canvas and mirrors your wiring work
-  into this stage as the family's needs get met.
+  A bridge agent watches the canvas and speaks through the robot cursor.
 initial_position: workshop
 waypoints:
   workshop:
     label: "Family Hub"
     adjacent: []
 devices:
-  wife_weather_wiring:
-    label: "weather-check → wife target"
+  wife_remind_created:
+    label: "remind-wife (missing piece created)"
     on: false
-  wife_remind_wiring:
-    label: "remind-wife → wife target"
-    on: false
-  daughter_route_wiring:
-    label: "route-search → daughter target"
-    on: false
-  daughter_hotel_wiring:
-    label: "book-hotel → daughter target"
+  daughter_hotel_created:
+    label: "book-hotel (missing piece created)"
     on: false
   wife_target:
     label: "Wife's goal: umbrella reminder"
@@ -43,82 +38,85 @@ devices:
 achievement_defs:
   - id: looked_around
     when: { action: observe }
-  - id: wife_weather_connected
-    when: { actor: chap, action: activate, target: wife_weather_wiring, result: ok }
-  - id: wife_remind_connected
-    when: { actor: chap, action: activate, target: wife_remind_wiring, result: ok }
-  - id: daughter_route_connected
-    when: { actor: chap, action: activate, target: daughter_route_wiring, result: ok }
-  - id: daughter_hotel_connected
-    when: { actor: chap, action: activate, target: daughter_hotel_wiring, result: ok }
+
+  # Bridge agent fires these after detecting the new child want on the canvas
+  - id: wife_remind_created
+    when: { actor: chap, action: activate, target: wife_remind_created, result: ok }
+  - id: daughter_hotel_created
+    when: { actor: chap, action: activate, target: daughter_hotel_created, result: ok }
+
   - id: wife_rescued
     when: { actor: chap, action: activate, target: wife_target, result: ok }
   - id: daughter_rescued
     when: { actor: chap, action: activate, target: daughter_target, result: ok }
   - id: family_rescued
     when: { actor: chap, action: activate, target: family_hub, result: ok }
+
 next_goal_rules:
+  # Step 1: look at the canvas first
   - if_missing: looked_around
     goal:
       text: "Observe the family canvas"
       hint: |
-        Open the Want Canvas and expand the children of 'wife-target' and 'daughter-target'
-        (click the count badge on each tile).
-        Then observe: rpg-observe target=stages.workshop1
-      required_skill: rpg-observe
+        Open the Want Canvas — two setups are each missing one want.
+        Both wife-target and daughter-target have monitors but are missing their doer want.
+        Look at both targets and observe to register your progress.
+        We'll handle them one at a time, starting with your wife.
+        required_skill: rpg-observe
 
-  - if_missing: wife_weather_connected
+  # Step 2: add wife's missing want first
+  - if_missing: wife_remind_created
     goal:
-      text: "Connect weather-check to wife's target"
+      text: "Add the reminder want to wife's setup"
       hint: |
-        On the Want Canvas, find 'weather-check' and connect it to 'wife-target'.
-        The weather monitor needs to feed into the wife's goal chain.
-        The bridge agent will confirm the connection.
+        Both setups are incomplete, but let's start with your wife.
+        wife-target has a weather monitor — but nothing sends the warning to her.
+        Click ＋ on the canvas to open the Add Want form.
+        Choose type 'reminder', then go to the Metadata tab and set Owner to 'wife-target'.
+        The robot will confirm when it's added.
 
-  - if_missing: wife_remind_connected
-    goal:
-      text: "Connect remind-wife to wife's target"
-      hint: |
-        Connect 'remind-wife' to 'wife-target' on the canvas.
-        The reminder needs to know about the rain before it can act.
-        Wire the output of weather into the wife's reminder.
-
-  - if_missing: daughter_route_connected
-    goal:
-      text: "Connect route-search to daughter's target"
-      hint: |
-        Find 'route-search' on the canvas and connect it to 'daughter-target'.
-        The Hakone route needs to be planned before booking can begin.
-
-  - if_missing: daughter_hotel_connected
-    goal:
-      text: "Connect book-hotel to daughter's target"
-      hint: |
-        Connect 'book-hotel' to 'daughter-target'.
-        Once the route is known, the hotel can be booked.
-
+  # Step 3: wait for wife's setup to run
   - if_missing: wife_rescued
     goal:
-      text: "Wife's chain is complete — watch it execute"
+      text: "Watch wife's setup run"
       hint: |
-        Both weather-check and remind-wife are connected to wife-target.
-        The bridge agent will fire the chain. Watch the wife-target's Final Result tab.
+        remind-wife has been added. The weather monitor feeds into it.
+        Wait for the reminder to fire and watch wife-target's Final Result tab.
+        The robot will notify you when it completes.
 
+  # Step 4: add daughter's missing want (only shown after wife is done)
+  - if_missing: daughter_hotel_created
+    goal:
+      text: "Wife is sorted — now add the hotel want to daughter's setup"
+      hint: |
+        Great work. Now your daughter needs you.
+        daughter-target has a route finder but no hotel booking.
+        Open daughter-target on the canvas and add a child want of type 'hotel',
+        then set Owner to 'daughter-target' in the Metadata tab.
+
+  # Step 5: wait for daughter's setup to run
   - if_missing: daughter_rescued
     goal:
-      text: "Daughter's chain is complete — watch it execute"
+      text: "Watch daughter's setup run"
       hint: |
-        Both route-search and book-hotel are connected to daughter-target.
-        The bridge agent will fire the chain. Watch the daughter-target's Final Result tab.
+        book-hotel has been added under daughter-target with route-search.
+        Wait for it to fire and check daughter-target's Final Result tab.
 
+  # Step 6: family complete
   - if_missing: family_rescued
     goal:
-      text: "Both chains ran — the family is taken care of"
+      text: "Both setups ran — the family is taken care of"
       hint: |
-        Wife's reminder was sent. Daughter's trip is booked.
-        The bridge agent will unite the family hub. The stage is nearly complete.
+        The reminder was sent. The trip is booked.
+        The robot will light up the family hub. You're done.
 
 cleared_when: family_rescued
+
+# ── mywant lifecycle hooks ────────────────────────────────────────────────────
+# mywant POSTs to /api/v1/hooks/mywant whenever a want is created.
+# The RPG server matches these rules and fires achievements + guidance commands.
+# mywant_hooks section removed — hooks are now deployed as rpg_hook wants in mywant_setup below.
+
 narrations:
   # --- observe: fully rescued ---
   - match:
@@ -126,35 +124,35 @@ narrations:
       requires_achievements: [family_rescued]
     conversations:
       - speaker: you
-        text: "She has an umbrella. The trip is booked. I did this."
+        text: "She has an umbrella. The trip is booked. I filled in the gaps."
       - speaker: chap
-        text: "The tools were always here. You just had to connect them."
+        text: "The structure was there. You saw what was missing and built it."
       - speaker: you
-        text: "That's what I do. I'm CursorMan. I traverse. I connect. I restore."
+        text: "That's what I do. I'm CursorMan. I traverse. I connect. I complete."
 
-  # --- observe: both chains complete, hub not yet ---
+  # --- observe: both setups done, hub pending ---
   - match:
       action: observe
       requires_achievements: [wife_rescued, daughter_rescued]
       missing_achievements: [family_rescued]
     conversations:
       - speaker: you
-        text: "Both results are in. The family is covered."
+        text: "Both setups ran. The family is covered."
       - speaker: chap
-        text: "The hub remembers what you've done. It's almost over."
+        text: "The hub remembers what you've built. Nearly done."
 
-  # --- observe: wife done, daughter not yet ---
+  # --- observe: wife setup done, daughter pending ---
   - match:
       action: observe
       requires_achievements: [wife_rescued]
       missing_achievements: [daughter_rescued]
     conversations:
       - speaker: you
-        text: "The reminder went out. She'll have her umbrella."
+        text: "The reminder went out. She'll take the umbrella."
       - speaker: chap
-        text: "Now your daughter. The route and the room — she's still waiting."
+        text: "Now your daughter. The hotel booking — she's still waiting."
 
-  # --- observe: daughter done, wife not yet ---
+  # --- observe: daughter setup done, wife pending ---
   - match:
       action: observe
       requires_achievements: [daughter_rescued]
@@ -165,118 +163,134 @@ narrations:
       - speaker: chap
         text: "Your wife still needs you. The rain is coming."
 
-  # --- observe: wiring in progress ---
+  # --- observe: both pieces added, setups not yet run ---
   - match:
       action: observe
-      requires_achievements: [looked_around]
+      requires_achievements: [wife_remind_created, daughter_hotel_created]
       missing_achievements: [wife_rescued, daughter_rescued]
     conversations:
       - speaker: you
-        text: "The tools are here. The connections aren't."
+        text: "Both missing pieces are in place. Both setups look ready."
       - speaker: chap
-        text: "Connect each capability to its target. When the chain is complete, it will run."
+        text: "The bridge agent is firing them now. Watch the final result tabs."
 
-  # --- observe: initial ---
+  # --- observe: wife piece added, daughter piece missing ---
+  - match:
+      action: observe
+      requires_achievements: [wife_remind_created]
+      missing_achievements: [daughter_hotel_created]
+    conversations:
+      - speaker: you
+        text: "The reminder is in. Now for the hotel."
+      - speaker: chap
+        text: "Open daughter-target. The route is found — add the hotel booking want."
+
+  # --- observe: initial (just looked around) ---
+  - match:
+      action: observe
+      requires_achievements: [looked_around]
+      missing_achievements: [wife_remind_created, daughter_hotel_created]
+    conversations:
+      - speaker: you
+        text: "Weather check — but no reminder. Route found — but no hotel."
+      - speaker: chap
+        text: "One want is missing from each setup. Add them and the family gets what they need."
+
+  # --- observe: very first observe ---
   - match:
       action: observe
     situation: |
-      The canvas shows two unfinished chains.
-      On one side: a weather monitor and a reminder waiting to be connected.
-      On the other: a route finder and a hotel booker, both idle.
-      Two people need help. The tools exist. Only the wiring is missing.
+      The canvas shows two setups, each missing one want.
+      wife-target: a weather monitor is in place — but nothing to send the warning.
+      daughter-target: the route to Hakone is found — but no room is booked.
+      The structure exists. One want needs to be added to each.
     conversations:
       - speaker: chap
-        text: "Your wife is going out today. Your daughter wants to go to Hakone. Both need you."
+        text: "Your wife is going out. Your daughter needs Hakone. Both setups are missing a piece."
       - speaker: you
-        text: "The capabilities are here — weather, reminders, routes, hotels. They're just not connected."
+        text: "Weather feeds in, but nothing carries it to her. Route is found, but no hotel."
       - speaker: chap
-        text: "Connect them to the right targets. When the chain runs, the final result will appear."
+        text: "Add the missing wants. I'll guide you. The robot will show you where to click."
 
 locales:
   ja:
     title: "家族を救え"
     description: |
-      家族がCursorManを必要としている。ツールはすでにそろっている。
+      家族がCursorManを必要としている——でも、それぞれの仕組みにピースが足りない。
 
       妻が外出しようとしている。雨が来るのに、彼女は知らない。
-      娘は箱根に行きたがっている。でも何も手配されていない。
+      天気を見るモニターはある。でも、警告を届ける手段が足りない。
 
-      2つのターゲット。2本の能力の連鎖。
-      正しいツールを正しい人に繋げ。
-      配線が完成すれば、wantが動き——結果が語る。
+      娘は箱根に行きたがっている。経路は分かった。でも宿が取れていない。
+      どちらの仕組みにも、wantが1つ足りない。
+
+      足りないwantを加えろ。ロボットが案内する。
+      必要なwantを加えれば、仕組みが動く。
 
       このステージはmywantのWant Canvas上でプレイする。
-      ブリッジエージェントがcanvasを監視し、配線の作業を
-      このステージに反映する。
+      ブリッジエージェントがcanvasを監視し、ロボットカーソルで話しかける。
     waypoints:
       workshop: { label: "家族のハブ" }
     devices:
-      wife_weather_wiring:   { label: "天気チェック → 妻のターゲット" }
-      wife_remind_wiring:    { label: "リマインド → 妻のターゲット" }
-      daughter_route_wiring: { label: "経路検索 → 娘のターゲット" }
-      daughter_hotel_wiring: { label: "ホテル予約 → 娘のターゲット" }
-      wife_target:           { label: "妻のゴール: 傘リマインド" }
-      daughter_target:       { label: "娘のゴール: 箱根旅行" }
-      family_hub:            { label: "家族が揃った" }
+      wife_remind_created:    { label: "remind-wife（欠けていたピースを作成済み）" }
+      daughter_hotel_created: { label: "book-hotel（欠けていたピースを作成済み）" }
+      wife_target:            { label: "妻のゴール: 傘リマインド" }
+      daughter_target:        { label: "娘のゴール: 箱根旅行" }
+      family_hub:             { label: "家族が揃った" }
     next_goal_rules:
       - goal:
           text: "家族のcanvasを観察しよう"
           hint: |
             Want Canvasで 'wife-target' と 'daughter-target' のchildを展開しよう。
-            次に観測: rpg-observe target=stages.workshop1
+            どちらの仕組みも1つwantが足りない——でも一度に両方は無理だ。
+            まずはwife-targetから始める。観測して進捗を記録しよう。
       - goal:
-          text: "weather-checkを妻のターゲットに繋ごう"
+          text: "妻の仕組みにリマインドwantを加えよう"
           hint: |
-            Want Canvas上で 'weather-check' を 'wife-target' に接続しよう。
-            天気の情報が妻のゴール連鎖に流れ込む必要がある。
+            どちらも未完成だが、まず妻から始めよう。
+            wife-targetには天気モニターがあるが、リマインドするものがない。
+            canvas の＋ボタンで Add Want フォームを開き、
+            Type を 'reminder' に設定。Metadata タブで Owner に 'wife-target' を選択して Save。
       - goal:
-          text: "remind-wifeを妻のターゲットに繋ごう"
+          text: "妻の仕組みが動く——見守ろう"
           hint: |
-            'remind-wife' を 'wife-target' に接続しよう。
-            天気情報が揃えば、リマインダーが動ける。
+            remind-wifeが加わった。天気モニターが連動する。
+            wife-targetのFinal Resultタブを確認しよう。
+            ロボットが完了を通知する。
       - goal:
-          text: "route-searchを娘のターゲットに繋ごう"
+          text: "妻の手配完了——娘の仕組みにホテル予約wantを加えよう"
           hint: |
-            'route-search' を 'daughter-target' に接続しよう。
-            箱根への経路が決まれば、次のステップに進める。
+            妻の手配は終わった。次は娘だ。
+            daughter-targetには経路検索があるが、ホテル予約がない。
+            daughter-targetを開いて、type 'hotel' のchild wantを加えよう。
       - goal:
-          text: "book-hotelを娘のターゲットに繋ごう"
+          text: "娘の仕組みが動く——見守ろう"
           hint: |
-            'book-hotel' を 'daughter-target' に接続しよう。
-            経路が確定したら、ホテルが予約できる。
+            book-hotelが加わった。route-searchが連動する。
+            daughter-targetのFinal Resultタブを確認しよう。
       - goal:
-          text: "妻の連鎖が完成——実行を見守ろう"
+          text: "2つの仕組みが動いた——家族の手配が完了した"
           hint: |
-            weather-checkとremind-wifeが両方wife-targetに繋がった。
-            ブリッジが連鎖を起動する。wife-targetのFinal Resultタブを確認しよう。
-      - goal:
-          text: "娘の連鎖が完成——実行を見守ろう"
-          hint: |
-            route-searchとbook-hotelが両方daughter-targetに繋がった。
-            ブリッジが連鎖を起動する。daughter-targetのFinal Resultタブを確認しよう。
-      - goal:
-          text: "2本の連鎖が走った——家族の手配が完了した"
-          hint: |
-            妻へのリマインドは送信済み。娘の旅行は予約済み。
+            リマインドは送信済み。旅行は予約済み。
             ブリッジがファミリーハブを点火する。
     narrations:
       - conversations:
           - speaker: you
-            text: "彼女は傘を持って出た。旅行も予約した。俺がやった。"
+            text: "彼女は傘を持って出た。旅行も予約した。俺が欠けたピースを埋めた。"
           - speaker: chap
-            text: "ツールは最初からそこにあった。あなたが繋いだだけです。"
+            text: "構造はそこにあった。あなたは何が足りないかを見て、作り上げた。"
           - speaker: you
-            text: "それが私の仕事だ。CursorMan——繋ぎ、渡り、修復する。"
+            text: "それが私の仕事だ。CursorMan——加え、渡り、完成させる。"
       - conversations:
           - speaker: you
-            text: "両方の結果が出た。家族の手配が整った。"
+            text: "両方の仕組みが動いた。家族の手配が整った。"
           - speaker: chap
             text: "ハブが覚えています。もうすぐ終わります。"
       - conversations:
           - speaker: you
             text: "リマインドは届いた。彼女は傘を持って行く。"
           - speaker: chap
-            text: "次は娘です。経路とホテル——まだ待っています。"
+            text: "次は娘です。ホテル——まだ待っています。"
       - conversations:
           - speaker: you
             text: "箱根は予約した。娘は旅行に行ける。"
@@ -284,18 +298,178 @@ locales:
             text: "奥さんにはまだあなたが必要です。雨が来ています。"
       - conversations:
           - speaker: you
-            text: "ツールはある。接続がない。"
+            text: "両方のピースが揃った。2つの仕組みが揃って見える。"
           - speaker: chap
-            text: "各能力をターゲットに繋いでください。連鎖が完成すれば動き出します。"
+            text: "ブリッジが今起動しています。Final Resultタブを確認してください。"
+      - conversations:
+          - speaker: you
+            text: "リマインドは加わった。次はホテルだ。"
+          - speaker: chap
+            text: "daughter-targetを開いてください。経路は分かっています——ホテル予約wantを加えてください。"
+      - conversations:
+          - speaker: you
+            text: "天気チェックはあるが、リマインドがない。経路はあるが、ホテルがない。"
+          - speaker: chap
+            text: "どちらの仕組みにも1つのwantが足りない。加えれば、家族に届く。"
       - situation: |
-          canvasに2本の未完成な連鎖が見える。
-          片側には: 天気モニターとリマインダーが、繋がれるのを待っている。
-          もう片側には: 経路検索とホテル予約が、アイドル状態のまま。
-          2人が助けを必要としている。ツールはある。配線だけが足りない。
+          canvasに2本の不完全な連鎖が見える。
+          wife-target: 天気モニターはある——でも、警告を届ける手段がない。
+          daughter-target: 箱根への経路は分かった——でも、宿が取れていない。
+          構造はある。各仕組みにwantが1つ足りない。
         conversations:
           - speaker: chap
-            text: "奥さんが今日外出します。娘さんは箱根に行きたがっています。2人ともあなたを必要としています。"
+            text: "奥さんが外出します。娘さんは箱根が必要です。どちらの仕組みにもwantが1つ足りない。"
           - speaker: you
-            text: "能力はここにある——天気、リマインド、経路、ホテル。ただ繋がっていないだけだ。"
+            text: "天気は入力されているが、彼女に届かない。経路は分かっているが、ホテルがない。"
           - speaker: chap
-            text: "正しいターゲットに繋いでください。連鎖が走れば、Final Resultに結果が現れます。"
+            text: "足りないwantを加えてください。案内します。ロボットがどこをクリックするか教えます。"
+
+# ── RPG-owned mywant initialisation ─────────────────────────────────────────
+# When debug/jump workshop1 is called, the RPG server cleans up old workshop1
+# wants, creates the initial partial setups, registers the lifecycle webhook,
+# and delivers the opening narration — no external setup script needed.
+mywant_setup:
+  cleanup_label:
+    game: workshop1
+  register_webhook: true
+  on_start_run:
+    - "mywant-gui cursor set 8 2"
+    - "mywant-gui say '家族がお前を必要としている。' --duration 3"
+    - "sleep 3.5"
+    - "mywant-gui say '2つの仕組みがある——どちらもwantが1つ足りない。' --duration 4"
+    - "sleep 5"
+    - "mywant-gui say 'まず妻の方から。＋ボタンでリマインドwantを加えよう。' --duration 5"
+  wants:
+    - name: wife-target
+      type: custom_target
+      labels:
+        game: workshop1
+        "mywant.io/canvas-x": "8"
+        "mywant.io/canvas-y": "-2"
+      params:
+        target_value: wife_umbrella_reminder_sent
+        label: 妻への傘リマインド
+    - name: weather-check
+      type: weather
+      labels:
+        game: workshop1
+        child-role: monitor
+        "mywant.io/canvas-x": "5"
+        "mywant.io/canvas-y": "-5"
+      owner: wife-target
+      params:
+        weather_city: Tokyo
+    - name: daughter-target
+      type: custom_target
+      labels:
+        game: workshop1
+        "mywant.io/canvas-x": "8"
+        "mywant.io/canvas-y": "6"
+      params:
+        target_value: daughter_hakone_trip_booked
+        label: 娘の箱根旅行
+    - name: route-search
+      type: transit_search
+      labels:
+        game: workshop1
+        child-role: monitor
+        "mywant.io/canvas-x": "5"
+        "mywant.io/canvas-y": "9"
+      owner: daughter-target
+      params:
+        from: 新宿
+        to: 小田原
+
+    # ── rpg_hook wants: each registers a filtered lifecycle rule ──────────────
+    # These are system wants — no owner, placed off to the right of the story wants.
+    - name: hook-wife-created
+      type: rpg_hook
+      labels:
+        game: workshop1
+        "mywant.io/canvas-x": "12"
+        "mywant.io/canvas-y": "0"
+      params:
+        event: want_created
+        match_type: reminder
+        match_owner: wife-target
+        target_url: "http://localhost:7100/api/v1/hooks/mywant"
+        activate: wife_remind_created
+        skip_if_achievement: wife_remind_created
+        run: '["mywant-gui say ''妻へのリマインダーが加わった。天気モニターが連動する。'' --duration 4"]'
+
+    - name: hook-wife-achieved
+      type: rpg_hook
+      labels:
+        game: workshop1
+        "mywant.io/canvas-x": "12"
+        "mywant.io/canvas-y": "1"
+      params:
+        event: want_achieved
+        match_type: reminder
+        match_owner: wife-target
+        target_url: "http://localhost:7100/api/v1/hooks/mywant"
+        activate: wife_target
+        skip_if_achievement: wife_rescued
+        run: '["mywant-gui say ''妻への傘リマインドが届いた。仕組みが動いた。'' --duration 4","sleep 5","mywant-gui say ''妻の手配は完了した。次は娘だ——daughter-target を開いてみよう。'' --duration 5"]'
+
+    - name: hook-daughter-created
+      type: rpg_hook
+      labels:
+        game: workshop1
+        "mywant.io/canvas-x": "12"
+        "mywant.io/canvas-y": "2"
+      params:
+        event: want_created
+        match_type: hotel
+        match_owner: daughter-target
+        target_url: "http://localhost:7100/api/v1/hooks/mywant"
+        activate: daughter_hotel_created
+        skip_if_achievement: daughter_hotel_created
+        run: '["mywant-gui say ''娘のホテル予約が加わった。経路検索が連動する。'' --duration 4","sleep 5","mywant-gui say ''2つの仕組みが揃った。どちらも動き始める——Final Result を確認しよう。'' --duration 5"]'
+
+    - name: hook-daughter-achieved
+      type: rpg_hook
+      labels:
+        game: workshop1
+        "mywant.io/canvas-x": "12"
+        "mywant.io/canvas-y": "3"
+      params:
+        event: want_achieved
+        match_type: hotel
+        match_owner: daughter-target
+        target_url: "http://localhost:7100/api/v1/hooks/mywant"
+        activate: daughter_target
+        skip_if_achievement: daughter_rescued
+        run: '["mywant-gui say ''娘の箱根旅行が予約された。仕組みが動いた。'' --duration 4"]'
+
+    - name: hook-family-via-wife
+      type: rpg_hook
+      labels:
+        game: workshop1
+        "mywant.io/canvas-x": "12"
+        "mywant.io/canvas-y": "4"
+      params:
+        event: want_achieved
+        match_type: reminder
+        match_owner: wife-target
+        target_url: "http://localhost:7100/api/v1/hooks/mywant"
+        activate: family_hub
+        skip_if_achievement: family_rescued
+        require_achievements: '["daughter_rescued"]'
+        run: '["sleep 2","mywant-gui say ''家族全員の手配が完了した。CursorManの仕事は終わった。'' --duration 5"]'
+
+    - name: hook-family-via-daughter
+      type: rpg_hook
+      labels:
+        game: workshop1
+        "mywant.io/canvas-x": "12"
+        "mywant.io/canvas-y": "5"
+      params:
+        event: want_achieved
+        match_type: hotel
+        match_owner: daughter-target
+        target_url: "http://localhost:7100/api/v1/hooks/mywant"
+        activate: family_hub
+        skip_if_achievement: family_rescued
+        require_achievements: '["wife_rescued"]'
+        run: '["sleep 2","mywant-gui say ''家族全員の手配が完了した。CursorManの仕事は終わった。'' --duration 5"]'

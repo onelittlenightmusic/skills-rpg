@@ -19,6 +19,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/v1/saves", s.handleSavesRoot)
 	mux.HandleFunc("/api/v1/saves/", s.handleSavesItem)
 	mux.HandleFunc("/api/v1/settings", s.handleSettings)
+	mux.HandleFunc("/api/v1/hooks/mywant", s.handleMywantHook)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"ok": true})
 	})
@@ -287,4 +288,18 @@ func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeErr(w, 405, "method not allowed")
 	}
+}
+
+func (s *Server) handleMywantHook(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeErr(w, 405, "method not allowed")
+		return
+	}
+	var event MywantHookEvent
+	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
+		writeErr(w, 400, "invalid JSON: "+err.Error())
+		return
+	}
+	s.HandleMywantHook(event)
+	writeJSON(w, 200, map[string]any{"ok": true})
 }

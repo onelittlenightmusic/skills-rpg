@@ -25,6 +25,7 @@ type Config struct {
 	StagesDir    string // path to stages/ for bootstrap (empty means use embedded)
 	Port         int    // 7100
 	SettingsPath string // default: ~/.skills-rpg.conf
+	MywantURL    string // e.g. "http://localhost:8080" — empty disables mywant integration
 }
 
 type Server struct {
@@ -34,6 +35,7 @@ type Server struct {
 	settings     Settings
 	settingsPath string
 	locales      map[string]map[string]*StageLocale // stageID → lang → locale
+	pristine     map[string]*Stage                  // stageID → unmodified definition from YAML
 }
 
 func NewServer(cfg Config) (*Server, error) {
@@ -60,24 +62,39 @@ func (s *Server) loadOrBootstrap() error {
 		return err
 	}
 
-	// Always load locale data fresh from stage YAMLs (not stored in current.yaml).
+	// Always load stage defs + locale data fresh from stage YAMLs
+	// (locales are not stored in current.yaml).
+	var fileStages map[string]*Stage
 	var locales map[string]map[string]*StageLocale
 	var err error
 
 	if s.cfg.StagesDir == "" {
 		embedded, _ := fs.Sub(DefaultStagesFS, "stages")
-		_, locales, _, err = loadStagesFromFS(embedded, ".")
+		fileStages, locales, _, err = loadStagesFromFS(embedded, ".")
 	} else {
-		_, locales, _, err = loadStagesFromDir(s.cfg.StagesDir)
+		fileStages, locales, _, err = loadStagesFromDir(s.cfg.StagesDir)
 	}
 	if err != nil {
 		return fmt.Errorf("load locales: %w", err)
 	}
 	s.locales = locales
+	s.pristine = fileStages
 
 	var st GameState
 	if err := readYAML(s.currentPath(), &st); err == nil {
+		// Merge stages added to the YAML set after this state was persisted,
+		// so new content becomes playable without resetting existing progress.
+		added := false
+		for id, def := range fileStages {
+			if _, ok := st.Stages[id]; !ok {
+				st.Stages[id] = copyStage(def)
+				added = true
+			}
+		}
 		s.state = &st
+		if added {
+			return s.persistLocked()
+		}
 		return nil
 	} else if !os.IsNotExist(err) {
 		return err
@@ -256,13 +273,25 @@ func (s *Server) DebugJumpStage(stageID string) error {
 	if !ok {
 		return fmt.Errorf("stage %q not found", stageID)
 	}
+	// Restore the jumped-to stage to its pristine YAML definition so doors,
+	// devices and items forget any mutations from a previous playthrough.
+	if def, ok := s.pristine[stageID]; ok {
+		stage = copyStage(def)
+		s.state.Stages[stageID] = stage
+	}
 	s.state.CurrentStage = stageID
 	s.state.You.Position = stage.InitialPosition
 	s.state.You.Inventory = nil
 	s.state.Achievements = []string{}
 	s.state.EventHistory = nil
 	s.state.NextGoal = computeNextGoal(s.state, s.currentLocaleLocked())
-	return s.persistLocked()
+	if err := s.persistLocked(); err != nil {
+		return err
+	}
+	if stage.MywantSetup != nil && s.cfg.MywantURL != "" {
+		go s.initMywantStage(stageID, stage)
+	}
+	return nil
 }
 
 // --- settings ---

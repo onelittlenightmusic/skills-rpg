@@ -37,6 +37,59 @@ type Stage struct {
 	Narrations      []NarrationDef       `yaml:"narrations,omitempty" json:"narrations,omitempty"`
 	ClearedWhen     string               `yaml:"cleared_when" json:"cleared_when"`
 	NextStage       string               `yaml:"next_stage,omitempty" json:"next_stage,omitempty"`
+	MywantHooks     []MywantHook         `yaml:"mywant_hooks,omitempty" json:"mywant_hooks,omitempty"`
+	MywantSetup     *MywantSetup         `yaml:"mywant_setup,omitempty" json:"mywant_setup,omitempty"`
+}
+
+// MywantSetup declares what the RPG server should create/configure in mywant
+// when this stage is started or jumped to.
+type MywantSetup struct {
+	// CleanupLabel removes all existing mywant wants that carry every listed label.
+	CleanupLabel map[string]string `yaml:"cleanup_label,omitempty" json:"cleanup_label,omitempty"`
+	// RegisterWebhook makes the RPG server register itself as a lifecycle webhook
+	// with mywant so it receives want_created events without any external script.
+	RegisterWebhook bool `yaml:"register_webhook" json:"register_webhook"`
+	// Wants lists the wants the RPG server creates in mywant on stage start.
+	Wants []MywantSetupWant `yaml:"wants,omitempty" json:"wants,omitempty"`
+	// OnStartRun is a list of shell commands executed after wants are created.
+	OnStartRun []string `yaml:"on_start_run,omitempty" json:"on_start_run,omitempty"`
+}
+
+// MywantSetupWant describes a single want to create in mywant canvas.
+type MywantSetupWant struct {
+	Name   string            `yaml:"name" json:"name"`
+	Type   string            `yaml:"type" json:"type"`
+	Labels map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
+	// Owner is the name of the parent want (ownerReference controller).
+	Owner  string            `yaml:"owner,omitempty" json:"owner,omitempty"`
+	Params map[string]any    `yaml:"params,omitempty" json:"params,omitempty"`
+}
+
+// MywantHook reacts to lifecycle events pushed from mywant (e.g. want_created).
+// The RPG server registers its endpoint with mywant; mywant calls it on
+// matching events; the server fires achievements and shell commands in response.
+//
+// Static hooks are defined in stage YAML (mywant_hooks:) for backwards compatibility.
+// Dynamic hooks are registered via rpg_hook want type and arrive with Rule.Metadata
+// in the payload — those bypass static matching entirely.
+type MywantHook struct {
+	Event                string            `yaml:"event" json:"event"`
+	MatchName            string            `yaml:"match_name,omitempty" json:"match_name,omitempty"`
+	MatchType            string            `yaml:"match_type,omitempty" json:"match_type,omitempty"`
+	MatchLabel           map[string]string `yaml:"match_label,omitempty" json:"match_label,omitempty"`
+	MatchOwner           string            `yaml:"match_owner,omitempty" json:"match_owner,omitempty"`
+	MatchChildRole       string            `yaml:"match_child_role,omitempty" json:"match_child_role,omitempty"`
+	SkipIfAchievement    string            `yaml:"skip_if_achievement,omitempty" json:"skip_if_achievement,omitempty"`
+	RequireAchievements  []string          `yaml:"require_achievements,omitempty" json:"require_achievements,omitempty"`
+	Activate             string            `yaml:"activate,omitempty" json:"activate,omitempty"`
+	Run                  []string          `yaml:"run,omitempty" json:"run,omitempty"`
+}
+
+// MywantRuleRef is the rule info embedded in the lifecycle payload by mywant
+// when a filtered rule (registered via rpg_hook want type) matches.
+type MywantRuleRef struct {
+	ID       string         `json:"id"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 // ConversationLine is a single line of dialogue spoken by a character.

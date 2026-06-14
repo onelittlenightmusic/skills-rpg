@@ -39,6 +39,20 @@ func writeYAMLAtomic(path string, v any) error {
 	return os.Rename(tmpName, path)
 }
 
+// copyStage returns a deep copy of a stage definition (via YAML round-trip),
+// used to hand out mutable instances of pristine stage defs.
+func copyStage(src *Stage) *Stage {
+	b, err := yaml.Marshal(src)
+	if err != nil {
+		return src
+	}
+	var dst Stage
+	if err := yaml.Unmarshal(b, &dst); err != nil {
+		return src
+	}
+	return &dst
+}
+
 func readYAML(path string, v any) error {
 	b, err := os.ReadFile(path)
 	if err != nil {

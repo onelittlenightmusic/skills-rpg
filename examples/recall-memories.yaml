@@ -1,0 +1,26 @@
+# Stage 1: Family & Memories (Recall) — 記憶の想起
+#
+# バラバラになった家族への想い（Want）を正しく繋ぎ直すことで、
+# CursorManの記憶と能力を呼び起こす。
+#
+wants:
+  - metadata:
+      name: recall-memories
+      type: coding
+      labels:
+        game: workshop1
+        mywant.io/canvas-x: "12"
+        mywant.io/canvas-y: "8"
+    spec:
+      params:
+        provider: claude_code
+        permission_mode: bypassPermissions
+        timeout_seconds: 1500
+        working_dir: "/Users/hiroyukiosaki/work/skills-rpg"
+        auto_request: |
+          あなたは「Family & Memories」ステージの記憶の想起システムです。
+          次のコマンドを実行して、家族の願いが正しく繋がったかを監視してください:
+
+            ./examples/recall-memories.sh
+
+          実行が完了したら、家族の絆が取り戻されたことを報告してください。
