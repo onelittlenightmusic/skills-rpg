@@ -380,96 +380,77 @@ mywant_setup:
         from: 新宿
         to: 小田原
 
-    # ── rpg_hook wants: each registers a filtered lifecycle rule ──────────────
-    # These are system wants — no owner, placed off to the right of the story wants.
-    - name: hook-wife-created
+    # ── rpg_hook want: registers all lifecycle rules for this stage in one want ──
+    - name: workshop1-hooks
       type: rpg_hook
       labels:
         game: workshop1
         "mywant.io/canvas-x": "12"
         "mywant.io/canvas-y": "0"
       params:
-        event: want_created
-        match_type: reminder
-        match_owner: wife-target
         target_url: "http://localhost:7100/api/v1/hooks/mywant"
-        activate: wife_remind_created
-        skip_if_achievement: wife_remind_created
-        run: '["mywant-gui say ''妻へのリマインダーが加わった。天気モニターが連動する。'' --duration 4"]'
-
-    - name: hook-wife-achieved
-      type: rpg_hook
-      labels:
-        game: workshop1
-        "mywant.io/canvas-x": "12"
-        "mywant.io/canvas-y": "1"
-      params:
-        event: want_achieved
-        match_type: reminder
-        match_owner: wife-target
-        target_url: "http://localhost:7100/api/v1/hooks/mywant"
-        activate: wife_target
-        skip_if_achievement: wife_rescued
-        run: '["mywant-gui say ''妻への傘リマインドが届いた。仕組みが動いた。'' --duration 4","sleep 5","mywant-gui say ''妻の手配は完了した。次は娘だ——daughter-target を開いてみよう。'' --duration 5"]'
-
-    - name: hook-daughter-created
-      type: rpg_hook
-      labels:
-        game: workshop1
-        "mywant.io/canvas-x": "12"
-        "mywant.io/canvas-y": "2"
-      params:
-        event: want_created
-        match_type: hotel
-        match_owner: daughter-target
-        target_url: "http://localhost:7100/api/v1/hooks/mywant"
-        activate: daughter_hotel_created
-        skip_if_achievement: daughter_hotel_created
-        run: '["mywant-gui say ''娘のホテル予約が加わった。経路検索が連動する。'' --duration 4","sleep 5","mywant-gui say ''2つの仕組みが揃った。どちらも動き始める——Final Result を確認しよう。'' --duration 5"]'
-
-    - name: hook-daughter-achieved
-      type: rpg_hook
-      labels:
-        game: workshop1
-        "mywant.io/canvas-x": "12"
-        "mywant.io/canvas-y": "3"
-      params:
-        event: want_achieved
-        match_type: hotel
-        match_owner: daughter-target
-        target_url: "http://localhost:7100/api/v1/hooks/mywant"
-        activate: daughter_target
-        skip_if_achievement: daughter_rescued
-        run: '["mywant-gui say ''娘の箱根旅行が予約された。仕組みが動いた。'' --duration 4"]'
-
-    - name: hook-family-via-wife
-      type: rpg_hook
-      labels:
-        game: workshop1
-        "mywant.io/canvas-x": "12"
-        "mywant.io/canvas-y": "4"
-      params:
-        event: want_achieved
-        match_type: reminder
-        match_owner: wife-target
-        target_url: "http://localhost:7100/api/v1/hooks/mywant"
-        activate: family_hub
-        skip_if_achievement: family_rescued
-        require_achievements: '["daughter_rescued"]'
-        run: '["sleep 2","mywant-gui say ''家族全員の手配が完了した。CursorManの仕事は終わった。'' --duration 5"]'
-
-    - name: hook-family-via-daughter
-      type: rpg_hook
-      labels:
-        game: workshop1
-        "mywant.io/canvas-x": "12"
-        "mywant.io/canvas-y": "5"
-      params:
-        event: want_achieved
-        match_type: hotel
-        match_owner: daughter-target
-        target_url: "http://localhost:7100/api/v1/hooks/mywant"
-        activate: family_hub
-        skip_if_achievement: family_rescued
-        require_achievements: '["wife_rescued"]'
-        run: '["sleep 2","mywant-gui say ''家族全員の手配が完了した。CursorManの仕事は終わった。'' --duration 5"]'
+        rules: |
+          [
+            {
+              "event": "want_created",
+              "match_type": "reminder",
+              "match_owner": "wife-target",
+              "metadata": {
+                "activate": "wife_remind_created",
+                "skip_if_achievement": "wife_remind_created",
+                "run": ["mywant-gui say '妻へのリマインダーが加わった。天気モニターが連動する。' --duration 4"]
+              }
+            },
+            {
+              "event": "want_achieved",
+              "match_type": "reminder",
+              "match_owner": "wife-target",
+              "metadata": {
+                "activate": "wife_target",
+                "skip_if_achievement": "wife_rescued",
+                "run": ["mywant-gui say '妻への傘リマインドが届いた。仕組みが動いた。' --duration 4", "sleep 5", "mywant-gui say '妻の手配は完了した。次は娘だ——daughter-target を開いてみよう。' --duration 5"]
+              }
+            },
+            {
+              "event": "want_achieved",
+              "match_type": "reminder",
+              "match_owner": "wife-target",
+              "metadata": {
+                "activate": "family_hub",
+                "skip_if_achievement": "family_rescued",
+                "require_achievements": ["daughter_rescued"],
+                "run": ["sleep 2", "mywant-gui say '家族全員の手配が完了した。CursorManの仕事は終わった。' --duration 5"]
+              }
+            },
+            {
+              "event": "want_created",
+              "match_type": "hotel",
+              "match_owner": "daughter-target",
+              "metadata": {
+                "activate": "daughter_hotel_created",
+                "skip_if_achievement": "daughter_hotel_created",
+                "run": ["mywant-gui say '娘のホテル予約が加わった。経路検索が連動する。' --duration 4", "sleep 5", "mywant-gui say '2つの仕組みが揃った。どちらも動き始める——Final Result を確認しよう。' --duration 5"]
+              }
+            },
+            {
+              "event": "want_achieved",
+              "match_type": "hotel",
+              "match_owner": "daughter-target",
+              "metadata": {
+                "activate": "daughter_target",
+                "skip_if_achievement": "daughter_rescued",
+                "run": ["mywant-gui say '娘の箱根旅行が予約された。仕組みが動いた。' --duration 4"]
+              }
+            },
+            {
+              "event": "want_achieved",
+              "match_type": "hotel",
+              "match_owner": "daughter-target",
+              "metadata": {
+                "activate": "family_hub",
+                "skip_if_achievement": "family_rescued",
+                "require_achievements": ["wife_rescued"],
+                "run": ["sleep 2", "mywant-gui say '家族全員の手配が完了した。CursorManの仕事は終わった。' --duration 5"]
+              }
+            }
+          ]
