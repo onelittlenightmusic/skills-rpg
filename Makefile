@@ -12,6 +12,7 @@ build: build-plugin smoke
 build-plugin:
 	@mkdir -p $(BIN_DIR)
 	go build -o $(BIN_DIR)/mywant-rpg ./cmd/mywant-rpg  # Ensure CLI is built
+	go build -o $(BIN_DIR)/stage-to-world ./cmd/stage-to-world
 
 smoke:
 	./docs/smoke.sh
