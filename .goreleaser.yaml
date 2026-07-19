@@ -2,6 +2,13 @@ version: 2
 
 project_name: mywant-rpg
 
+release:
+  # Lets a retried/rerun release overwrite artifacts a previous partial run
+  # already uploaded (e.g. after the homebrew formula push lost the tap race
+  # with a concurrent mywant/mywant-gui release), instead of failing with
+  # 422 "already_exists" on the tarballs/checksums.
+  replace_existing_artifacts: true
+
 builds:
   - id: mywant-rpg
     main: ./cmd/mywant-rpg
