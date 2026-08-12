@@ -1,20 +1,25 @@
 // stage-to-world converts skills-rpg's stage1..stage9 waypoint/door graphs
-// into a single mywant "world" (a canvas layout built from `wall`/`door`
-// wants) named "skills-rpg" by default.
+// into a single mywant "world" (a canvas layout built from `wall`/`rpg_door`/
+// device wants) named "skills-rpg" by default.
 //
 // Every stage's waypoints are flattened into a single left-to-right room
 // chain (all 9 stages are simple linear graphs — verified against the real
 // stage1..stage9 data, no branching), one row per stage so stages never
 // overlap. Each room is a 5x5 tile footprint (walls included); adjacent
 // rooms within a stage share their boundary wall. A skills-rpg `Door` between
-// two rooms becomes a 1x1 `door` want in a gap in that shared wall, wired to
-// live-sync its "locked" state from the running rpg-server (rpg_stage_id/
-// rpg_door_id params — see mywant's door.yaml). A plain `Adjacent` link with
-// no `Door` entry is left fully open (no wall on that side at all).
+// two rooms becomes a 1x1 `rpg_door` want in a gap in that shared wall, and
+// every entry in a stage's `devices` map becomes an `rpg_alarm` or
+// `rpg_generator` tile on the floor in front of the door it gates — both
+// mirror the running rpg-server (stage_id/device_id params — see
+// server/skills/rpg-door and server/skills/rpg-device). A plain `Adjacent`
+// link with no `Door` entry is left fully open (no wall on that side at all).
 //
 // Usage:
 //
 //	go run ./cmd/stage-to-world [-stages-dir server/stages] [-world skills-rpg] [-mywant-url http://localhost:8080]
+//
+// -dry-run prints the wants it would import and touches nothing, which is the
+// way to see a layout change before it replaces a world someone is playing in.
 package main
 
 import (
@@ -23,10 +28,12 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -43,11 +50,11 @@ import (
 // cell — see the WantCanvas.tsx positionMap fix this pairs with, but this
 // also just produces a cleaner, unambiguous room outline on its own.
 const (
-	roomSize    = 6          // full room footprint (walls included), tiles
-	roomPitch   = roomSize - 1 // distance between room anchors; rooms share one wall column
-	sideLen     = roomSize - 1 // tileFootprintCells span = length+1: full side (6 cells) needs length=5
-	topBotLen   = roomSize - 3 // top/bottom span (4 cells, corners excluded) needs length=3
-	rowGap      = 10         // vertical spacing between stage rows (> roomSize, so rows never touch)
+	roomSize  = 6            // full room footprint (walls included), tiles
+	roomPitch = roomSize - 1 // distance between room anchors; rooms share one wall column
+	sideLen   = roomSize - 1 // tileFootprintCells span = length+1: full side (6 cells) needs length=5
+	topBotLen = roomSize - 3 // top/bottom span (4 cells, corners excluded) needs length=3
+	rowGap    = 10           // vertical spacing between stage rows (> roomSize, so rows never touch)
 )
 
 // want mirrors just enough of mywant's want-spec YAML shape to be accepted
@@ -73,6 +80,7 @@ func main() {
 	worldName := flag.String("world", "skills-rpg", "target mywant world name")
 	mywantURL := flag.String("mywant-url", envOr("MYWANT_URL", "http://localhost:8080"), "mywant server base URL")
 	onlyAddMissing := flag.Bool("only-add-missing", false, "reconcile mode: add generated wants whose ID doesn't already exist in the currently active world, without opening a different world or clearing anything (safe to run against a world that has extra manually-deployed wants, e.g. a live coding-instance)")
+	dryRun := flag.Bool("dry-run", false, "print the generated wants as YAML and exit, without opening, clearing or writing to any world")
 	flag.Parse()
 
 	stages, err := loadStages(*stagesDir)
@@ -135,7 +143,16 @@ func main() {
 			}},
 		})
 	}
-	fmt.Printf("Generated %d wants (wall+door+startpoint+next_stage) from %d stages\n", len(wants), len(stages))
+	fmt.Printf("Generated %d wants (wall+door+device+startpoint+next_stage) from %d stages\n", len(wants), len(stages))
+
+	if *dryRun {
+		data, err := yaml.Marshal(wants)
+		if err != nil {
+			fatalf("marshal wants: %v", err)
+		}
+		os.Stdout.Write(data)
+		return
+	}
 
 	if *onlyAddMissing {
 		existing, err := existingWantIDs(*mywantURL)
@@ -269,12 +286,35 @@ func findDoor(stage *server.Stage, a, b string) (string, *server.Door) {
 	return "", nil
 }
 
+// cell is a canvas square, as (x, y). Used as a map key, so devices can be
+// laid down without ever landing two on the same square.
+type cell struct{ x, y int }
+
 // stageInfo records where a stage's first and last rooms' interiors are, so
 // a later pass can place a startpoint in the first and a next_stage portal
-// (targeting the next stage's startpoint) in the last.
+// (targeting the next stage's startpoint) in the last. It also records the
+// square every door tile ended up in, which is what device placement reads:
+// a device stands in front of the door it gates, so it has to know where the
+// door is.
 type stageInfo struct {
-	startX, startY int // first room's interior center — where CursorMan should land
-	lastX, lastY   int // last room's interior center — where this stage's next_stage portal sits
+	startX, startY int             // first room's interior center — where CursorMan should land
+	lastX, lastY   int             // last room's interior center — where this stage's next_stage portal sits
+	baseY          int             // top wall row of every room in this stage
+	rightX         int             // right wall column of the last room — the stage's east edge
+	doors          map[string]cell // rpg door id -> the square its tile stands in
+}
+
+// isFloor reports whether (x, y) is an interior square of one of this stage's
+// rooms — inside the top/bottom walls, and not on one of the shared wall
+// columns the rooms are separated by (every multiple of roomPitch).
+func (s stageInfo) isFloor(c cell) bool {
+	if c.y <= s.baseY || c.y >= s.baseY+roomSize-1 {
+		return false
+	}
+	if c.x <= 0 || c.x >= s.rightX {
+		return false
+	}
+	return c.x%roomPitch != 0
 }
 
 // layoutStage places stage's rooms in a single row (y = stageIndex*rowGap),
@@ -284,22 +324,33 @@ func layoutStage(stage *server.Stage, stageIndex int) ([]want, stageInfo) {
 	baseY := stageIndex * rowGap
 
 	var out []want
+	doors := map[string]cell{}
 	for i, wpID := range order {
 		rx := i * roomPitch
 		ry := baseY
-		out = append(out, roomWalls(stage, wpID, order, i, rx, ry)...)
+		roomWants, doorKey, doorAt := roomWalls(stage, wpID, order, i, rx, ry)
+		out = append(out, roomWants...)
+		if doorKey != "" {
+			doors[doorKey] = doorAt
+		}
 	}
 
 	lastRX := (len(order) - 1) * roomPitch
-	return out, stageInfo{
+	info := stageInfo{
 		startX: 2, startY: baseY + 2, // first room's anchor is always rx=0
 		lastX: lastRX + 2, lastY: baseY + 2,
+		baseY: baseY, rightX: lastRX + roomSize - 1,
+		doors: doors,
 	}
+	return append(out, deviceWants(stage, info)...), info
 }
 
 // roomWalls emits the wall(s) (and, where a Door connects to the next room,
 // the door) bounding room i (anchored at rx,ry, a roomSize x roomSize box).
-func roomWalls(stage *server.Stage, wpID string, order []string, i, rx, ry int) []want {
+// It also returns that door's id and the square it stands in (empty id when
+// the room has no door on its right side), so devices can be placed against
+// it later.
+func roomWalls(stage *server.Stage, wpID string, order []string, i, rx, ry int) ([]want, string, cell) {
 	idPrefix := fmt.Sprintf("%s-%s", stage.ID, wpID)
 	var out []want
 
@@ -336,7 +387,7 @@ func roomWalls(stage *server.Stage, wpID string, order []string, i, rx, ry int) 
 	if i == len(order)-1 {
 		// Last room in the stage: cap it with a full right wall.
 		addWall("right", rightX, ry, 90, sideLen)
-		return out
+		return out, "", cell{}
 	}
 
 	nextID := order[i+1]
@@ -351,32 +402,208 @@ func roomWalls(stage *server.Stage, wpID string, order []string, i, rx, ry int) 
 		// side passage.
 		addWall("right-corner-top", rightX, ry, 0, 0)
 		addWall("right-corner-bottom", rightX, ry+roomSize-1, 0, 0)
-		return out
+		return out, "", cell{}
 	}
 
 	// Split the shared (6-cell) wall into "2 cells + 1-cell door gap + 3
 	// cells" and place a 1x1 door want in the gap, synced to this exact
 	// rpg-server door. None of these three pieces share a cell with each
 	// other or with any other wall in the room.
+	//
+	// The tile is `rpg_door`, not the bundled `door`: both mirror `locked`
+	// from rpg-server and both block CursorMan while it is set, but rpg_door
+	// also carries the reason the door is shut — which key opens it, whether
+	// chap holds that key, which device is holding it — and that is the whole
+	// point of the device tiles placed next to it.
 	addWall("right-a", rightX, ry, 90, 1)
 	addWall("right-b", rightX, ry+3, 90, 2)
+	at := cell{rightX, ry + 2}
 	out = append(out, want{
 		Metadata: wantMetadata{
 			ID:   fmt.Sprintf("want-%s-door-%s", idPrefix, doorKey),
 			Name: fmt.Sprintf("%s-door-%s", idPrefix, doorKey),
-			Type: "door",
+			Type: "rpg_door",
 			Labels: map[string]string{
-				"mywant.io/canvas-x": fmt.Sprint(rightX),
-				"mywant.io/canvas-y": fmt.Sprint(ry + 2),
+				"mywant.io/canvas-x": fmt.Sprint(at.x),
+				"mywant.io/canvas-y": fmt.Sprint(at.y),
 			},
 		},
 		Spec: wantSpec{Params: map[string]any{
-			"locked":       door.Locked,
-			"rpg_stage_id": stage.ID,
-			"rpg_door_id":  doorKey,
+			"locked":   door.Locked,
+			"stage_id": stage.ID,
+			"door_id":  doorKey,
 		}},
 	})
+	return out, doorKey, at
+}
+
+// Where a device tile is looked for, relative to the square it wants: the
+// square itself, then straight back from the door, then forward, then a
+// column further from the door. A room only ever holds a couple of devices,
+// so this never has to search far — it exists so two devices gating the same
+// door, or a device whose preferred square is already the startpoint, still
+// land on floor rather than on top of something.
+var deviceOffsets = []cell{
+	{0, 0}, {0, -1}, {0, 1}, {0, -2}, {0, 2},
+	{-1, 0}, {-1, -1}, {-1, 1}, {-2, 0}, {-2, -1}, {-2, 1},
+}
+
+// deviceWants places one tile per entry in the stage's `devices` map.
+//
+// Nothing in the stage data says where a device is — a device is only an id,
+// a label and an on/off flag. What the data does say is what each device
+// gates: a door names it in requires_device or blocked_by_device, and a
+// device names whatever holds it shut in blocked_by_device. That is enough to
+// place them. The device gating a door stands on the floor square in front of
+// that door, and whatever holds that device shut stands one square further
+// back, so the room reads in the order it has to be solved: the far tile
+// first, then the near one, then the door.
+func deviceWants(stage *server.Stage, info stageInfo) []want {
+	if len(stage.Devices) == 0 {
+		return nil
+	}
+	devIDs := slices.Sorted(maps.Keys(stage.Devices))
+	controllable := devicesControllable(stage)
+
+	// Which door each device gates. Doors are walked in id order so a device
+	// gating more than one door still lands somewhere deterministic.
+	gated := map[string]string{}
+	for _, doorKey := range slices.Sorted(maps.Keys(stage.Doors)) {
+		d := stage.Doors[doorKey]
+		for _, devID := range []string{d.RequiresDevice, d.BlockedByDevice} {
+			if devID == "" {
+				continue
+			}
+			if _, taken := gated[devID]; !taken {
+				gated[devID] = doorKey
+			}
+		}
+	}
+
+	// The startpoint and the next_stage portal are placed by the caller's
+	// second pass, and they are floor squares like any other.
+	taken := map[cell]bool{
+		{info.startX, info.startY}: true,
+		{info.lastX, info.lastY}:   true,
+	}
+	placed := map[string]cell{}
+	var out []want
+
+	put := func(devID string, want cell) bool {
+		for _, off := range deviceOffsets {
+			c := cell{want.x + off.x, want.y + off.y}
+			if !info.isFloor(c) || taken[c] {
+				continue
+			}
+			taken[c] = true
+			placed[devID] = c
+			out = append(out, deviceWant(stage, devID, c, controllable))
+			return true
+		}
+		return false
+	}
+
+	// In front of the door each device gates.
+	for _, devID := range devIDs {
+		door, ok := info.doors[gated[devID]]
+		if !ok {
+			continue // no door, or a doorway the layout drew as an open gap
+		}
+		put(devID, cell{door.x - 1, door.y})
+	}
+
+	// Behind whatever they hold shut. Looped until nothing new lands, so a
+	// chain of blockers keeps stepping one square further back.
+	for progress := true; progress; {
+		progress = false
+		for _, devID := range devIDs {
+			if _, done := placed[devID]; done {
+				continue
+			}
+			for _, other := range devIDs {
+				at, ok := placed[other]
+				if !ok || stage.Devices[other].BlockedByDevice != devID {
+					continue
+				}
+				progress = put(devID, cell{at.x, at.y - 1})
+				break
+			}
+		}
+	}
+
+	// Anything left gates nothing the layout drew — park it in the first
+	// room, off the line the player walks from the startpoint to the door.
+	for _, devID := range devIDs {
+		if _, done := placed[devID]; !done {
+			put(devID, cell{info.startX, info.startY - 1})
+		}
+	}
 	return out
+}
+
+func deviceWant(stage *server.Stage, devID string, at cell, controllable bool) want {
+	slug := strings.ReplaceAll(devID, "_", "-")
+	return want{
+		Metadata: wantMetadata{
+			ID:   fmt.Sprintf("want-%s-%s", stage.ID, slug),
+			Name: fmt.Sprintf("%s-%s", stage.ID, slug),
+			Type: deviceWantType(stage, devID),
+			Labels: map[string]string{
+				"mywant.io/canvas-x": fmt.Sprint(at.x),
+				"mywant.io/canvas-y": fmt.Sprint(at.y),
+			},
+		},
+		Spec: wantSpec{Params: map[string]any{
+			"stage_id":     stage.ID,
+			"device_id":    devID,
+			"controllable": controllable,
+		}},
+	}
+}
+
+// deviceWantType picks the tile a device is drawn as. The stage data has no
+// type field, but it does say which way the device has to be pointed for the
+// stage to open up, and that is the difference between the two tiles: an
+// alarm is a thing you switch off (something else is held shut while it
+// runs), a generator is a thing you switch on (something else needs it
+// running). Where a device gates nothing, its resting state says the same —
+// alarms start on, generators start off.
+func deviceWantType(stage *server.Stage, devID string) string {
+	for _, d := range stage.Doors {
+		if d.BlockedByDevice == devID {
+			return "rpg_alarm"
+		}
+	}
+	for _, other := range stage.Devices {
+		if other.BlockedByDevice == devID {
+			return "rpg_alarm"
+		}
+	}
+	for _, d := range stage.Doors {
+		if d.RequiresDevice == devID {
+			return "rpg_generator"
+		}
+	}
+	if stage.Devices[devID].On {
+		return "rpg_alarm"
+	}
+	return "rpg_generator"
+}
+
+// devicesControllable reports whether the stage's device tiles may be clicked
+// to have chap operate them.
+//
+// Usually yes — operating the device from the board is the point. The
+// exception is a stage whose own goals tell the player to deploy a want to do
+// it (stage9): there a clickable tile is the answer sheet, so those tiles are
+// left as read-only mirrors of the server.
+func devicesControllable(stage *server.Stage) bool {
+	for _, rule := range stage.NextGoalRules {
+		if strings.Contains(rule.Goal.RequiredSkill, "mywant-deploy") {
+			return false
+		}
+	}
+	return true
 }
 
 func openWorld(base, name string) error {
@@ -411,62 +638,44 @@ func importWants(base string, wants []want) error {
 // existingWantIDs returns the set of want IDs already present in the
 // currently active world (used by -only-add-missing to avoid re-creating or
 // colliding with anything, including manually-deployed wants this tool never
-// generated in the first place).
+// generated in the first place). System wants are left out, so its size is
+// the same population waitForWantCount counts; no generated id can name one
+// anyway.
 func existingWantIDs(base string) (map[string]bool, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(base + "/api/v1/wants")
+	live, err := deletableWantIDs(client, base)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	var body struct {
-		Wants []struct {
-			Metadata struct {
-				ID string `json:"id"`
-			} `json:"metadata"`
-		} `json:"wants"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return nil, err
-	}
-	ids := make(map[string]bool, len(body.Wants))
-	for _, w := range body.Wants {
-		ids[w.Metadata.ID] = true
+	ids := make(map[string]bool, len(live))
+	for _, id := range live {
+		ids[id] = true
 	}
 	return ids, nil
 }
 
-// clearAllWants deletes every want currently in the active world (via the
-// generic batch DELETE /api/v1/wants, which only ever targets non-system
-// wants — see mywant's listWants/exportableWants convention), then waits for
-// the count to drop to zero. A no-op if the world is already empty.
+// clearAllWants deletes every deletable want in the active world (via the
+// generic batch DELETE /api/v1/wants) and waits for the deletions to land. A
+// no-op if the world is already empty.
+//
+// System wants (isSystemWant — `robot` is one) are left out of the batch.
+// They have to be: the endpoint rejects the whole request with 403 if a
+// single id in it names one, so including them deletes nothing at all. There
+// is no reason to want them gone either — the server puts them back by
+// itself. So the world never empties, and what this waits for is the
+// deletable ones being gone rather than a count of zero: a delete landing
+// mid-import would take a freshly imported want with it.
 func clearAllWants(base string) error {
 	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(base + "/api/v1/wants")
+	live, err := deletableWantIDs(client, base)
 	if err != nil {
 		return err
 	}
-	var body struct {
-		Wants []struct {
-			Metadata struct {
-				ID string `json:"id"`
-			} `json:"metadata"`
-		} `json:"wants"`
-	}
-	err = json.NewDecoder(resp.Body).Decode(&body)
-	resp.Body.Close()
-	if err != nil {
-		return err
-	}
-	if len(body.Wants) == 0 {
+	if len(live) == 0 {
 		return nil
 	}
 
-	ids := make([]string, 0, len(body.Wants))
-	for _, w := range body.Wants {
-		ids = append(ids, w.Metadata.ID)
-	}
-	payload, err := json.Marshal(map[string]any{"ids": ids})
+	payload, err := json.Marshal(map[string]any{"ids": live})
 	if err != nil {
 		return err
 	}
@@ -480,38 +689,58 @@ func clearAllWants(base string) error {
 	}
 
 	for i := 0; i < 50; i++ {
-		resp, err := client.Get(base + "/api/v1/wants")
-		if err == nil {
-			var body struct {
-				Wants []json.RawMessage `json:"wants"`
-			}
-			if json.NewDecoder(resp.Body).Decode(&body) == nil && len(body.Wants) == 0 {
-				resp.Body.Close()
-				return nil
-			}
-			resp.Body.Close()
-		}
 		time.Sleep(200 * time.Millisecond)
+		left, err := deletableWantIDs(client, base)
+		if err != nil {
+			continue
+		}
+		if len(left) == 0 {
+			return nil
+		}
 	}
 	return fmt.Errorf("timed out waiting for existing wants to clear")
 }
 
-// waitForWantCount polls GET /api/v1/wants until it reports at least `want`
+// deletableWantIDs lists the ids of every want in the active world that the
+// server will actually let go of.
+func deletableWantIDs(client *http.Client, base string) ([]string, error) {
+	resp, err := client.Get(base + "/api/v1/wants")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var body struct {
+		Wants []struct {
+			Metadata struct {
+				ID       string `json:"id"`
+				IsSystem bool   `json:"isSystemWant"`
+			} `json:"metadata"`
+		} `json:"wants"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return nil, err
+	}
+	var ids []string
+	for _, w := range body.Wants {
+		if !w.Metadata.IsSystem {
+			ids = append(ids, w.Metadata.ID)
+		}
+	}
+	return ids, nil
+}
+
+// waitForWantCount polls until the world holds at least `want` deletable
 // wants (bounded, ~10s), so a subsequent save doesn't race the import
-// endpoint's background finalization.
+// endpoint's background finalization. System wants are not counted — they are
+// none of this tool's doing, and counting them would let the wait finish one
+// want early.
 func waitForWantCount(base string, want int) error {
 	client := &http.Client{Timeout: 10 * time.Second}
 	var lastCount int
 	for i := 0; i < 50; i++ {
-		resp, err := client.Get(base + "/api/v1/wants")
+		ids, err := deletableWantIDs(client, base)
 		if err == nil {
-			var body struct {
-				Wants []json.RawMessage `json:"wants"`
-			}
-			if json.NewDecoder(resp.Body).Decode(&body) == nil {
-				lastCount = len(body.Wants)
-			}
-			resp.Body.Close()
+			lastCount = len(ids)
 			if lastCount >= want {
 				return nil
 			}
