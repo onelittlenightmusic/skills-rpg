@@ -255,6 +255,11 @@ func (s *Server) Control(in ControlInput) (ControlResult, int) {
 	if !res.OK {
 		return res, 409
 	}
+	if in.Action == ActionAdvance {
+		if stage := s.state.Stages[s.state.CurrentStage]; stage != nil && stage.MywantSetup != nil && s.cfg.MywantURL != "" {
+			go s.initMywantStage(s.state.CurrentStage, stage)
+		}
+	}
 	return res, 200
 }
 
