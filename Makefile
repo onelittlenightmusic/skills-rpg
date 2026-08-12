@@ -1,6 +1,10 @@
 .PHONY: all build build-server build-mcp build-plugin install-skills uninstall-skills install-claude uninstall-claude clean run-server stop-server restart-server restart reset smoke reload-go rebuild-frontend
 
 BIN_DIR := bin
+# Where the customs live in this repo, and where they get linked to. The
+# targets below link rather than copy, so editing a custom here is editing the
+# installed one — the two drifted apart back when this copied.
+SKILL_SRC := server/skills
 SKILL_DST ?= $(HOME)/.mywant/custom-types
 DATA_DIR ?= $(HOME)/.mywant-rpg
 
@@ -19,7 +23,7 @@ smoke:
 
 install-skills:
 	@mkdir -p $(SKILL_DST)
-	@for d in skills/*/; do \
+	@for d in $(SKILL_SRC)/*/; do \
 	  name=$$(basename $$d); \
 	  src=$$(cd "$$d" && pwd); \
 	  echo "linking $$name -> $(SKILL_DST)/$$name"; \
@@ -28,7 +32,7 @@ install-skills:
 	done
 
 uninstall-skills:
-	@for d in skills/*/; do \
+	@for d in $(SKILL_SRC)/*/; do \
 	  name=$$(basename $$d); \
 	  echo "removing $$name from $(SKILL_DST)"; \
 	  rm -rf "$(SKILL_DST)/$$name"; \
@@ -39,7 +43,7 @@ MYWANT_SKILLS    ?= $(HOME)/.mywant/custom-types/mywant-skills
 
 install-claude:
 	@mkdir -p $(CLAUDE_SKILLS)
-	@for d in skills/*/; do \
+	@for d in $(SKILL_SRC)/*/; do \
 	  name=$$(basename $$d); \
 	  echo "installing $$name -> $(CLAUDE_SKILLS)/$$name"; \
 	  rm -rf "$(CLAUDE_SKILLS)/$$name"; \
@@ -58,7 +62,7 @@ install-claude:
 	fi
 
 uninstall-claude:
-	@for d in skills/*/; do \
+	@for d in $(SKILL_SRC)/*/; do \
 	  name=$$(basename $$d); \
 	  rm -rf "$(CLAUDE_SKILLS)/$$name"; \
 	  echo "removed $$name"; \
