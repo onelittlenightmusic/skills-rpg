@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -204,15 +206,21 @@ var serverDataDir string
 var serverStagesDir string
 var serverMywantURL string
 var serverReset bool
+var serverDetach bool
 
 var serverStartCmd = &cobra.Command{
 	Use: "start",
 	Run: func(cmd *cobra.Command, args []string) {
+		if serverDetach {
+			startDetached()
+			return
+		}
+
 		cfg := server.Config{
-			DataDir:    serverDataDir,
-			StagesDir:  serverStagesDir,
-			Port:       serverPort,
-			MywantURL:  serverMywantURL,
+			DataDir:   serverDataDir,
+			StagesDir: serverStagesDir,
+			Port:      serverPort,
+			MywantURL: serverMywantURL,
 		}
 		s, err := server.NewServer(cfg)
 		if err != nil {
@@ -231,6 +239,80 @@ var serverStartCmd = &cobra.Command{
 			fmt.Printf("server error: %v\n", err)
 		}
 	},
+}
+
+// startDetached re-executes this binary as a background `server start` (without
+// -D), pointing its output at the log file and leaving it running after the
+// shell exits. The child writes its own PID file; the parent writes it too so
+// `server status` is accurate the moment this returns.
+func startDetached() {
+	// Guard: don't stack a second server on top of a live one.
+	if pid := readPID(rpgPIDFile()); pid > 0 && isRunning(pid) {
+		fmt.Fprintf(os.Stderr, "Error: rpg-server is already running (PID %d).\n", pid)
+		fmt.Fprintf(os.Stderr, "       Stop it first: mywant-rpg server stop\n")
+		os.Exit(1)
+	}
+	if isPortListening(serverPort) {
+		fmt.Fprintf(os.Stderr, "Error: port %d is already in use.\n", serverPort)
+		os.Exit(1)
+	}
+
+	executable, err := os.Executable()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: cannot locate own executable: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Rebuild the invocation without -D. --stages-dir defaults to empty, so it
+	// is only forwarded when actually set.
+	newArgs := []string{"server", "start",
+		"--port", strconv.Itoa(serverPort),
+		"--data-dir", serverDataDir,
+		"--mywant-url", serverMywantURL,
+	}
+	if serverStagesDir != "" {
+		newArgs = append(newArgs, "--stages-dir", serverStagesDir)
+	}
+
+	logPath := rpgLogFile()
+	if err := os.MkdirAll(filepath.Dir(logPath), 0755); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: cannot create log directory: %v\n", err)
+		os.Exit(1)
+	}
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: cannot open log file %s: %v\n", logPath, err)
+		os.Exit(1)
+	}
+	defer logFile.Close()
+
+	proc := exec.Command(executable, newArgs...)
+	proc.Stdout = logFile
+	proc.Stderr = logFile
+	// Detach from the shell's process group so zsh/bash don't report the child
+	// as a killed job, and so it survives the shell exiting.
+	proc.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	if err := proc.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to start rpg-server: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Give it a moment so an immediate failure (bad stages dir, port race) is
+	// reported here rather than silently landing in the log.
+	time.Sleep(300 * time.Millisecond)
+	if err := proc.Process.Signal(syscall.Signal(0)); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: rpg-server exited immediately after start.\n")
+		fmt.Fprintf(os.Stderr, "       See logs for details: %s\n", logPath)
+		os.Exit(1)
+	}
+
+	if err := os.WriteFile(rpgPIDFile(), []byte(strconv.Itoa(proc.Process.Pid)), 0644); err != nil {
+		fmt.Printf("Warning: failed to write PID file: %v\n", err)
+	}
+
+	fmt.Printf("rpg-server started in background (PID %d) on port %d\n", proc.Process.Pid, serverPort)
+	fmt.Printf("Logs: %s\n", logPath)
 }
 
 var serverStopCmd = &cobra.Command{
@@ -289,6 +371,7 @@ func init() {
 	serveCmd.Flags().StringVar(&serverStagesDir, "stages-dir", "", "stages directory")
 	serveCmd.Flags().StringVar(&serverMywantURL, "mywant-url", "http://localhost:8080", "mywant server URL")
 	serverStartCmd.Flags().StringVar(&serverMywantURL, "mywant-url", "http://localhost:8080", "mywant server URL")
+	serverStartCmd.Flags().BoolVarP(&serverDetach, "detach", "D", false, "Run server in background")
 }
 
 var mcpCmd = &cobra.Command{Use: "mcp"}
@@ -509,6 +592,17 @@ func copyFS(srcFS fs.FS, srcDir, dstDir string) error {
 func rpgPIDFile() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".mywant", "rpg-server.pid")
+}
+
+// isPortListening reports whether something already accepts connections on the
+// port — a stale PID file would otherwise let a second server start and fail.
+func isPortListening(port int) bool {
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 300*time.Millisecond)
+	if err != nil {
+		return false
+	}
+	conn.Close()
+	return true
 }
 func rpgLogFile() string {
 	home, _ := os.UserHomeDir()

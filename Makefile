@@ -1,4 +1,4 @@
-.PHONY: all build build-server build-mcp build-plugin install-skills uninstall-skills install-claude uninstall-claude clean run-server stop-server restart-server restart reset smoke reload-go rebuild-frontend
+.PHONY: all build build-server build-mcp build-plugin cli-build cli-install cli-uninstall install-skills uninstall-skills install-claude uninstall-claude clean run-server stop-server restart-server restart reset smoke reload-go rebuild-frontend
 
 BIN_DIR := bin
 # Where the customs live in this repo, and where they get linked to. The
@@ -7,6 +7,10 @@ BIN_DIR := bin
 SKILL_SRC := server/skills
 SKILL_DST ?= $(HOME)/.mywant/custom-types
 DATA_DIR ?= $(HOME)/.mywant-rpg
+
+# Where `make cli-install` puts the CLI — the same place mywant installs to.
+# Override with: make cli-install INSTALL_DIR=/usr/local/bin
+INSTALL_DIR ?= $(HOME)/.local/bin
 
 all: build
 
@@ -17,6 +21,24 @@ build-plugin:
 	@mkdir -p $(BIN_DIR)
 	go build -o $(BIN_DIR)/mywant-rpg ./cmd/mywant-rpg  # Ensure CLI is built
 	go build -o $(BIN_DIR)/stage-to-world ./cmd/stage-to-world
+
+# Just the CLI — no stage-to-world, no smoke test. This is what cli-install
+# needs, and it keeps bin/mywant-rpg current for the bin/rpg-server wrapper.
+cli-build:
+	@mkdir -p $(BIN_DIR)
+	go build -o $(BIN_DIR)/mywant-rpg ./cmd/mywant-rpg
+
+# Build the CLI and put it on PATH.
+cli-install: cli-build
+	@mkdir -p $(INSTALL_DIR)
+	@install -m 0755 $(BIN_DIR)/mywant-rpg $(INSTALL_DIR)/mywant-rpg
+	@echo "installed: $(INSTALL_DIR)/mywant-rpg"
+	@command -v mywant-rpg > /dev/null 2>&1 || \
+	  echo "warning: $(INSTALL_DIR) is not on PATH"
+
+cli-uninstall:
+	@rm -f $(INSTALL_DIR)/mywant-rpg
+	@echo "removed: $(INSTALL_DIR)/mywant-rpg"
 
 smoke:
 	./docs/smoke.sh
