@@ -85,6 +85,12 @@ wantType:
     - { name: skill_path,              type: string, label: current, persistent: true, initialValue: "" }
     - { name: skill_json_arg_template, type: string, label: current, persistent: true, initialValue: "" }
     - { name: skill_json_arg,          type: string, label: current, persistent: false, initialValue: "" }
+    # Keep one interpreter alive and send it jobs, instead of starting a new
+    # one every tick. The observation costs a fraction of a millisecond; the
+    # interpreter and its imports cost ~57ms, and that was the entire bill.
+    # The resident process also shares one GET /api/v1/state across every
+    # want using this skill (see main.py's snapshot cache).
+    - { name: skill_serve,             type: bool,   label: current, persistent: true, initialValue: true }
     - { name: skill_timeout_seconds,   type: int,    label: goal,    persistent: true, initialValue: 15 }
     - { name: skill_poll_interval_ms,  type: int,    label: goal,    persistent: true, initialValue: 2000 }
     - { name: mrs_raw_output,          type: object, label: current, persistent: false, initialValue: null }
@@ -96,6 +102,7 @@ wantType:
       controllable: '${controllable}'
       skill_path: "~/.mywant/custom-types/rpg-device/main.py"
       skill_json_arg_template: '{"stage_id":"%{stage_id}","device_id":"%{device_id}","desired":"%{action}","attempted":"%{attempted}","last_error":"%{error}"}'
+      skill_serve: true
     goal:
       skill_timeout_seconds: 15
       skill_poll_interval_ms: 2000

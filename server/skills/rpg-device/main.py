@@ -40,6 +40,7 @@ stage_id or device_id missing/empty -> prints {} and exits (no-op).
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -52,9 +53,28 @@ def clean(val) -> str:
     return "" if (v.startswith("%{") and v.endswith("}")) else v
 
 
-def read_state():
+# One snapshot serves every device. Under `serve` mode this process answers all
+# the generators and alarms of a world, and they were each issuing the same
+# argument-independent GET. The TTL sits just under the poll interval so a
+# device still sees a change on the tick after it happens.
+STATE_TTL_SECONDS = 1.5
+_snapshot = {"at": 0.0, "data": None}
+
+
+def read_state(force: bool = False):
+    """The whole game state. Raises if rpg-server cannot be reached.
+
+    force=True skips the cache — required after control(), where the point of
+    the read is to observe the change we just caused. It also refreshes the
+    shared snapshot, so the other devices see that change immediately.
+    """
+    now = time.monotonic()
+    if not force and _snapshot["data"] is not None and now - _snapshot["at"] < STATE_TTL_SECONDS:
+        return _snapshot["data"]
     with urllib.request.urlopen(f"{RPG_SERVER_URL}/api/v1/state", timeout=5) as resp:
-        return json.loads(resp.read().decode())
+        _snapshot["data"] = json.loads(resp.read().decode())
+        _snapshot["at"] = now
+    return _snapshot["data"]
 
 
 def control(action: str, target: str) -> str:
@@ -121,14 +141,7 @@ def survey(state, stage_id, device_id):
     }
 
 
-def main() -> None:
-    arg = {}
-    if len(sys.argv) > 1:
-        try:
-            arg = json.loads(sys.argv[1])
-        except json.JSONDecodeError:
-            pass
-
+def observe(arg: dict) -> dict:
     stage_id = clean(arg.get("stage_id", ""))
     device_id = clean(arg.get("device_id", ""))
     desired = clean(arg.get("desired", "")).lower()
@@ -136,23 +149,20 @@ def main() -> None:
     last_error = clean(arg.get("last_error", ""))
 
     if not stage_id or not device_id:
-        print(json.dumps({}), flush=True)
-        return
+        return {}
 
     try:
         state = read_state()
     except Exception as e:
         # Unreachable: say nothing about the device rather than guess at it.
-        print(json.dumps({"error": f"cannot reach rpg-server: {e}"}, ensure_ascii=False), flush=True)
-        return
+        return {"error": f"cannot reach rpg-server: {e}"}
 
     view = survey(state, stage_id, device_id)
     if view is None:
-        print(json.dumps({
+        return {
             "error": f'unknown device "{device_id}" in "{stage_id}"',
             "attempted": desired,
-        }, ensure_ascii=False), flush=True)
-        return
+        }
 
     fresh_intent = desired != attempted
     error = "" if fresh_intent else last_error
@@ -167,7 +177,7 @@ def main() -> None:
     if act:
         error = control("activate" if desired == "on" else "deactivate", device_id)
         try:
-            view = survey(state := read_state(), stage_id, device_id) or view
+            view = survey(state := read_state(force=True), stage_id, device_id) or view
         except Exception:
             pass  # The act landed; the next poll will read the result.
 
@@ -178,13 +188,45 @@ def main() -> None:
     else:
         summary = f'{view["label"]} is {"on" if view["on"] else "off"}'
 
-    print(json.dumps({
+    return {
         **view,
         "attempted": desired,
         "error": error,
         "summary": summary,
-    }, ensure_ascii=False), flush=True)
+    }
+
+
+def parse_arg(raw) -> dict:
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
+
+def serve() -> None:
+    """Answer jobs on stdin until it closes (MYWANT_MRS_SERVE=1).
+
+    Starting an interpreter and importing urllib costs ~57ms; the observation
+    itself costs a fraction of a millisecond. Staying alive is the whole point.
+    """
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        req = parse_arg(line)
+        args = req.get("args") or []
+        out = observe(parse_arg(args[0]) if args else {})
+        out["_id"] = req.get("_id")
+        print(json.dumps(out, ensure_ascii=False), flush=True)
+
+
+def main() -> None:
+    arg = parse_arg(sys.argv[1]) if len(sys.argv) > 1 else {}
+    print(json.dumps(observe(arg), ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":
-    main()
+    if os.environ.get("MYWANT_MRS_SERVE") == "1":
+        serve()
+    else:
+        main()

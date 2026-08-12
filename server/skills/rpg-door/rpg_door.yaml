@@ -19,6 +19,10 @@ wantType:
     category: game
     pattern: independent
     labels:
+      # bundled の door と同じく、壁の一部として立つ。form-type を壁と共有すると
+      # キャンバスがドアの両脇の隙間をレンガで埋め、壁の奥行きが戸口を貫いて
+      # 続く ── ドアの周りだけ壁が途切れて穴が空いたようには見えなくなる。
+      form-type: wall
       # Drawn as a door on the board, not as a card: the leaf swings on `locked`.
       form-style: door
       type-tone-color: "#8a5a3b"
@@ -70,6 +74,12 @@ wantType:
     - { name: skill_path,              type: string, label: current, persistent: true, initialValue: "" }
     - { name: skill_json_arg_template, type: string, label: current, persistent: true, initialValue: "" }
     - { name: skill_json_arg,          type: string, label: current, persistent: false, initialValue: "" }
+    # Keep one interpreter alive and send it jobs, instead of starting a new
+    # one every tick. The observation costs a fraction of a millisecond; the
+    # interpreter and its imports cost ~57ms, and that was the entire bill.
+    # The resident process also shares one GET /api/v1/state across every
+    # want using this skill (see main.py's snapshot cache).
+    - { name: skill_serve,             type: bool,   label: current, persistent: true, initialValue: true }
     - { name: skill_timeout_seconds,   type: int,    label: goal,    persistent: true, initialValue: 5 }
     - { name: skill_poll_interval_ms,  type: int,    label: goal,    persistent: true, initialValue: 2000 }
     - { name: mrs_raw_output,          type: object, label: current, persistent: false, initialValue: null }
@@ -81,6 +91,7 @@ wantType:
       locked: '${locked}'
       skill_path: "~/.mywant/custom-types/rpg-door/main.py"
       skill_json_arg_template: '{"stage_id":"%{stage_id}","door_id":"%{door_id}"}'
+      skill_serve: true
     goal:
       skill_timeout_seconds: 5
       skill_poll_interval_ms: 2000

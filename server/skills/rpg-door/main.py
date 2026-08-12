@@ -22,6 +22,7 @@ door keeps whatever "locked" its own params gave it).
 import json
 import os
 import sys
+import time
 import urllib.request
 
 RPG_SERVER_URL = os.environ.get("RPG_SERVER_URL", "http://127.0.0.1:7100").rstrip("/")
@@ -33,36 +34,51 @@ def clean(val) -> str:
     return "" if (v.startswith("%{") and v.endswith("}")) else v
 
 
-def main() -> None:
-    arg = {}
-    if len(sys.argv) > 1:
-        try:
-            arg = json.loads(sys.argv[1])
-        except json.JSONDecodeError:
-            pass
+# One snapshot serves every door. Under `serve` mode this process answers all
+# 17 doors of a world, and they were each fetching the same argument-independent
+# GET /api/v1/state — 17 identical requests every two seconds. The TTL is set
+# just under the poll interval so a door still sees a change on the tick after
+# it happens.
+STATE_TTL_SECONDS = 1.5
+_snapshot = {"at": 0.0, "data": None}
 
+
+def read_state():
+    """The whole game state, refetched at most once per STATE_TTL_SECONDS.
+
+    Returns None when rpg-server cannot be reached, which callers must treat as
+    "say nothing" rather than "everything is false" — see observe().
+    """
+    now = time.monotonic()
+    if _snapshot["data"] is not None and now - _snapshot["at"] < STATE_TTL_SECONDS:
+        return _snapshot["data"]
+    try:
+        with urllib.request.urlopen(f"{RPG_SERVER_URL}/api/v1/state", timeout=5) as resp:
+            _snapshot["data"] = json.loads(resp.read().decode())
+            _snapshot["at"] = now
+    except Exception:
+        _snapshot["data"] = None
+    return _snapshot["data"]
+
+
+def observe(arg: dict) -> dict:
     stage_id = clean(arg.get("stage_id", ""))
     door_id = clean(arg.get("door_id", ""))
 
     if not stage_id or not door_id:
-        print(json.dumps({}), flush=True)
-        return
+        return {}
 
-    try:
-        with urllib.request.urlopen(f"{RPG_SERVER_URL}/api/v1/state", timeout=5) as resp:
-            state = json.loads(resp.read().decode())
-    except Exception:
+    state = read_state()
+    if state is None:
         # rpg-server not running / unreachable — leave every mirrored field
         # untouched rather than clobbering "locked" with a guess. A door that
         # forgot it was locked would let CursorMan walk through a locked door.
-        print(json.dumps({}), flush=True)
-        return
+        return {}
 
     stage = state.get("stages", {}).get(stage_id, {})
     door = stage.get("doors", {}).get(door_id)
     if door is None:
-        print(json.dumps({}), flush=True)
-        return
+        return {}
 
     waypoints = stage.get("waypoints", {})
     devices = stage.get("devices", {})
@@ -95,7 +111,7 @@ def main() -> None:
     else:
         summary = f"{door_id} is unlocked"
 
-    print(json.dumps({
+    return {
         "locked": locked,
         "open": is_open,
         "key": key,
@@ -110,8 +126,41 @@ def main() -> None:
         "between_to": label_of(between[1] if len(between) > 1 else ""),
         "stage_title": stage.get("title", ""),
         "summary": summary,
-    }, ensure_ascii=False), flush=True)
+    }
+
+
+def parse_arg(raw: str) -> dict:
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
+
+def serve() -> None:
+    """Answer jobs on stdin until it closes (MYWANT_MRS_SERVE=1).
+
+    Starting an interpreter and importing urllib costs ~57ms; the observation
+    itself costs 0.11ms. Staying alive is the whole point — the request/response
+    loop below is what lets mywant stop paying the former per door per tick.
+    """
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        req = parse_arg(line)
+        args = req.get("args") or []
+        out = observe(parse_arg(args[0]) if args else {})
+        out["_id"] = req.get("_id")
+        print(json.dumps(out, ensure_ascii=False), flush=True)
+
+
+def main() -> None:
+    arg = parse_arg(sys.argv[1]) if len(sys.argv) > 1 else {}
+    print(json.dumps(observe(arg), ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":
-    main()
+    if os.environ.get("MYWANT_MRS_SERVE") == "1":
+        serve()
+    else:
+        main()
