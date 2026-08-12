@@ -9,6 +9,9 @@ wantType:
     pattern: independent
     labels:
       child-role: doer
+      category-icon: "Swords"
+      category-bg-light: "linear-gradient(160deg, #fca5a5 0%, #fde8d8 100%)"
+      category-bg-dark: "linear-gradient(160deg, #b91c1c 0%, #7f1d1d 100%)"
 
   finalResultField: summary
 
