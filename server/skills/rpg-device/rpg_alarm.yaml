@@ -1,0 +1,122 @@
+wantType:
+  metadata:
+    name: rpg_alarm
+    title: RPG Alarm
+    description: |
+      skills-rpg のステージ上にある警報装置（device）の状態を継続表示する want。
+
+      2秒ごとに rpg-server を poll して on/off をミラーするので、カードが示す
+      状態は常にサーバ側の実状態。鳴っている間はサイレンから音波が出て、
+      止めると音波が消える ── 「止まった」ことが絵として読める。
+
+      その警報が blocked_by_device になっているドアも一緒に取得するため、
+      「警報を止めるとこのドアが開けられる」という因果がカード1枚で読める。
+
+      controllable: true なら、カードの警報をクリックして chap に
+      activate / deactivate させられる。クリックは「どちら向きであってほしいか」
+      (webhook_payload.action) を宣言するだけで、実行と結果の反映は次の poll が行う。
+    version: '1.0'
+    category: rpg
+    pattern: independent
+    labels:
+      user-control: "true"
+      # The tile is a two-lamp status panel: green over red, lit by "on".
+      form-style: lamp
+      type-tone-color: "#5a2b2b"
+      child-role: monitor
+      type-icon: "Siren"
+      category-icon: "Swords"
+      category-bg-light: "linear-gradient(160deg, #fca5a5 0%, #fde8d8 100%)"
+      category-bg-dark: "linear-gradient(160deg, #b91c1c 0%, #7f1d1d 100%)"
+
+  finalResultField: summary
+
+  parameters:
+    - name: stage_id
+      description: "監視するステージの ID（例: stage5）"
+      type: string
+      required: true
+    - name: device_id
+      description: "そのステージ内の device ID（例: alarm, alarm_system）"
+      type: string
+      required: true
+    - name: controllable
+      description: カードのクリックで chap に activate/deactivate させるか
+      type: bool
+      required: false
+      default: false
+
+  state:
+    - { name: stage_id,     description: stage id (mirror), type: string, label: current, persistent: true, initialValue: "" }
+    - { name: device_id,    description: device id (mirror), type: string, label: current, persistent: true, initialValue: "" }
+    - { name: controllable, description: whether the card may operate the device, type: bool, label: current, persistent: true, initialValue: false }
+
+    # ── Mirrored from rpg-server on every poll ──
+    - { name: on,          description: whether the alarm is sounding, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "on" }
+    - { name: label,       description: device label from the server, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "label" }
+    - { name: blocked_by,  description: device holding this one shut, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "blocked_by" }
+    - { name: blocked,     description: whether that blocking device is currently on, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "blocked" }
+    - { name: powers,      description: door ids this device unlocks (requires_device), type: array, label: current, persistent: true, initialValue: [], fetchFrom: mrs_raw_output, onFetchData: "powers" }
+    - { name: blocks,      description: door ids this device holds shut (blocked_by_device), type: array, label: current, persistent: true, initialValue: [], fetchFrom: mrs_raw_output, onFetchData: "blocks" }
+    - { name: gates,       description: "{id, open, locked} of every gated door", type: array, label: current, persistent: true, initialValue: [], fetchFrom: mrs_raw_output, onFetchData: "gates" }
+    - { name: stage_title, description: stage title, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "stage_title" }
+    - { name: summary,     description: one-line status, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "summary" }
+    - { name: error,       description: last error, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "error" }
+
+    # ── The want's standing intent ──
+    # Declaring webhook_payload as a current-labeled field is what makes the
+    # server drop {"action":"on"|"off"} into it (engine/server/handlers_webhook.go).
+    # Nothing clears it, so the last click stands as this want's declared intent
+    # until the next one — a level, not an edge. The poll reads it as %{action},
+    # since skill_json_arg_template exposes a map field's sub-keys by name.
+    #
+    # It has to be a level: fetchFrom fields are re-expanded from the last
+    # script output on every reconcile cycle, so a one-shot request the script
+    # cleared would be wiped before any poll could act on it.
+    - { name: webhook_payload,     description: 'last click: {"action":"on"|"off"}', type: object, label: current }
+    - { name: webhook_received_at, description: webhook timestamp, type: string, label: current }
+    # Written only by the script: the intent it last acted on, so a refused
+    # attempt is not retried every two seconds.
+    - { name: attempted,  description: intent the last poll acted on, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "attempted" }
+
+    # ── monitor_mrs_agent plumbing ──
+    - { name: skill_path,              type: string, label: current, persistent: true, initialValue: "" }
+    - { name: skill_json_arg_template, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: skill_json_arg,          type: string, label: current, persistent: false, initialValue: "" }
+    - { name: skill_timeout_seconds,   type: int,    label: goal,    persistent: true, initialValue: 15 }
+    - { name: skill_poll_interval_ms,  type: int,    label: goal,    persistent: true, initialValue: 2000 }
+    - { name: mrs_raw_output,          type: object, label: current, persistent: false, initialValue: null }
+
+  onInitialize:
+    current:
+      stage_id: '${stage_id}'
+      device_id: '${device_id}'
+      controllable: '${controllable}'
+      skill_path: "~/.mywant/custom-types/rpg-device/main.py"
+      skill_json_arg_template: '{"stage_id":"%{stage_id}","device_id":"%{device_id}","desired":"%{action}","attempted":"%{attempted}","last_error":"%{error}"}'
+    goal:
+      skill_timeout_seconds: 15
+      skill_poll_interval_ms: 2000
+
+  requires:
+    - monitor_mrs_agent
+
+  examples:
+    - name: stage5 security alarm
+      description: alarm_door を塞いでいる警報を監視・停止する
+      want:
+        metadata: { name: stage5-alarm, type: rpg_alarm }
+        spec:
+          params:
+            stage_id: stage5
+            device_id: alarm
+            controllable: true
+
+    - name: stage6 alarm system
+      description: main_generator を押さえている警報（表示のみ）
+      want:
+        metadata: { name: stage6-alarm-system, type: rpg_alarm }
+        spec:
+          params:
+            stage_id: stage6
+            device_id: alarm_system

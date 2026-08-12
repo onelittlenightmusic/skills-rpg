@@ -1,0 +1,118 @@
+wantType:
+  metadata:
+    name: rpg_door
+    title: RPG Door
+    description: |
+      skills-rpg のドア1枚を継続観測して、キャンバスの障害物としても
+      want card としても表示する。
+
+      キャンバス上では bundled の door 型と同じく form-style: door のタイルとして
+      描かれ、locked のあいだ CursorMan の通行を塞ぐ。door 型と違うのは、
+      locked 以外も rpg-server から取ってくること ── どの鍵で開くのか、
+      chap がその鍵を持っているのか、どのデバイスが開錠を止めているのか。
+      その全部を1枚のカードに線画で描く。
+
+      2秒ごとに GET /api/v1/state を poll する。rpg-server が落ちている間は
+      何も書き換えない（locked を推測で上書きすると、施錠されたドアを
+      通り抜けられてしまう）。
+    version: '1.0'
+    category: game
+    pattern: independent
+    labels:
+      # Drawn as a door on the board, not as a card: the leaf swings on `locked`.
+      form-style: door
+      type-tone-color: "#8a5a3b"
+      type-icon: "DoorClosed"
+      child-role: monitor
+      # 17 doors would bury the dashboard list. The card is reached by selecting
+      # the tile on the canvas.
+      list-visible: "false"
+
+  finalResultField: summary
+
+  parameters:
+    - name: stage_id
+      description: "skills-rpg のステージ ID（例: stage4）"
+      type: string
+      required: true
+    - name: door_id
+      description: "そのステージ内のドア ID（例: power_door）"
+      type: string
+      required: true
+    - name: locked
+      description: rpg-server から最初の観測が届くまでのあいだの初期状態
+      type: bool
+      required: false
+      default: true
+
+  state:
+    - { name: stage_id, description: stage id (mirror), type: string, label: current, persistent: true, initialValue: "" }
+    - { name: door_id,  description: door id (mirror),  type: string, label: current, persistent: true, initialValue: "" }
+
+    # ── Mirrored from rpg-server on every poll ──
+    # locked is what the canvas reads to decide whether CursorMan may pass.
+    - { name: locked,            description: whether the door blocks CursorMan, type: bool, label: current, persistent: true, initialValue: true, fetchFrom: mrs_raw_output, onFetchData: "locked" }
+    - { name: open,              description: whether the door stands open, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "open" }
+    - { name: key,               description: key id that opens this door, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "key" }
+    - { name: key_held_by_chap,  description: whether chap is carrying that key, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "key_held_by_chap" }
+    - { name: requires_device,   description: device that must be running, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "requires_device" }
+    - { name: device_on,         description: whether that device is running, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "device_on" }
+    - { name: device_label,      description: that device's label, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "device_label" }
+    - { name: blocked_by_device, description: device that must be stopped, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "blocked_by_device" }
+    - { name: blocker_on,        description: whether that blocker is running, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "blocker_on" }
+    - { name: blocker_label,     description: that blocker's label, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "blocker_label" }
+    - { name: between_from,      description: waypoint on one side, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "between_from" }
+    - { name: between_to,        description: waypoint on the other side, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "between_to" }
+    - { name: stage_title,       description: stage title, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "stage_title" }
+    - { name: summary,           description: first unmet condition, in words, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "summary" }
+
+    # ── monitor_mrs_agent plumbing ──
+    - { name: skill_path,              type: string, label: current, persistent: true, initialValue: "" }
+    - { name: skill_json_arg_template, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: skill_json_arg,          type: string, label: current, persistent: false, initialValue: "" }
+    - { name: skill_timeout_seconds,   type: int,    label: goal,    persistent: true, initialValue: 5 }
+    - { name: skill_poll_interval_ms,  type: int,    label: goal,    persistent: true, initialValue: 2000 }
+    - { name: mrs_raw_output,          type: object, label: current, persistent: false, initialValue: null }
+
+  onInitialize:
+    current:
+      stage_id: '${stage_id}'
+      door_id: '${door_id}'
+      locked: '${locked}'
+      skill_path: "~/.mywant/custom-types/rpg-door/main.py"
+      skill_json_arg_template: '{"stage_id":"%{stage_id}","door_id":"%{door_id}"}'
+    goal:
+      skill_timeout_seconds: 5
+      skill_poll_interval_ms: 2000
+
+  requires:
+    - monitor_mrs_agent
+
+  examples:
+    - name: stage4 power door
+      description: 発電機が回るまで開かないドア
+      want:
+        metadata:
+          name: stage4-power-door
+          type: rpg_door
+          labels:
+            mywant.io/canvas-x: "5"
+            mywant.io/canvas-y: "32"
+        spec:
+          params:
+            stage_id: stage4
+            door_id: power_door
+
+    - name: stage5 alarm door
+      description: 警報が鳴っているあいだ塞がれているドア
+      want:
+        metadata:
+          name: stage5-alarm-door
+          type: rpg_door
+          labels:
+            mywant.io/canvas-x: "5"
+            mywant.io/canvas-y: "42"
+        spec:
+          params:
+            stage_id: stage5
+            door_id: alarm_door
