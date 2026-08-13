@@ -15,6 +15,7 @@ const (
 	ActionDeactivate = "deactivate" // chap deactivates a device
 	ActionState      = "state"      // chap checks device state
 	ActionAdvance    = "advance"    // you advances to the next stage after clearing
+	ActionReturn     = "return"     // you walks back to the stage that leads here
 )
 
 const (
@@ -29,7 +30,7 @@ func actorAllowed(actor, action string) bool {
 	switch actor {
 	case ActorYou:
 		switch action {
-		case ActionObserve, ActionMove, ActionPickup, ActionAdvance:
+		case ActionObserve, ActionMove, ActionPickup, ActionAdvance, ActionReturn:
 			return true
 		}
 	case ActorChap:
@@ -95,6 +96,8 @@ func applyControl(state *GameState, in ControlInput, locale *StageLocale) (Event
 		changes, err = doState(stage, in)
 	case ActionAdvance:
 		changes, err = doAdvance(state, stage)
+	case ActionReturn:
+		changes, err = doReturn(state, stage)
 	default:
 		err = fmt.Errorf("unknown action %q", in.Action)
 	}
@@ -382,20 +385,86 @@ func doDeactivate(state *GameState, stage *Stage, in ControlInput) (map[string]a
 
 // blockedByAnyDoor returns an error if any closed door exists between a and b.
 func doAdvance(state *GameState, stage *Stage) (map[string]any, error) {
-	if stage.ClearedWhen == "" || !has(state.Achievements, stage.ClearedWhen) {
-		return nil, fmt.Errorf("current stage is not cleared yet")
-	}
 	nextID := stage.NextStage
 	next, ok := state.Stages[nextID]
 	if !ok || next == nil {
 		return nil, fmt.Errorf("no next stage to advance to")
 	}
+	// Clearing is what earns you a stage you have never seen. Walking back into
+	// one you have already been in is not that — you left it standing, and the
+	// door you came out of is still there. Without this, going back one stage
+	// stranded you: the clear condition was met in a life the stage no longer
+	// remembers, so the way forward refused and there was no way on.
+	if _, beenThere := state.StageExit[nextID]; !beenThere {
+		if stage.ClearedWhen == "" || !has(state.Achievements, stage.ClearedWhen) {
+			return nil, fmt.Errorf("current stage is not cleared yet")
+		}
+	}
+	// Where you were standing when you left, so walking back in later puts you
+	// there rather than at that stage's entrance.
+	rememberExit(state, stage.ID)
 	state.CurrentStage = nextID
 	state.EventHistory = nil
 	if next.InitialPosition != "" {
 		state.You.Position = next.InitialPosition
 	}
 	return map[string]any{"current_stage": nextID}, nil
+}
+
+// doReturn walks you back into the stage that leads to this one.
+//
+// The counterpart of doAdvance, and deliberately built out of the same pieces:
+// change the current stage, forget the per-stage event log, place you. What it
+// must NOT do is what DebugJumpStage does — restore the stage from its pristine
+// YAML and empty your inventory and achievements. That is a debug restart, and
+// using it to travel meant every trip out and back re-armed the alarms, re-shut
+// the doors and forgot what you were carrying. Walking through a door is not a
+// reason for a stage to forget you were ever in it.
+//
+// No "cleared" requirement, unlike advancing: you may leave a stage unfinished
+// and come back to it, and the way back is exactly how you would.
+func doReturn(state *GameState, stage *Stage) (map[string]any, error) {
+	prevID := previousStageOf(state, stage.ID)
+	if prevID == "" {
+		return nil, fmt.Errorf("no previous stage to return to")
+	}
+	prev, ok := state.Stages[prevID]
+	if !ok || prev == nil {
+		return nil, fmt.Errorf("previous stage %q is not loaded", prevID)
+	}
+	rememberExit(state, stage.ID)
+	state.CurrentStage = prevID
+	state.EventHistory = nil
+	if at := state.StageExit[prevID]; at != "" {
+		state.You.Position = at
+	} else if prev.InitialPosition != "" {
+		state.You.Position = prev.InitialPosition
+	}
+	return map[string]any{"current_stage": prevID}, nil
+}
+
+// previousStageOf answers "who leads here", by inverting the next_stage links
+// the stages already carry. Nothing stores the backward link: two directions
+// recorded separately are two things that can disagree, and a stage graph that
+// disagrees with itself would send you back somewhere you have never been.
+func previousStageOf(state *GameState, id string) string {
+	for prevID, st := range state.Stages {
+		if st != nil && st.NextStage == id {
+			return prevID
+		}
+	}
+	return ""
+}
+
+// rememberExit records where you were standing in a stage as you leave it.
+func rememberExit(state *GameState, stageID string) {
+	if stageID == "" || state.You.Position == "" {
+		return
+	}
+	if state.StageExit == nil {
+		state.StageExit = map[string]string{}
+	}
+	state.StageExit[stageID] = state.You.Position
 }
 
 func blockedByAnyDoor(stage *Stage, a, b string) error {

@@ -1,0 +1,20 @@
+agent:
+  metadata:
+    name: rpg_stage_jump_agent
+    capability: rpg_stage_jump
+    type: monitor
+  script:
+    path: ./main.py
+    timeout_seconds: 5
+    # One interpreter, kept alive. The script implements the resident loop; the
+    # runner falls back to spawning if it ever stops doing so.
+    serve: true
+    # Nothing to do until a card writes where to go, and starting an interpreter
+    # every tick to be told that is the whole cost of an idle portal. With the
+    # gate, an idle want costs nothing and the travel still happens on the tick
+    # after the button is pressed.
+    required_params:
+      - pending_jump
+  state_updates:
+    - { name: pending_jump,     type: string, label: current, persistent: true, onFetchData: "pending_jump" }
+    - { name: last_jump_result, type: string, label: current, persistent: true, onFetchData: "last_jump_result" }

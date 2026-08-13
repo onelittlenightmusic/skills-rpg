@@ -12,6 +12,10 @@ type GameState struct {
 	NextGoal      Goal              `yaml:"next_goal" json:"next_goal"`
 	PlaytimeSec   int               `yaml:"playtime_seconds" json:"playtime_seconds"`
 	EventHistory  []Event           `yaml:"event_history,omitempty" json:"event_history,omitempty"`
+	// Where you were standing in each stage when you left it, so returning to
+	// one puts you back where you were rather than at its entrance. Written on
+	// the way out (advance and return), read on the way in.
+	StageExit map[string]string `yaml:"stage_exit,omitempty" json:"stage_exit,omitempty"`
 }
 
 type Player struct {

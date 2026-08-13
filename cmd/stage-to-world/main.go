@@ -104,8 +104,31 @@ func main() {
 	// stage's startpoint (skipped where NextStage is empty or unknown, e.g.
 	// the final stage). Needs all stages laid out first since a stage's
 	// portal targets the *next* stage's coordinates.
+	// Who leads into each stage, read back off the same NextStage links the
+	// portals are built from — so the way back cannot disagree with the way
+	// forward. A stage nobody points at (the first one) simply has no entry
+	// here, and its start point is left with no way back, which is the truth.
+	prevOf := map[string]string{}
+	for _, stage := range stages {
+		if stage.NextStage != "" {
+			prevOf[stage.NextStage] = stage.ID
+		}
+	}
+
 	for _, stage := range stages {
 		info := layouts[stage.ID]
+		startParams := map[string]any{"label": fmt.Sprintf("%s entrance", stage.ID)}
+		// Landing on the portal you came through, not on that stage's own start
+		// point: going back should put you where you left, facing the door you
+		// walked into. (Its start point is where you would land arriving from
+		// the stage before it — a different journey.)
+		if prev, ok := prevOf[stage.ID]; ok {
+			if prevInfo, ok := layouts[prev]; ok {
+				startParams["rpg_prev_stage_id"] = prev
+				startParams["target_x"] = prevInfo.lastX
+				startParams["target_y"] = prevInfo.lastY
+			}
+		}
 		wants = append(wants, want{
 			Metadata: wantMetadata{
 				ID:   fmt.Sprintf("want-%s-startpoint", stage.ID),
@@ -116,7 +139,7 @@ func main() {
 					"mywant.io/canvas-y": fmt.Sprint(info.startY),
 				},
 			},
-			Spec: wantSpec{Params: map[string]any{"label": fmt.Sprintf("%s entrance", stage.ID)}},
+			Spec: wantSpec{Params: startParams},
 		})
 
 		if stage.NextStage == "" {
