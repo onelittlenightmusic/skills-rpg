@@ -159,6 +159,15 @@ Claude Code (you)
 
 Wants (stages 7–9) are deployed via the `mywant-deploy` skill and run as background agents that call the same HTTP API.
 
+Everything that changes the game — however it arrives, MCP tool or skill or CLI
+or the canvas — goes through one endpoint as one shape. What may be asked, by
+which of the two actors, and what has to be true for it to happen:
+
+| | |
+|---|---|
+| [docs/actions.md](docs/actions.md) | the action model: actors, preconditions, results |
+| [docs/mywant-rpg-cli.md](docs/mywant-rpg-cli.md) | the `mywant rpg` command line |
+
 ## Settings API
 
 | Endpoint | Method | Description |

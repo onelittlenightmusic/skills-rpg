@@ -3,8 +3,10 @@ wantType:
     name: rpg_control
     title: RPG Control
     description: |
-      rpg-server に対してゲームアクション (open / move / pickup / observe など) を chap として実行する。
-      you から拒否されたアクションを代行する用途で使う。
+      rpg-server に対してゲームアクション (open / activate / move / pickup / advance / return など) を実行する。
+      既定の実行者は chap で、you から拒否されたアクションを代行する用途。actor に you を
+      指定すれば、移動・取得・ステージ間の移動 (advance / return) も呼べる。
+      誰が何を実行できるかは docs/actions.md を参照。
     version: '1.0'
     category: rpg
     pattern: independent
@@ -17,6 +19,11 @@ wantType:
   finalResultField: summary
 
   parameters:
+    - name: actor
+      description: 実行者。chap（扉・デバイス）か you（移動・取得・advance / return）
+      type: string
+      required: false
+      default: chap
     - name: action
       description: ゲームアクション名（observe / move / pickup / open など）
       type: string
@@ -32,6 +39,7 @@ wantType:
 
   state:
     - { name: skill_json_arg,        description: JSON arg passed to main.py, type: string, label: current, persistent: false, initialValue: "" }
+    - { name: actor,                 description: actor (mirror), type: string, label: current, persistent: false, initialValue: "" }
     - { name: action,                description: action (mirror), type: string, label: current, persistent: false, initialValue: "" }
     - { name: target,                description: target (mirror), type: string, label: current, persistent: false, initialValue: "" }
     - { name: args,                  description: args (mirror), type: object, label: current, persistent: false, initialValue: {} }
@@ -51,7 +59,7 @@ wantType:
 
   onInitialize:
     current:
-      skill_json_arg: '{"action":"${action}","target":"${target}","args":${args}}'
+      skill_json_arg: '{"actor":"${actor}","action":"${action}","target":"${target}","args":${args}}'
 
   requires:
     - rpg_control
@@ -63,3 +71,10 @@ wantType:
         metadata: { name: ask-chap-open-door1, type: rpg_control }
         spec:
           params: { action: open, target: door1 }
+
+    - name: send you to the next stage
+      description: クリア済みのステージから次へ進む（両ステージはそのまま残る）
+      want:
+        metadata: { name: go-next-stage, type: rpg_control }
+        spec:
+          params: { actor: you, action: advance }

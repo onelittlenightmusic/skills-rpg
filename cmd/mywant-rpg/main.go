@@ -138,7 +138,8 @@ var (
 )
 
 var controlCmd = &cobra.Command{
-	Use: "control <action> [target]",
+	Use:  "control <action> [target]",
+	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		actor := controlActor
 		if actor == "" {
@@ -150,6 +151,22 @@ var controlCmd = &cobra.Command{
 		}
 		if len(args) > 1 {
 			payload["target"] = args[1]
+		}
+		// --arg key=value, repeatable. Split on the first '=' only, so a value
+		// may contain one.
+		if len(controlArgs) > 0 {
+			extra := map[string]any{}
+			for _, kv := range controlArgs {
+				k, v, found := strings.Cut(kv, "=")
+				if !found {
+					fmt.Fprintf(os.Stderr, "ignoring --arg %q: expected key=value\n", kv)
+					continue
+				}
+				extra[k] = v
+			}
+			if len(extra) > 0 {
+				payload["args"] = extra
+			}
 		}
 		v, status, err := client().send("POST", "/api/v1/control", payload)
 		printResult(v, status, err)
@@ -648,6 +665,12 @@ func init() {
 		defaultURL = v
 	}
 	rootCmd.PersistentFlags().StringVar(&serverURL, "server-url", defaultURL, "rpg-server base URL")
+
+	// Both were declared and read but never registered, so every control call
+	// went out as chap with no args — which left move, pickup, advance and
+	// return, the whole of `you`'s half of the game, unreachable from the CLI.
+	controlCmd.Flags().StringVar(&controlActor, "actor", "chap", "actor performing the action: chap or you")
+	controlCmd.Flags().StringArrayVar(&controlArgs, "arg", nil, "extra argument as key=value (repeatable)")
 
 	// Use PersistentFlags on rootCmd so all subcommands (including hidden ones) can access them.
 	rootCmd.PersistentFlags().IntVar(&serverPort, "port", 7100, "server port")
