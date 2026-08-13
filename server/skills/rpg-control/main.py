@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
-"""rpg-control: send a control action to rpg-server as `chap`.
+"""rpg-control: send a control action to rpg-server.
 
 Reads JSON arg from sys.argv[1] (or stdin if absent):
-  {"action": "open", "target": "door1", "args": {...}}
+  {"actor": "chap", "action": "open", "target": "door1", "args": {...}}
+
+`actor` defaults to chap, which is what this skill is usually for — doing the
+half of the game the player cannot. It is a parameter rather than a constant
+because the two halves are a game rule, not a property of the caller: `you`
+walks, picks things up and travels between stages, and a skill that could only
+ever be chap simply could not reach those. The MCP tool has always taken an
+actor; this is the same door into the same endpoint.
+
+See docs/actions.md for who may perform what.
 """
 import json
 import os
@@ -31,18 +40,19 @@ def main() -> None:
 
     action = arg.get("action", "")
     target = arg.get("target", "")
+    actor = str(arg.get("actor") or "chap").strip() or "chap"
     if not action:
         error_out("action is required")
         return
 
-    body = {"actor": "chap", "action": action, "target": target}
+    body = {"actor": actor, "action": action, "target": target}
     if "args" in arg and arg["args"]:
         body["args"] = arg["args"]
 
     base = os.environ.get("RPG_SERVER_URL", "http://localhost:7100").rstrip("/")
     url = f"{base}/api/v1/control"
 
-    report_progress(20, f"chap → {action} {target}")
+    report_progress(20, f"{actor} → {action} {target}")
     req = urllib.request.Request(
         url,
         data=json.dumps(body).encode(),

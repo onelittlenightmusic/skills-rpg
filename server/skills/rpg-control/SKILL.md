@@ -1,6 +1,6 @@
 ---
 name: rpg-control
-description: rpg-server に対してゲームアクション (open / move / pickup / observe など) を `chap` として実行する。`you` から拒否されたアクションを代行する用途で使う。
+description: rpg-server に対してゲームアクション (open / activate / move / pickup / advance / return など) を実行する。既定は `chap`（`you` から拒否されたアクションの代行）。`actor` を `you` にすれば移動やステージ移動も呼べる。
 compatibility:
   python: ">=3.9"
 metadata:
@@ -9,7 +9,9 @@ metadata:
   final-result-field: summary
 ---
 
-`${CLAUDE_SKILL_DIR}/main.py` に JSON 引数 `{"action": ..., "target": ..., "args": ...}` を渡すと、rpg-server の `/api/v1/control` を `actor=chap` で呼び出した結果を JSON で返す。
+`${CLAUDE_SKILL_DIR}/main.py` に JSON 引数 `{"actor": ..., "action": ..., "target": ..., "args": ...}` を渡すと、rpg-server の `/api/v1/control` を呼び出した結果を JSON で返す。
+
+アクターは2人で、できることが分かれている（chap は扉とデバイス、you は移動・取得・ステージ移動）。誰が何を実行できるか、前提条件は何かは [docs/actions.md](https://github.com/onelittlenightmusic/skills-rpg/blob/main/docs/actions.md) を参照。
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/main.py" $ARGUMENTS
@@ -25,7 +27,8 @@ python3 "${CLAUDE_SKILL_DIR}/main.py" $ARGUMENTS
 
 | フィールド | 型 | 必須 | デフォルト | 説明 |
 |---|---|---|---|---|
-| `action` | string | ✓ | — | ゲームアクション名（observe / move / pickup / open など） |
+| `actor` | string | — | `chap` | 実行者。`chap`（扉・デバイス）か `you`（移動・取得・advance / return） |
+| `action` | string | ✓ | — | ゲームアクション名（observe / move / pickup / open / advance / return など） |
 | `target` | string | — | — | 対象（door id / item id / waypoint id など） |
 | `args` | object | — | — | アクション固有の追加引数 |
 
@@ -48,6 +51,17 @@ python3 "${CLAUDE_SKILL_DIR}/main.py" $ARGUMENTS
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/main.py" '{"action":"open","target":"door1"}'
 ```
+
+### Move `you`, and go to the next stage
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/main.py" '{"actor":"you","action":"move","target":"control_room"}'
+python3 "${CLAUDE_SKILL_DIR}/main.py" '{"actor":"you","action":"advance"}'
+```
+
+ステージ間の移動は `advance` / `return` を使う。どちらも両ステージをそのまま残す
+（扉もデバイスも持ち物も achievements も）。`debug jump` は YAML の初期状態へ戻す
+テスト用リスタートなので、移動には使わない。
 
 出力:
 ```json

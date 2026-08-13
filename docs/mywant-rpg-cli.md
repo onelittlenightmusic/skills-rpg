@@ -84,7 +84,9 @@ mywant rpg observe stages.stage1.doors.door1  # specific door state
 
 ### `control <action> [target]`
 
-Perform a game action. The default actor is `chap` (the AI agent). Use `--actor you` for player actions.
+Perform a game action. What the actions are, who may perform each one and what
+has to be true for them to succeed is [actions.md](actions.md); this is only how
+to send one.
 
 ```sh
 mywant rpg control <action> [target] [--actor chap|you] [--arg key=value ...]
@@ -92,29 +94,30 @@ mywant rpg control <action> [target] [--actor chap|you] [--arg key=value ...]
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--actor` | `chap` | Actor performing the action: `chap` (AI agent) or `you` (player) |
-| `--arg` | | Extra arguments as `key=value` pairs (repeatable) |
+| `--actor` | `chap` | Who is acting: `chap` (the agent) or `you` (the player) |
+| `--arg` | | Extra argument as `key=value`, repeatable |
 
-**Common actions:**
+The actor matters: the two halves of the game are split between them, and
+either one asked to do the other's work is refused. chap opens doors and works
+devices; you walks, picks things up and travels between stages.
 
 ```sh
-# Move to a waypoint
-mywant rpg control move entrance
-
-# Open a door
+# chap's half — the default
 mywant rpg control open door1
-
-# Pick up an item
-mywant rpg control pickup key_bronze
-
-# Deactivate a system
 mywant rpg control deactivate alarm_system
+mywant rpg control state main_generator
 
-# Observe as a game action (records an observe event)
-mywant rpg control observe control_room --actor you
+# you's half
+mywant rpg control move control_room --actor you
+mywant rpg control pickup key_bronze --actor you
 
-# Pass extra arguments
-mywant rpg control use terminal --arg code=1234
+# Travel between stages — the ordinary way, which leaves both stages standing
+mywant rpg control advance --actor you
+mywant rpg control return  --actor you
+
+# Naming the key to try, so a wrong one is a wrong one rather than an
+# automatic pick from what chap happens to be carrying
+mywant rpg control open vault_door --arg key=key_bronze
 ```
 
 ---
@@ -225,12 +228,49 @@ mywant rpg server status
 
 ### `debug jump <stage>`
 
-Teleport to the beginning of any stage. **Clears all achievements and inventory.** For testing only.
+Restart any stage from scratch. **Restores that stage to its pristine YAML
+definition — doors shut, devices off, items back where they started — and
+clears all achievements and inventory.** For testing only.
 
 ```sh
 mywant rpg debug jump stage1
 mywant rpg debug jump stage4
 ```
+
+> **Not a way to travel.** Used to move between stages, this makes every trip
+> out and back re-arm the alarms and forget what you were carrying. Use
+> `control advance` / `control return` (see [actions.md](actions.md)), which
+> leave both stages exactly as they stand.
+
+---
+
+### `install <target>` / `uninstall <target>`
+
+Copy the bundled skills into an agent's skill directory, so it can call them.
+
+```sh
+mywant rpg install claude     # ~/.claude/skills
+mywant rpg install gemini
+mywant rpg install codex
+mywant rpg install mywant     # ~/.mywant/custom-types — the want types the canvas draws
+```
+
+`uninstall` takes the same four targets and removes what was copied.
+
+---
+
+### `mcp serve`
+
+Run the MCP server on stdio, exposing the game as agent tools (`rpg_start`,
+`rpg_observe`, `rpg_control_system`, …). This is what an agent runtime launches;
+you do not normally run it by hand.
+
+```sh
+mywant rpg mcp serve
+```
+
+Unlike `control`, the MCP tool takes an actor argument, so an agent reaches both
+halves of the game through it.
 
 ---
 
@@ -249,9 +289,9 @@ mywant rpg goal
 # 4. Observe surroundings
 mywant rpg observe you
 
-# 5. Take action
-mywant rpg control move entrance
+# 5. Take action — chap opens, you walks
 mywant rpg control open door1
+mywant rpg control move entrance --actor you
 
 # 6. Save progress
 mywant rpg save quicksave
