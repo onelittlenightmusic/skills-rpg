@@ -69,7 +69,7 @@ hand first — the ladder enforces the order the stages teach in.
 |---|---|
 | 留 | chap can be told a name instead of a description |
 | 群 | chap accepts "the district" as an address |
-| 種 | chap proposes only mechanisms that can take the value you named |
+| 種 | chap proposes only want types that can take the value you named |
 | 道 | chap reports what is connected to what, unasked |
 | 束 | chap wires a whole group on one instruction |
 
@@ -131,27 +131,36 @@ sides. Everything else in Act 1 and Act 2 rests on affordances that already ship
 ## The Story
 
 You are out of the dungeon. The fortress city runs on the Monolith — the lights
-are on, machinery turns, and every mechanism reports healthy.
+are on, machinery turns, and every want in the city reports healthy.
 
 Nothing works.
 
-The Empire did not sabotage the city. Breaking things invites repair. It did two
-quieter things: it **took the names off everything**, so no instruction can find
-its object, and it **cut the roads between the mechanisms**, so everything still
-produces what it always produced and there is nowhere for it to go.
+The dungeon already said what the Empire does to people who challenge the
+Monolith: *the Empire erased them, but the tools remained.* The fortress is where
+the player finds out what erasing someone actually meant.
+
+**It meant taking their name off everything they built.**
+
+The Keymakers signed their work. The city's gates, its pumps, its lifts — all
+built by people the Empire then unmade, which in practice meant scraping the
+maker's name off every one of them. Breaking the gates would have invited repair.
+Taking the names left them running and unaddressable: a gate whose maker has no
+name is a gate nobody can call to. The Empire cut the roads between the wants for
+the same reason — everything still produces what it always produced, and there is
+nowhere for it to go.
 
 The result is a city that cannot be accused of being broken and cannot be used.
 
-**Lira**, a Keymaker archivist, kept a ledger through all of it. She is the reason
-the old names can be recovered — and the reason the player learns that a name is
-not a sticker but a record of what a value has been used for. She is also the one
-who recognises the forms: it is Lira who tells the player, the first time chap
-answers a shorter instruction correctly, that this is what the Keymakers called a
-kata.
+**Lira** was your master, a Keymaker, and she died in the dungeon. What you
+carried out is her **maker's mark** — and because the Empire scraped her name off
+everything she built, the mark in your pocket is the last place that name still
+exists. Naming it and pinning it is how you put her back into the world, and it
+is why the first gate opens.
 
 The dungeon taught that defining an intent makes repetition scale. The fortress
 is the other half: **an intent with nothing named to act on, and no road to act
-along, scales to nothing.**
+along, scales to nothing.** Tools endure and intent endures, as the Keymakers
+wrote — but a tool whose maker has no name cannot be called.
 
 `fortress8` opens the Monolith's outer shell. The Legacy is inside — world 3.
 
@@ -159,7 +168,7 @@ along, scales to nothing.**
 
 ## Act 1 — Putting things on the board
 
-### fortress1 — The Plate at Your Feet
+### fortress1 — The Maker's Mark
 
 **Learning Theme**: pinning. A value that is not on the board is not in the world.
 **Kata**: 留 initiated.
@@ -167,44 +176,68 @@ along, scales to nothing.**
 | Item | Details |
 |---|---|
 | Room | `gatehouse` |
-| Blocker | `north_gate` — its mechanism asks for a destination and has none |
+| Blocker | `north_gate` — built by Lira, and it answers to its maker's name |
+| Item held | `lira_mark` — her maker's mark, carried out of the dungeon |
 | Clear Condition | `first_thing_pinned` |
 | Next Stage | fortress2 |
 
-The gate's mechanism sits green and idle with an empty destination field. The
-player is carrying the answer — a name scratched on a plate taken from the
-dungeon — but it is text, and text is nowhere.
+The north gate is Lira's work and it will not open. The gate is not broken; the
+Empire scraped her name off it, and a gate whose maker has no name has nobody to
+answer to.
+
+The player is carrying the answer without knowing it is one. The mark in their
+inventory is the last surviving copy of that name — but an item in your pocket is
+something *you* know, and the board does not read pockets.
 
 Naming it makes it a thing. **Pinning it puts it on the board at the character's
-own cell**, which is where the lesson lands: the value stops being something the
-player knows and becomes something the world contains, standing on the floor
-beside them.
+own cell**, and that is where both lessons land at once: the value stops being
+something the player knows and becomes something the world contains — and Lira,
+who the Empire unmade, is back in the world enough for her own gate to recognise
+her. A road is drawn from the tile to the gate, and the gate opens.
 
-**Goal Steps**: observe → the gate names what it lacks → name the value → pin it → the tile appears underfoot → the gate resolves.
+**Goal Steps**: observe → the gate names a maker it cannot find → read the mark → name it → pin it → the tile appears underfoot, one road running to the gate → the gate opens.
+
+**Why this first**: pinning is the operation every later stage builds on, and this
+is the version of it where the player has a reason to care what gets pinned.
 
 ---
 
-### fortress2 — Three Identical Valves
+### fortress2 — The Third Road
 
-**Learning Theme**: reading a thing tile. The board answers "what uses this".
-**Kata**: 留 to 皆伝 (a second and third value pinned along the way).
+**Learning Theme**: reading a thing tile. The board answers "what uses this", and
+a name reaches further than the one thing you gave it to.
+**Kata**: 留 held.
 
 | Item | Details |
 |---|---|
 | Room | `pump_hall` |
-| Blocker | `sluice_door` — opens from whichever valve actually feeds it |
+| Blocker | `cistern` — draining, and one of Lira's wants is doing it |
 | Clear Condition | `traced_by_board` |
 | Next Stage | fortress3 |
 
-Three mechanisms, identical to look at, one of them fed by the value from
-`fortress1`. Asking chap gets a shrug: it can act, it cannot know which of three
-indistinguishable things you meant.
+Through the gate is the pump hall, and the cistern is emptying. Nothing here was
+touched — but looking back at the tile the player pinned a minute ago, **three
+roads now leave it**. One to the gate. Two to wants they have never seen.
 
-The pinned thing answers it. A thing tile **draws a road to every want that names
-it**, and carries its use count and the icons of the want types using it. The
-player queries nothing — they walk to the tile and see which road leaves it.
+The gate was not the only thing Lira built. Putting her name back did not open one
+door; it woke everything she ever signed, all at once, and one of those is pulling
+the cistern down.
 
-**Goal Steps**: observe → chap cannot disambiguate → walk to the pinned thing → follow its road → operate that valve.
+The board answers which. A thing tile **draws a road to every want that names it**,
+and carries its use count and the icons of the want types using it, so the player
+queries nothing — they walk to the tile and follow the roads to find the want at
+the other end.
+
+This is the stage that pays for the first one. Pinning was worth doing because a
+pinned thing tells you who is using it — and the answer is the first measure of
+how much of this city was hers.
+
+**Goal Steps**: observe → the cistern is draining → look at the tile: three roads → follow them → find the want draining it → stop it.
+
+**Why here**: it makes the consequence of `fortress1` into the problem of
+`fortress2`, so the two are one continuous event rather than two puzzles. It also
+teaches the thing a player is most likely to be surprised by later — that naming
+a value gives it reach.
 
 ---
 
@@ -236,7 +269,7 @@ thing — so it is placed before the first want is built rather than after.
 
 ---
 
-### fortress4 — The Gate That Has No Mechanism
+### fortress4 — The Gate Nobody Built
 
 **Learning Theme**: seeding a want from a thing. The name shapes what you can build.
 **Kata**: 種.
@@ -244,26 +277,27 @@ thing — so it is placed before the first want is built rather than after.
 | Item | Details |
 |---|---|
 | Room | `east_approach` |
-| Blocker | `relay_gate` — needs a mechanism that does not exist yet |
+| Blocker | `relay_gate` — needs a want that was never built |
 | Clear Condition | `seeded_from_thing` |
 | Next Stage | fortress5 |
 
-Nothing here can open the gate, because the mechanism for it was never built. The
-player has to make one, and the interesting part is where they start.
+Nothing here can open the gate, because the want that would open it was never
+built — Lira did not live to build this one. The player has to make it, and the
+interesting part is where they start.
 
 Starting from the **pinned thing** rather than an empty form does two visible
 things: the type list is **filtered to the types that can accept this kind of
 value**, and the new want is born with the value already in the right parameter.
 Wrong choices are not rejected later — they are absent.
 
-**Goal Steps**: observe → the gate has no mechanism → Add Want *from the pinned thing* → notice the narrowed list → deploy → the gate opens.
+**Goal Steps**: observe → the gate has no want behind it → Add Want *from the pinned thing* → notice the narrowed list → deploy → the gate opens.
 
 **Why here**: it closes Act 1 by answering what a name is worth — it is worth the
 thing you build next.
 
 ---
 
-## Act 2 — Roads between mechanisms
+## Act 2 — Roads between wants
 
 ### fortress5 — Everything Green, Nothing Moving
 
@@ -277,8 +311,8 @@ thing you build next.
 | Clear Condition | `first_road_drawn` |
 | Next Stage | fortress6 |
 
-The Keymakers' machinery, intact, still running. One mechanism produces exactly
-what the door needs. The door is two metres away. Both report healthy. Nothing
+The Keymakers' workshop, intact, still running. One want produces exactly what
+the door needs. The door is two metres away. Both report healthy. Nothing
 happens.
 
 **This stage betrays the dungeon's lesson on purpose.** The dungeon trained the
@@ -305,7 +339,7 @@ is a normal move.
 | Clear Condition | `rematched` |
 | Next Stage | fortress7 |
 
-Several mechanisms offer output; the lift takes one input. Connect the wrong one
+Several wants offer output; the lift takes one input. Connect the wrong one
 and **nothing errors** — the lift runs, arrives, and opens onto the wrong floor,
 where the door behind you locks. Plausible and wrong teaches better than rejected.
 
@@ -325,13 +359,12 @@ one board.
 | Item | Details |
 |---|---|
 | Room | `assay_room` |
-| Blocker | `derived_door` — wants a value no single mechanism produces |
+| Blocker | `derived_door` — asks for a value no single want produces |
 | Clear Condition | `chain_named` |
 | Next Stage | fortress8 |
 
 The door asks for something that exists nowhere in the city. It has to be derived:
-one mechanism produces, a second transforms, a third delivers — three roads in a
-row.
+one want produces, a second transforms, a third delivers — three roads in a row.
 
 Then the move that ties the world together. The value in the middle of that chain
 is worth having again, so the player **pins it**. A chain of roads with a named
@@ -420,8 +453,9 @@ doors:
 ```
 
 **A way to see kata advance in-game.** The record book exists as a page; what the
-fortress needs is for a form reaching 初伝 to be a *moment* — Lira naming it, chap
-answering a shorter instruction — rather than a number changing on a screen the
+fortress needs is for a form reaching 初伝 to be a *moment* — chap answering a
+shorter instruction, and saying what the Keymakers called that — rather than a
+number changing on a screen the
 player may never open. This matters more once make Kata exists: a form the player
 never noticed themselves earning is a tool they will never think to reach for.
 
