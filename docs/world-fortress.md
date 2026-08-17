@@ -43,6 +43,13 @@ gate nobody can call to. The roads between the wants were cut for the same reaso
 — everything still produces what it always produced, and there is nowhere for it
 to go.
 
+And it is not finished. **The redaction crews are still working.** A name only
+lives on this board while something refers to it, so keeping a city nameless is
+not an act but a routine: find the references, remove them, move on. The player
+will watch it done to a name they personally restored, which is how they find out
+what they are actually up against — not the ruins of an old crime, but a shift
+that comes round again.
+
 A city that cannot be accused of being broken, and cannot be used.
 
 **Lira** was your master, a Keymaker, and she died in the dungeon. What you carried
@@ -102,21 +109,35 @@ gate is now using it**. The player did not place it.
 
 **Learns**: pinning, and what it is *for*.
 
-Through the gate. Behind you the gate's work is finished, and **the tile winks
-out** — a name nothing is using is not on the board.
+Through the gate — and behind you a redaction crew is already at the gate,
+scraping her name back off it. **The tile winks out.** Not because anything broke
+or finished: the name is gone from the only thing that was referring to it, and a
+name nothing refers to is not on the board.
 
-This is the Empire's method, performed by the city's own rules in front of the
-player. They did not destroy her name; they made it **contingent** — present only
-while something happened to refer to it, and then they removed the references.
+The player has just watched the erasure happen, at working speed, to a name they
+put back five minutes ago. The Empire never destroyed Lira's name. It made her
+name **contingent** — present only while something happened to refer to it — and
+then it went around removing the references. It is still going around removing
+them. That is not history, it is the job somebody in this city has today.
 
-Pinning is the answer, and it is not a convenience: a pinned thing stays whether
-or not anything uses it. **Pin is the undoing of the erasure.**
+Pinning is the answer, and it is not a convenience: a pinned thing stands on the
+board whether or not anything refers to it, which is precisely the dependency the
+Empire has been exploiting. **Pin is the undoing of the erasure**, and the crew
+can scrape that gate as often as they like.
 
-**Goal**: walk through → watch the tile disappear → pin it → it stands there, and stays.
+**Goal**: walk through → watch the crew scrape the name and the tile vanish → name it again → pin it → they scrape it again and it stays.
 
-> Implementation note: which transition makes the gate's want stop counting as a
-> user of the value (completed / stopped / deleted) has to be chosen. The drawing
-> rule is: pinned, or has coordinates, or is named by a live want.
+> **Verified** (against a running mywant): the thing↔want relation is derived on
+> read — a want names a value while one of its subtyped parameters *holds* that
+> value. Want status is not part of it. A want that has finished its work
+> (`achieved`) still holds the edge; the edge disappears when the parameter stops
+> holding the value, or when the want is deleted. So the redaction crew's move is
+> to **clear the gate's maker parameter** — an earlier draft had the tile vanish
+> when the gate's work finished, which does not happen and would have been odd if
+> it did.
+>
+> What this needs: an `rpg_redactor` behaviour that blanks a named parameter on a
+> named want, so a stage can stage the erasure on cue.
 
 ---
 
@@ -325,7 +346,7 @@ Every operation in Act 1 and Act 3 rests on affordances that already ship:
 | Stage | Rests on |
 |---|---|
 | fortress2, 5 | naming a value explicitly, and implicitly by typing it into a want |
-| fortress3 | pinning; and the drawing rule (pinned / placed / named by a live want) |
+| fortress3 | pinning; the drawing rule (pinned / placed / referred to by a want); and an `rpg_redactor` that clears a named parameter on cue |
 | fortress4 | a thing tile draws a road to every want naming it |
 | fortress6 | subtypes, and the accepted-subtype matching a want declares |
 | fortress7 | Add Want from a thing: filtered type list, seeded parameter |
