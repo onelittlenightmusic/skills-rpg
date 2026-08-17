@@ -167,7 +167,8 @@ which of the two actors, and what has to be true for it to happen:
 |---|---|
 | [docs/actions.md](docs/actions.md) | the action model: actors, preconditions, results |
 | [docs/mywant-rpg-cli.md](docs/mywant-rpg-cli.md) | the `mywant rpg` command line |
-| [docs/world-fortress.md](docs/world-fortress.md) | design for world 2 and the world-switching it needs (not implemented) |
+| [docs/world-fortress.md](docs/world-fortress.md) | design for world 2 — things and connections, plus the world-switching (not implemented) |
+| [docs/world-monolith.md](docs/world-monolith.md) | design for world 3 — kata, and the Legacy (not implemented) |
 
 ## Settings API
 

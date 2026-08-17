@@ -3,128 +3,22 @@
 > **Status: design.** Nothing here is implemented yet. When these stages ship,
 > `STAGES.md` gets the usual per-stage entries and this file stays as the record
 > of why they are shaped the way they are.
+>
+> World 3 (the forms, and the Legacy) is [docs/world-monolith.md](world-monolith.md).
+> The world-switching both need is specified at the bottom of this file.
 
-The dungeon (`stage1`–`stage9`) teaches **MCP → Skills → Wants**: how to ask, how
-to automate the asking, how to define an intent that scales. It teaches through
-doors, because a door is something the player already wants opened.
+The dungeon (`stage1`–`stage9`) teaches **MCP → Skills → Wants** through doors,
+because a door is something the player already wants opened. It is played almost
+entirely through Claude Code and the CLI.
 
-The fortress teaches the board. Every stage is **one operation on the want
-canvas**, performed by the character standing on it, with a result the player can
-see without asking anyone:
+The fortress teaches **the board**: things, and the roads between wants. Every
+stage is one operation on the want canvas, performed by the character standing on
+it, with a result the player can see without asking anyone.
 
-| | Operation | What appears on the board |
-|---|---|---|
-| 1 | **Pin** a thing | the value becomes a tile, at the character's feet |
-| 2 | **Read** the tile | roads to every want that uses it, and how often |
-| 3 | **Group** things | lines joining them; one name for the set |
-| 4 | **Seed** a want from a thing | the type list narrows; the value is already in the field |
-| 5 | **Connect** two wants | a road appears, and something starts moving |
-| 6 | **Match** the right ends | what each end speaks decides what fits |
-| 7 | **Chain**, name the middle | the derived value becomes a tile of its own |
-| 8 | **Apply a kata** to the board | the form names what is missing, and fills it |
-
-Nothing is learned by being told to run a command. Each stage is a place the
-player is stuck, the operation is the way out, and the board shows what changed.
-
----
-
-## Kata — the spine
-
-The operations above are exactly what **kata (型)** are made of. A kata is a named
-combination of **waza (所作)**, and from 黄帯 upward every kata is measured against
-a **thing group** (`join: { kind: thing_group }`) — the group is what makes its
-waza be about the same thing. Grouping is not a side topic; it is the connective
-tissue of the whole ladder.
-
-So the fortress does not teach kata as a subject. It **is** a kata practice, and
-the player finds that out the way a student does: by noticing that chap needs less
-telling than it did an hour ago.
-
-Kata grant no features — every want type is usable from day one. What they grant
-is 手数 (shorthand), 権限 (delegation) and 語彙 (vocabulary), which in this story
-reads as chap getting better at understanding you. That is the reward the player
-feels, and the record book (the kata page) is where they go to see why.
-
-### The fortress kata
-
-A set of its own, shipped with the world, named in the same register as the白帯
-forms (駅・市・標・催・金):
-
-| Kata | Waza | Yields | Stage |
-|---|---|---|---|
-| **留** (tome) — to fix in place | `thing` pinned | a value you can walk to | fortress1–2 |
-| **群** (mure) — the flock | a thing group with members | one name for many | fortress3 |
-| **種** (tane) — the seed | `want_type` joined to a pinned thing | a want born knowing its value | fortress4 |
-| **道** (michi) — the road | a connection between two wants | what one makes reaches the other | fortress5–6 |
-| **束** (taba) — the sheaf | 道 repeated across a group | one intent, every destination | fortress7–8 |
-
-Each is held at 初伝 the first time and at 皆伝 with repetition, which is why
-several stages revisit a form rather than each introducing a new one. `束` is a
-`repeat` waza over `道`, so it cannot be reached without having drawn roads by
-hand first — the ladder enforces the order the stages teach in.
-
-**What chap gains, in story terms:**
-
-| Form | 手数 / 権限 / 語彙 |
-|---|---|
-| 留 | chap can be told a name instead of a description |
-| 群 | chap accepts "the district" as an address |
-| 種 | chap proposes only want types that can take the value you named |
-| 道 | chap reports what is connected to what, unasked |
-| 束 | chap wires a whole group on one instruction |
-
-The last one is the world's thesis: **you stop giving instructions per object.**
-
-### make Kata — a form you can apply
-
-A kata that only reports progress is a scoreboard. The point of holding a form is
-that you can *use* it, and the fortress ends by making that literal.
-
-**Entry point.** The character action bubble — the one that opens when you press
-Start standing on empty ground, where Call, Ride, Drop, Say and Map live — gains
-**Kata**. That menu is the right home because it is the menu that acts on *you*:
-applying a form is something the player does, not something done to a card.
-
-**The gesture.**
-
-1. Start on open ground → the bubble → **Kata**
-2. A picker of the forms you **hold** — an unlearned form has nothing to lend, so
-   only 初伝 and above are offered
-3. Pick one, e.g. 束
-4. The board answers with **what is missing**: this form wants a road from the
-   supply to each member of the district, you have two, here are the other six —
-   drawn on the board as proposals, not as facts
-5. Accept, and they are made
-
-**What the player understands at that moment**: a kata is not a badge for work
-already done. It is a description of a shape, and the board can be compared
-against it. Having practised 留・群・種・道 by hand is what makes the comparison
-mean anything — the form knows what "the district" is because the player grouped
-it, and knows what a road is because the player drew some.
-
-**Backend.** Most of this already exists. Kata progress is derived server-side on
-every read, and each waza already comes back with `satisfied`, `have`, `need`,
-`matchedIDs` and a one-phrase `hint`. What is missing is the step from "this waza
-is unsatisfied" to "here is the specific thing to make on *this* board":
-
-```
-POST /api/v1/kata/{id}/recommend   →  { proposals: [ ... ] }
-```
-
-Each proposal is executable rather than descriptive — a want to create with its
-type and seed, a connection to draw between two named ends, a group to extend —
-so the frontend can offer it and, on acceptance, carry it out. The matching work
-(which pinned things, which existing wants, which group) is the same matching the
-progress derivation already does; this endpoint returns the *complement* of it
-instead of the count.
-
-**Frontend.** A `Kata` item and picker stage in the character action bubble
-(alongside `pick-call` / `pick-ride`), and the proposals rendered on the canvas in
-the idiom the app already uses for recommendations — proposed, reviewable,
-accepted or dismissed — rather than applied silently.
-
-**Scope note**: this is the one part of the fortress that needs work on both
-sides. Everything else in Act 1 and Act 2 rests on affordances that already ship.
+Sixteen stages, because someone who has never used mywant learns exactly one new
+thing at a time. The count is not padding — an earlier draft of this world fit
+the same material into eight and had to assume, at four separate points, that the
+player already knew something nobody had taught them.
 
 ---
 
@@ -141,325 +35,323 @@ the player finds out what erasing someone actually meant.
 
 **It meant taking their name off everything they built.**
 
-The Keymakers signed their work. The city's gates, its pumps, its lifts — all
-built by people the Empire then unmade, which in practice meant scraping the
-maker's name off every one of them. Breaking the gates would have invited repair.
-Taking the names left them running and unaddressable: a gate whose maker has no
-name is a gate nobody can call to. The Empire cut the roads between the wants for
-the same reason — everything still produces what it always produced, and there is
-nowhere for it to go.
+The Keymakers signed their work. The city's gates, its pumps, its lifts were built
+by people the Empire then unmade, which in practice meant scraping the maker's
+name off every one of them. Breaking the gates would have invited repair. Taking
+the names left them running and unaddressable: a gate whose maker has no name is a
+gate nobody can call to. The roads between the wants were cut for the same reason
+— everything still produces what it always produced, and there is nowhere for it
+to go.
 
-The result is a city that cannot be accused of being broken and cannot be used.
+A city that cannot be accused of being broken, and cannot be used.
 
-**Lira** was your master, a Keymaker, and she died in the dungeon. What you
-carried out is her **maker's mark** — and because the Empire scraped her name off
+**Lira** was your master, a Keymaker, and she died in the dungeon. What you carried
+out is her **maker's mark** — and because the Empire scraped her name off
 everything she built, the mark in your pocket is the last place that name still
-exists. Naming it and pinning it is how you put her back into the world, and it
-is why the first gate opens.
+exists.
 
-The dungeon taught that defining an intent makes repetition scale. The fortress
-is the other half: **an intent with nothing named to act on, and no road to act
+The dungeon taught that defining an intent makes repetition scale. The fortress is
+the other half: **an intent with nothing named to act on, and no road to act
 along, scales to nothing.** Tools endure and intent endures, as the Keymakers
 wrote — but a tool whose maker has no name cannot be called.
 
-`fortress8` opens the Monolith's outer shell. The Legacy is inside — world 3.
+`fortress16` opens the Monolith's outer shell.
 
 ---
 
-## Act 1 — Putting things on the board
+## Act 0 — The board
 
-### fortress1 — The Maker's Mark
+### fortress1 — The City You Can See
 
-**Learning Theme**: pinning. A value that is not on the board is not in the world.
-**Kata**: 留 initiated.
+**Learns**: the canvas is a place you *act on*, not a place you walk through.
 
-| Item | Details |
-|---|---|
-| Room | `gatehouse` |
-| Blocker | `north_gate` — built by Lira, and it answers to its maker's name |
-| Item held | `lira_mark` — her maker's mark, carried out of the dungeon |
-| Clear Condition | `first_thing_pinned` |
-| Next Stage | fortress2 |
+Underground, everything went through chap. Above ground you can see the city's
+own board for the first time — every want in the district, standing where it
+stands.
 
-The north gate is Lira's work and it will not open. The gate is not broken; the
-Empire scraped her name off it, and a gate whose maker has no name has nobody to
-answer to.
+The first thing that has to be done cannot be asked of chap, because it is not an
+action on the world: it is a change to how the world is laid out. The player has
+to reach into the board themselves.
 
-The player is carrying the answer without knowing it is one. The mark in their
-inventory is the last surviving copy of that name — but an item in your pocket is
-something *you* know, and the board does not read pockets.
-
-Naming it makes it a thing. **Pinning it puts it on the board at the character's
-own cell**, and that is where both lessons land at once: the value stops being
-something the player knows and becomes something the world contains — and Lira,
-who the Empire unmade, is back in the world enough for her own gate to recognise
-her. A road is drawn from the tile to the gate, and the gate opens.
-
-**Goal Steps**: observe → the gate names a maker it cannot find → read the mark → name it → pin it → the tile appears underfoot, one road running to the gate → the gate opens.
-
-**Why this first**: pinning is the operation every later stage builds on, and this
-is the version of it where the player has a reason to care what gets pinned.
+**Why a stage at all**: world 1 is played through Claude Code and the CLI. Opening
+world 2 with "name this value" assumes the player knows where anything is. This is
+the stage that hands them the surface.
 
 ---
 
-### fortress2 — The Third Road
+## Act 1 — Names
 
-**Learning Theme**: reading a thing tile. The board answers "what uses this", and
-a name reaches further than the one thing you gave it to.
-**Kata**: 留 held.
+### fortress2 — The Maker's Mark
 
-| Item | Details |
-|---|---|
-| Room | `pump_hall` |
-| Blocker | `cistern` — draining, and one of Lira's wants is doing it |
-| Clear Condition | `traced_by_board` |
-| Next Stage | fortress3 |
+**Learns**: naming a value. It exists to the system once it has a name.
 
-Through the gate is the pump hall, and the cistern is emptying. Nothing here was
-touched — but looking back at the tile the player pinned a minute ago, **three
-roads now leave it**. One to the gate. Two to wants they have never seen.
+The north gate is Lira's work and will not open — not broken, just scraped clean
+of the name it answers to. The mark in the player's inventory is the last copy of
+that name, and an item in your pocket is something *you* know; the board does not
+read pockets.
+
+Naming it puts the value into the world. The gate resolves and opens — and a tile
+appears on the board by itself, with one road running to the gate, **because the
+gate is now using it**. The player did not place it.
+
+**Goal**: observe → the gate names a maker it cannot find → read the mark → name the value → the gate opens.
+
+---
+
+### fortress3 — The Name That Vanishes
+
+**Learns**: pinning, and what it is *for*.
+
+Through the gate. Behind you the gate's work is finished, and **the tile winks
+out** — a name nothing is using is not on the board.
+
+This is the Empire's method, performed by the city's own rules in front of the
+player. They did not destroy her name; they made it **contingent** — present only
+while something happened to refer to it, and then they removed the references.
+
+Pinning is the answer, and it is not a convenience: a pinned thing stays whether
+or not anything uses it. **Pin is the undoing of the erasure.**
+
+**Goal**: walk through → watch the tile disappear → pin it → it stands there, and stays.
+
+> Implementation note: which transition makes the gate's want stop counting as a
+> user of the value (completed / stopped / deleted) has to be chosen. The drawing
+> rule is: pinned, or has coordinates, or is named by a live want.
+
+---
+
+### fortress4 — The Third Road
+
+**Learns**: reading a thing tile — it shows who uses it, and a name reaches
+further than the one thing you gave it to.
+
+The cistern is draining and nothing here was touched. The pinned tile, which had
+one road a minute ago, now has **three** — the gate, and two wants the player has
+never seen.
 
 The gate was not the only thing Lira built. Putting her name back did not open one
-door; it woke everything she ever signed, all at once, and one of those is pulling
-the cistern down.
+door; it woke everything she ever signed, and one of them is pulling the cistern
+down.
 
-The board answers which. A thing tile **draws a road to every want that names it**,
-and carries its use count and the icons of the want types using it, so the player
-queries nothing — they walk to the tile and follow the roads to find the want at
-the other end.
-
-This is the stage that pays for the first one. Pinning was worth doing because a
-pinned thing tells you who is using it — and the answer is the first measure of
-how much of this city was hers.
-
-**Goal Steps**: observe → the cistern is draining → look at the tile: three roads → follow them → find the want draining it → stop it.
-
-**Why here**: it makes the consequence of `fortress1` into the problem of
-`fortress2`, so the two are one continuous event rather than two puzzles. It also
-teaches the thing a player is most likely to be surprised by later — that naming
-a value gives it reach.
+**Goal**: the cistern is draining → look at the tile: three roads → follow them → find the want draining it → stop it.
 
 ---
 
-### fortress3 — The Ward With No Address
+### fortress5 — The Name You Typed
 
-**Learning Theme**: grouping. One name for many things.
-**Kata**: 群.
+**Learns**: things are usually made *implicitly* — type a value into a want's
+field and it is remembered.
 
-| Item | Details |
-|---|---|
-| Room | `ward_office` |
-| Blocker | `ward_ledger` — will accept a work order for a district, not for a building |
-| Clear Condition | `group_formed` |
-| Next Stage | fortress4 |
+So far naming has been a deliberate act on an heirloom. That is the rare case. A
+sluice here needs a level and the player simply types one in — and afterwards the
+value is in the catalog, with a tile, without anyone having decided to make a
+thing.
 
-Eight buildings, each now named and pinned, and a ledger that refuses every one of
-them: it does not take addresses one at a time, it takes a **district**. Naming
-each building again in a list is possible and pointedly tedious.
+Left untaught, a player comes away believing the catalog is a manual archive they
+must curate. It is mostly a record of what they have already typed.
 
-The move is to say that these eight belong together. On the board that draws the
-lines that join them; to chap it becomes an address it can accept. This is the
-first time the player names something that is not a value but a **relationship**.
-
-It is also the stage everything above 白帯 quietly depends on — `join:
-{ kind: thing_group }` is how every later kata knows its waza are about the same
-thing — so it is placed before the first want is built rather than after.
-
-**Goal Steps**: observe → the ledger rejects single buildings → group the pinned things → the lines appear → file the district order.
+**Goal**: set the sluice by hand → look at the board → the value you typed is standing there.
 
 ---
 
-### fortress4 — The Gate Nobody Built
+### fortress6 — Kinds of Name
 
-**Learning Theme**: seeding a want from a thing. The name shapes what you can build.
-**Kata**: 種.
+**Learns**: a thing has a **kind** (subtype), and kinds are what wants accept.
 
-| Item | Details |
-|---|---|
-| Room | `east_approach` |
-| Blocker | `relay_gate` — needs a want that was never built |
-| Clear Condition | `seeded_from_thing` |
-| Next Stage | fortress5 |
+Two values, both correct, both refused by the other's fitting: a level is not a
+maker, a maker is not a level. Nothing here is about spelling — the values are
+different *kinds of thing*, and every want declares which kinds it takes.
 
-Nothing here can open the gate, because the want that would open it was never
-built — Lira did not live to build this one. The player has to make it, and the
-interesting part is where they start.
+**Goal**: try the wrong value in the wrong place → read what each asks for → see the kinds on the tiles → match them.
 
-Starting from the **pinned thing** rather than an empty form does two visible
-things: the type list is **filtered to the types that can accept this kind of
-value**, and the new want is born with the value already in the right parameter.
-Wrong choices are not rejected later — they are absent.
-
-**Goal Steps**: observe → the gate has no want behind it → Add Want *from the pinned thing* → notice the narrowed list → deploy → the gate opens.
-
-**Why here**: it closes Act 1 by answering what a name is worth — it is worth the
-thing you build next.
+**Why before seeding**: `fortress7` shows a list narrowing itself. Without this
+stage the player sees the result and not the reason.
 
 ---
 
-## Act 2 — Roads between wants
+### fortress7 — The Gate Nobody Built
 
-### fortress5 — Everything Green, Nothing Moving
+**Learns**: seeding a want from a thing.
 
-**Learning Theme**: connection. A healthy want connected to nothing does nothing.
-**Kata**: 道 initiated.
+The relay gate has no want behind it — Lira did not live to build this one. The
+player has to, and the interesting part is where they start.
 
-| Item | Details |
-|---|---|
-| Room | `keymaker_workshop` |
-| Blocker | `pressure_door` — needs supply produced two metres away |
-| Clear Condition | `first_road_drawn` |
-| Next Stage | fortress6 |
+Starting from the **pinned thing** rather than an empty form: the type list is
+filtered to types that can accept this kind of value, and the new want is born
+with the value already in the right parameter. Wrong choices are not rejected
+later; they are absent.
 
-The Keymakers' workshop, intact, still running. One want produces exactly what
-the door needs. The door is two metres away. Both report healthy. Nothing
-happens.
+**Goal**: the gate has no want → Add Want *from the tile* → notice the narrowed list → deploy → the gate opens.
+
+---
+
+### fortress8 — The Ward With No Address
+
+**Learns**: grouping. One name for many things.
+
+Eight of Lira's works stand in the ward, each with its own named value already on
+the board — visible because each is in use, exactly as `fortress2` established.
+The ward ledger will not take them one at a time. It takes a **district**.
+
+Saying these eight belong together draws the lines that join them, and gives chap
+an address it can accept. It is the first time the player names a **relationship**
+rather than a value.
+
+**Goal**: the ledger rejects buildings one by one → group the eight → the lines appear → file the district order.
+
+---
+
+## Act 2 — Reading a want
+
+The player has deployed wants since `stage7` and has never once looked at one on
+the board. Act 3 is unreadable without this.
+
+### fortress9 — Green and Red
+
+**Learns**: a want tile is readable — it has a state, and the state is not the
+same as "doing something useful".
+
+A row of Lira's wants, some running, some stopped, one failed. The player learns
+to tell them apart by looking, and — more importantly — that **green does not mean
+working**. That single fact is what makes `fortress12` land.
+
+**Goal**: find the failed one among the running ones → read why → restart it.
+
+---
+
+### fortress10 — What It Has Made
+
+**Learns**: a want holds results — what it has actually produced.
+
+Something is producing the wrong pressure and the only way to know is to look at
+what it has been putting out, not at whether it is running.
+
+**Goal**: read the produced values → find the one that is wrong → correct its input.
+
+---
+
+### fortress11 — Mouths
+
+**Learns**: a want has **ends** — what it offers, and what it needs.
+
+The Keymakers' wants have openings on them, and until now the player has read them
+as decoration. This is the stage that says what they are: one side offers a value,
+the other asks for one, and they are the only places a road can attach.
+
+**Goal**: walk the workshop → read the offers and the needs → say, without connecting anything, which two could be joined.
+
+---
+
+## Act 3 — Roads
+
+### fortress12 — Everything Green, Nothing Moving
+
+**Learns**: connecting two wants.
+
+One want produces exactly what the door needs. The door is two metres away. Both
+are green. Nothing happens.
 
 **This stage betrays the dungeon's lesson on purpose.** The dungeon trained the
 player that when something does not work, you deploy a want. Here that changes
-nothing, twice, before the real move becomes visible: the two are not related and
-nobody has said they are. Connecting them **draws a road**, in the same visual
-language as the roads a thing draws to its wants — so the player already knows how
-to read it.
+nothing, twice, before the real move becomes visible: the two are not related, and
+nobody has said they are. Connecting them draws a road, in the same visual
+language as the roads a thing draws to its wants.
 
-**Goal Steps**: observe → both green → deploy something (no effect) → connect the two → the road appears → the door powers.
-
----
-
-### fortress6 — The Wrong Floor
-
-**Learning Theme**: a connection is between *ends*, not between wants. Disconnecting
-is a normal move.
-**Kata**: 道 to 皆伝.
-
-| Item | Details |
-|---|---|
-| Room | `lift_lobby` |
-| Blocker | `lift` — arrives wherever it was told to |
-| Clear Condition | `rematched` |
-| Next Stage | fortress7 |
-
-Several wants offer output; the lift takes one input. Connect the wrong one
-and **nothing errors** — the lift runs, arrives, and opens onto the wrong floor,
-where the door behind you locks. Plausible and wrong teaches better than rejected.
-
-Getting out means reading what each end actually speaks, disconnecting, and
-connecting the pair that matches.
-
-**Goal Steps**: observe → connect (plausible, wrong) → arrive on the wrong floor → read the ends → disconnect → connect the matching pair.
+**Goal**: both green → deploy something (no effect) → connect the two ends → the road appears → the door powers.
 
 ---
 
-### fortress7 — The Value Nobody Makes
+### fortress13 — The Wrong Floor
 
-**Learning Theme**: chains, and naming what comes out of the middle. Both acts on
-one board.
-**Kata**: 道 held; 留 applied to something the player produced.
+**Learns**: disconnecting and rewiring. A connection can be wrong without being an
+error.
 
-| Item | Details |
-|---|---|
-| Room | `assay_room` |
-| Blocker | `derived_door` — asks for a value no single want produces |
-| Clear Condition | `chain_named` |
-| Next Stage | fortress8 |
+Several wants offer output; the lift takes one input. Connect the wrong one and
+**nothing errors** — the lift runs, arrives, opens onto the wrong floor, and the
+door behind you locks. Plausible and wrong teaches better than rejected.
 
-The door asks for something that exists nowhere in the city. It has to be derived:
-one want produces, a second transforms, a third delivers — three roads in a row.
-
-Then the move that ties the world together. The value in the middle of that chain
-is worth having again, so the player **pins it**. A chain of roads with a named
-tile standing in the middle of it, and from here that derived value can seed a
-want like any other name — which is exactly what the last stage needs.
-
-**Goal Steps**: observe → connect A→B → connect B→C → pin the intermediate value → the door opens, and the new tile stands in the chain.
+**Goal**: connect (plausible, wrong) → arrive on the wrong floor → read the ends again → disconnect → connect the matching pair.
 
 ---
 
-### fortress8 — Rewiring the District
+### fortress14 — The Value Nobody Makes
 
-**Learning Theme**: what all of it is *for*. One intent, every named destination.
-**Kata**: 束 — and with it the belt.
+**Learns**: chains. Three wants in a row, deriving something none of them holds.
 
-| Item | Details |
-|---|---|
-| Room | `district_ward` |
-| Blocker | `shell_gate` — the Monolith's outer shell |
-| Clear Condition | `city_relit` |
-| Next Stage | — (opens world 3) |
+The assay door asks for a value that exists nowhere in the city. One want produces,
+a second transforms, a third delivers.
 
-The district from `fortress3`: eight buildings, each needing its own named value,
-all fed from one supply. The player wires the first two by hand and the tedium is
+**Goal**: connect A→B → connect B→C → the derived value reaches the door.
+
+---
+
+### fortress15 — The Name in the Middle
+
+**Learns**: pinning something *you* produced. Act 1 and Act 3 on one board.
+
+The value in the middle of that chain is worth having again, so the player pins it
+— and this time the thing being named is not an heirloom but something they made.
+A chain of roads with a named tile standing in the middle of it.
+
+**Goal**: pin the intermediate value → it stands in the chain → use it to seed the next want.
+
+---
+
+### fortress16 — Rewiring the District
+
+**Learns**: the two halves at scale. The finale.
+
+The eight buildings from `fortress8`, each needing its own named value, all fed
+from one supply. The player wires the first two by hand and the tedium is
 deliberate — the same tedium `stage7` used to make wants worth having, now in this
 world's material.
 
-The answer is the dungeon's answer applied to what Act 1 built: **the form knows
-this shape already.** Start on open ground, pick **Kata → 束**, and the board
-answers with the six roads it is missing — because the district is a group the
-player made, and a road is something the player has drawn by hand five times. The
-proposals appear, the player accepts, and the district lights building by
-building.
+The answer is the dungeon's answer applied to what Act 1 built: deploy one want
+whose destinations are **the group**. The names stop being labels and become the
+list the intent fans out across. The district lights building by building, the
+board fills with roads, and the Monolith's outer shell opens.
 
-This is where kata stops being a progress bar. The player has spent seven stages
-performing forms; here a form performs for them, and it can only do so because
-everything it needs to match against was named by hand first.
+**Goal**: wire two by hand → notice the shape repeating → deploy one want across the group → the district lights → the shell opens.
 
-束 is a `repeat` waza over 道, so the ladder only offers it to a player who has
-drawn roads themselves. Reaching it is the belt, and the belt is what opens the
-shell.
-
-**Goal Steps**: wire two by hand → notice the shape repeating → Start → Kata → 束 → the missing roads are proposed → accept → the district lights → the shell opens.
+> There is a shorter way to do this stage, and world 3 is where the player is
+> given it. Doing it by hand first is what makes that shortcut mean anything.
 
 ---
 
 ## What has to exist
 
-Most of it is already built in the GUI. The stages are arranged around affordances
-that work today:
+Every operation in Act 1 and Act 3 rests on affordances that already ship:
 
 | Stage | Rests on |
 |---|---|
-| fortress1 | pinning a thing places it at the character's cell |
-| fortress2 | a thing tile draws a road to every want naming it, and shows use count and want-type icons |
-| fortress3 | thing groups, drawn on the board as lines joining their members |
-| fortress4 | Add Want from a thing filters types by subtype and seeds the matching parameter |
-| fortress5–7 | want↔want connection, drawn as a road |
-| fortress8 | **make Kata** — see below; the one genuinely new feature |
+| fortress2, 5 | naming a value explicitly, and implicitly by typing it into a want |
+| fortress3 | pinning; and the drawing rule (pinned / placed / named by a live want) |
+| fortress4 | a thing tile draws a road to every want naming it |
+| fortress6 | subtypes, and the accepted-subtype matching a want declares |
+| fortress7 | Add Want from a thing: filtered type list, seeded parameter |
+| fortress8 | thing groups, drawn as lines between members |
+| fortress9–11 | want state, results, expose/import |
+| fortress12–15 | want↔want connection, drawn as a road |
 
-Four things need adding.
-
-**make Kata**, described in full above: a `Kata` item in the character action
-bubble, a picker of held forms, `POST /api/v1/kata/{id}/recommend` returning
-executable proposals, and those proposals rendered on the canvas. Both sides.
-
-**A waza kind for connections.** Kata waza today are `want_type`, `thing` and
-`repeat`. 道 and 束 need a fourth that is satisfied by a connection existing
-between two wants. Everything else the fortress kata need — including the group
-axis — is already expressible, since `join: { kind: thing_group }` is how the
-existing belts bind their waza together.
-
-**Door predicates for the new operations**, in the shape `requires_device` /
-`blocked_by_device` already established:
+What the RPG server needs is the ability to *notice* these, so a stage can be
+cleared by doing them. The existing gates are `requires_device` /
+`blocked_by_device`; these are the same shape:
 
 ```yaml
 doors:
   north_gate:
-    requires_thing_pinned:    { subtype: destination }
-  ward_ledger:
-    requires_thing_group:     { min_members: 8 }
+    requires_thing_named:      { from_item: lira_mark }
+  cistern:
+    requires_thing_pinned:     { value: "..." }
   relay_gate:
-    requires_want_seeded_from:{ thing_subtype: destination }
+    requires_want_seeded_from: { thing_subtype: maker }
+  ward_ledger:
+    requires_thing_group:      { min_members: 8 }
   pressure_door:
-    requires_connection:      { from: supply, to: sink }
+    requires_connection:       { from: supply, to: sink }
 ```
 
-**A way to see kata advance in-game.** The record book exists as a page; what the
-fortress needs is for a form reaching 初伝 to be a *moment* — chap answering a
-shorter instruction, and saying what the Keymakers called that — rather than a
-number changing on a screen the
-player may never open. This matters more once make Kata exists: a form the player
-never noticed themselves earning is a tool they will never think to reach for.
-
-The plumbing for all of this is in place: the RPG server holds a mywant client
+The plumbing is in place: the RPG server holds a mywant client
 (`server/mywant_client.go`) and receives lifecycle webhooks
 (`/api/v1/hooks/mywant`), which is how a stage sees a want created, a thing
 pinned, or a connection made.
@@ -468,8 +360,8 @@ pinned, or a connection made.
 
 ## Worlds (plumbing)
 
-The player never learns this; it is save-file machinery, and it is here only
-because a second world cannot exist without it.
+The player never learns this; it is save-file machinery, and it is here because
+neither of the two new worlds can exist without it.
 
 `GameState` grows a world layer, and everything per-progress moves into it:
 `CurrentWorld` plus `Worlds map[string]*WorldState`, where a `WorldState` holds
@@ -493,4 +385,4 @@ Two notes worth keeping:
 
 **Prerequisite**: `cmd/stage-to-world` currently flattens every stage into a single
 mywant world called `skills-rpg`. It needs a `-world` filter and a default name of
-`skills-rpg-<world>` before either world can be linked to a mywant world of its own.
+`skills-rpg-<world>` before any world can be linked to a mywant world of its own.
