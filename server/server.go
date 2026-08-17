@@ -49,6 +49,13 @@ func NewServer(cfg Config) (*Server, error) {
 	}
 
 	s := &Server{cfg: cfg, settingsPath: settingsPath, settings: settings}
+	// The fortress's doors ask mywant what the city has been told the name of.
+	// Without a mywant they get a board that answers "no" to everything and says
+	// so when acted on, which is better than a stage quietly behaving as though
+	// a name had been given. See rules_things.go.
+	if cfg.MywantURL != "" {
+		setBoard(mywantBoard{url: cfg.MywantURL})
+	}
 	if err := s.loadOrBootstrap(); err != nil {
 		return nil, err
 	}

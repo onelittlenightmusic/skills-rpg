@@ -12,6 +12,10 @@ waypoints:
   pump_yard:
     label: "Pump Yard"
     adjacent: [gate_arch]
+items:
+  lira_mark:
+    held_by: you
+    value: "Lira"
 devices:
   redaction_crew:
     label: "Imperial Redaction Crew"
@@ -21,25 +25,23 @@ doors:
     between: [gate_arch, pump_yard]
     open: false
     locked: true
-    # Not a lock that a key opens: the door reads the board, and the board has to
-    # still show her name after the crew has done its round.
-    # NOTE: predicate pending server support — see docs/world-fortress.md.
+    # Not a lock that a key opens: the door reads the board, and a name that is
+    # merely referred to is one the crews can take away — so this one asks for a
+    # name that stands on its own.
     requires_thing_pinned:
       subtype: maker
+      from_item: lira_mark
 achievement_defs:
-  - id: watched_the_scrape
-    # The crew clears the gate's maker parameter. The edge is derived from the
-    # parameter holding the value, so the tile goes with it. Verified against a
-    # running mywant — want status is not part of the relation.
-    when: { actor: redaction_crew, action: redact, target: north_gate, result: ok }
+  - id: saw_the_crew
+    when: { action: observe }
   - id: named_again
     when: { actor: you, action: name_thing, subtype: maker, result: ok }
   - id: pinned_lira
     when: { actor: you, action: pin_thing, subtype: maker, result: ok }
-  - id: survived_second_scrape
-    when: { actor: redaction_crew, action: redact, target: north_gate, result: no_effect }
+  - id: through_the_yard_door
+    when: { actor: you, action: move, target: pump_yard, result: ok }
 next_goal_rules:
-  - if_missing: watched_the_scrape
+  - if_missing: saw_the_crew
     goal:
       text: "Something is happening at the gate behind you"
       hint: "Look back. rpg_observe"
@@ -52,16 +54,16 @@ next_goal_rules:
     goal:
       text: "It will go again when they come round. Make it stay"
       hint: "Pin the thing. A pinned value stands on the board whether or not anything refers to it"
-  - if_missing: survived_second_scrape
+  - if_missing: through_the_yard_door
     goal:
-      text: "Wait for them to come round again"
-      hint: "They will scrape the gate. Watch what happens to the tile this time"
-cleared_when: survived_second_scrape
+      text: "The yard door only answers a name that stays. Go through"
+      hint: "rpg_control_system actor=you action=move target=pump_yard"
+cleared_when: through_the_yard_door
 next_stage: fortress4
 narrations:
   - match:
       action: observe
-      requires_achievements: [survived_second_scrape]
+      requires_achievements: [through_the_yard_door]
     situation: |
       The crew worked the gate over a second time, thoroughly, and left.
       Her tile is still standing on the board.
@@ -81,7 +83,7 @@ narrations:
   - match:
       action: observe
       requires_achievements: [pinned_lira]
-      missing_achievements: [survived_second_scrape]
+      missing_achievements: [through_the_yard_door]
     conversations:
       - speaker: chap
         text: "The tile is pinned. Nothing refers to her at this moment, and she is still on the board."
@@ -90,7 +92,7 @@ narrations:
 
   - match:
       action: observe
-      requires_achievements: [watched_the_scrape]
+      requires_achievements: [saw_the_crew]
       missing_achievements: [named_again]
     situation: |
       Where the tile stood there is board and nothing else. The gate stands open —
@@ -123,7 +125,13 @@ narrations:
       Second shift covers the ward.
       This is not a purge. A purge ends.
 
-  - match: { actor: redaction_crew, action: redact, target: north_gate, result: ok }
+  # The scrape itself is narrated, not simulated: an actor that is neither you
+  # nor chap does not exist in the action model, and inventing one to stage a
+  # cutscene is a bigger change than this beat is worth. What the stage enforces
+  # is the part that matters — the yard door will not take a borrowed name.
+  # See docs/world-fortress.md for the rpg_redactor that would let the tile
+  # actually vanish and come back.
+  - match: { action: observe, missing_achievements: [named_again] }
     on_success: |
       The foreman reaches into the gate's mechanism, and the field you filled
       goes blank. Nothing dramatic happens — the gate is still open, still

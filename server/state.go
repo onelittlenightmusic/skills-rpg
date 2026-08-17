@@ -147,6 +147,43 @@ type Door struct {
 	Key             string    `yaml:"key,omitempty" json:"key,omitempty"`
 	RequiresDevice  string    `yaml:"requires_device,omitempty" json:"requires_device,omitempty"`
 	BlockedByDevice string    `yaml:"blocked_by_device,omitempty" json:"blocked_by_device,omitempty"`
+
+	// The fortress's doors read the board rather than a lock. Both take the
+	// same shape as the device conditions above: a fact about the world that
+	// has to hold before the door will answer.
+	//
+	// Named is satisfied by the value existing in mywant's catalog at all.
+	// Pinned additionally requires it to be standing on the board on the
+	// player's own say-so — which is a different thing, and the difference is
+	// what fortress3 is about.
+	RequiresThingNamed  *ThingCond `yaml:"requires_thing_named,omitempty" json:"requires_thing_named,omitempty"`
+	RequiresThingPinned *ThingCond `yaml:"requires_thing_pinned,omitempty" json:"requires_thing_pinned,omitempty"`
+}
+
+// ThingCond names a value the world has to know about. The value can be given
+// outright, or taken from an item the stage defines — a mark carries the name
+// struck on it, and the door does not need to repeat it.
+type ThingCond struct {
+	Subtype  string `yaml:"subtype,omitempty" json:"subtype,omitempty"`
+	Value    string `yaml:"value,omitempty" json:"value,omitempty"`
+	FromItem string `yaml:"from_item,omitempty" json:"from_item,omitempty"`
+}
+
+// Want returns the value this condition is about, reading it off the named item
+// when the condition defers to one.
+func (c *ThingCond) Want(stage *Stage) string {
+	if c == nil {
+		return ""
+	}
+	if c.Value != "" {
+		return c.Value
+	}
+	if c.FromItem != "" && stage != nil {
+		if it, ok := stage.Items[c.FromItem]; ok {
+			return it.Value
+		}
+	}
+	return ""
 }
 
 type Device struct {
@@ -158,6 +195,10 @@ type Device struct {
 type Item struct {
 	At     string `yaml:"at,omitempty" json:"at,omitempty"`
 	HeldBy string `yaml:"held_by,omitempty" json:"held_by,omitempty"`
+	// Value is what is written on it, for items that carry a name rather than
+	// being one — a maker's mark struck with "Lira". Inspecting the item is how
+	// the player reads it; naming it is how the city gets told.
+	Value string `yaml:"value,omitempty" json:"value,omitempty"`
 }
 
 type Goal struct {

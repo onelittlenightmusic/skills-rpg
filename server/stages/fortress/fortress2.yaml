@@ -18,14 +18,17 @@ doors:
     open: false
     locked: true
     # Opens once a thing of subtype `maker` exists carrying the value struck on
-    # lira_mark. Naming it is the whole move; nothing has to be pinned yet.
-    # NOTE: predicate pending server support — see docs/world-fortress.md.
+    # lira_mark. Naming it is the whole move; nothing has to be pinned yet —
+    # fortress3 is where that distinction earns its keep.
     requires_thing_named:
       subtype: maker
       from_item: lira_mark
 items:
   lira_mark:
     held_by: you
+    # The name struck on it. The door's condition reads the value from here, so
+    # the stage says it once and the goal hints do not have to spoil it.
+    value: "Lira"
 achievement_defs:
   - id: read_the_mark
     when: { actor: you, action: inspect, target: lira_mark, result: ok }

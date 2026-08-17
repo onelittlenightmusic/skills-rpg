@@ -16,6 +16,15 @@ const (
 	ActionState      = "state"      // chap checks device state
 	ActionAdvance    = "advance"    // you advances to the next stage after clearing
 	ActionReturn     = "return"     // you walks back to the stage that leads here
+
+	// The fortress's own verbs. All three belong to you, not to chap: the
+	// dungeon's division was that chap acts on the world and you only look at
+	// it, and these do not cross that line. Naming a value and putting it on
+	// the board are not interventions in the city — they are things the player
+	// says about it, and saying them is the whole subject of world 2.
+	ActionInspect   = "inspect"    // you reads an item, a door, or a want's card
+	ActionNameThing = "name_thing" // you tells the city a value's name
+	ActionPinThing  = "pin_thing"  // you puts that name on the board to stay
 )
 
 const (
@@ -30,7 +39,8 @@ func actorAllowed(actor, action string) bool {
 	switch actor {
 	case ActorYou:
 		switch action {
-		case ActionObserve, ActionMove, ActionPickup, ActionAdvance, ActionReturn:
+		case ActionObserve, ActionMove, ActionPickup, ActionAdvance, ActionReturn,
+			ActionInspect, ActionNameThing, ActionPinThing:
 			return true
 		}
 	case ActorChap:
@@ -98,6 +108,12 @@ func applyControl(state *GameState, in ControlInput, locale *StageLocale) (Event
 		changes, err = doAdvance(state, stage)
 	case ActionReturn:
 		changes, err = doReturn(state, stage)
+	case ActionInspect:
+		changes, err = doInspect(state, stage, in)
+	case ActionNameThing:
+		changes, err = doNameThing(state, stage, in)
+	case ActionPinThing:
+		changes, err = doPinThing(state, stage, in)
 	default:
 		err = fmt.Errorf("unknown action %q", in.Action)
 	}
@@ -334,6 +350,11 @@ func doOpen(state *GameState, stage *Stage, in ControlInput) (map[string]any, er
 		if ok && dev.On {
 			return nil, fmt.Errorf("door %q is blocked while device %q is active", id, door.BlockedByDevice)
 		}
+	}
+	// The fortress's conditions: facts about the board rather than about this
+	// stage. See rules_things.go.
+	if err := thingGate(stage, id, door); err != nil {
+		return nil, err
 	}
 	door.Open = true
 	door.Locked = false
