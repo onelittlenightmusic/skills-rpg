@@ -43,6 +43,34 @@ cli-uninstall:
 smoke:
 	./docs/smoke.sh
 
+# ── Worlds ───────────────────────────────────────────────────────────────────
+#
+# Each world of stages becomes a mywant world of its own: a canvas of wall /
+# rpg_door / device wants laid out from the stage graphs, which is the board the
+# player's character actually walks around on.
+#
+# One mywant world per skills-rpg world, and the names line up: stages in
+# server/stages/<w> build the mywant world skills-rpg-<w>. The dungeon keeps the
+# unsuffixed name it has always had, because worlds already exist under it and
+# renaming them would strand anyone's saved board.
+#
+# These WRITE to a running mywant — `world open` switches the live canvas — so
+# they are not part of `make build`. Run one when the stages have changed.
+# Add DRY_RUN=1 to see the wants without touching anything.
+MYWANT_URL ?= http://localhost:8080
+DRY_RUN ?=
+world-args = -mywant-url $(MYWANT_URL) $(if $(DRY_RUN),-dry-run,)
+
+.PHONY: worlds world-dungeon world-fortress
+
+worlds: world-dungeon world-fortress
+
+world-dungeon:
+	go run ./cmd/stage-to-world -stages-dir server/stages -world skills-rpg $(world-args)
+
+world-fortress:
+	go run ./cmd/stage-to-world -stages-dir server/stages/fortress -world skills-rpg-fortress $(world-args)
+
 install-skills:
 	@mkdir -p $(SKILL_DST)
 	@for d in $(SKILL_SRC)/*/; do \

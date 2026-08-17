@@ -247,14 +247,20 @@ func loadStages(dir string) ([]*server.Stage, error) {
 		if e.IsDir() || !strings.HasSuffix(name, ".yaml") {
 			continue
 		}
-		if !strings.HasPrefix(name, "stage") || strings.Contains(name, "-jp") {
+		if strings.Contains(name, "-jp") {
+			continue // locale-only file
+		}
+		// world.yaml describes the world a directory of stages belongs to. It
+		// sits beside them and is not one.
+		if name == "world.yaml" {
 			continue
 		}
 		files = append(files, name)
 	}
 	sort.Strings(files)
 
-	stages := make([]*server.Stage, 0, len(files))
+	byID := map[string]*server.Stage{}
+	var order []string
 	for _, f := range files {
 		data, err := os.ReadFile(filepath.Join(dir, f))
 		if err != nil {
@@ -265,11 +271,58 @@ func loadStages(dir string) ([]*server.Stage, error) {
 			return nil, fmt.Errorf("%s: %w", f, err)
 		}
 		if st.ID == "" || len(st.Waypoints) == 0 {
-			continue // not a real stage file (e.g. workshop1.yaml has a different shape)
+			continue
 		}
-		stages = append(stages, &st)
+		byID[st.ID] = &st
+		order = append(order, st.ID)
 	}
-	return stages, nil
+	if len(byID) == 0 {
+		return nil, nil
+	}
+
+	// A world is the chain its stages form, not every stage file in the
+	// directory. server/stages also holds workshop1.yaml, which has an id and a
+	// waypoint and is nobody's next_stage — it is a workshop, not part of the
+	// dungeon, and putting its room on the dungeon's board would be wrong.
+	//
+	// This used to be handled by requiring the filename to start with "stage",
+	// which worked while there was one world whose stages were numbered. A
+	// second world names its stages after itself, so the rule had to become one
+	// about the stages rather than about their filenames — and walking the
+	// chain is what "which stages are this world's" actually means.
+	first := firstStage(dir, order)
+	var chain []*server.Stage
+	seen := map[string]bool{}
+	for id := first; id != "" && !seen[id]; {
+		st, ok := byID[id]
+		if !ok {
+			break // names a stage that is not written yet
+		}
+		seen[id] = true
+		chain = append(chain, st)
+		id = st.NextStage
+	}
+	return chain, nil
+}
+
+// firstStage is where the chain starts: world.yaml says so when the directory
+// has one, and otherwise it is the earliest id in sorted order — which is what
+// the dungeon has always meant by stage1.
+func firstStage(dir string, order []string) string {
+	if data, err := os.ReadFile(filepath.Join(dir, "world.yaml")); err == nil {
+		var w struct {
+			FirstStage string `yaml:"first_stage"`
+		}
+		if yaml.Unmarshal(data, &w) == nil && w.FirstStage != "" {
+			return w.FirstStage
+		}
+	}
+	sorted := append([]string(nil), order...)
+	sort.Strings(sorted)
+	if len(sorted) == 0 {
+		return ""
+	}
+	return sorted[0]
 }
 
 // walkWaypoints flattens a stage's waypoint graph into a single visiting
