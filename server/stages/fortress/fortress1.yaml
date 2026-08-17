@@ -1,0 +1,190 @@
+id: fortress1
+title: "The City You Can See"
+description: |
+  Out of the dungeon at last. Above ground the city's own board is visible —
+  every want in the district, standing where it stands.
+  Underground, everything went through chap. Here, some things do not.
+initial_position: gatehouse_yard
+waypoints:
+  gatehouse_yard:
+    label: "Gatehouse Yard"
+    adjacent: [north_gate_approach]
+  north_gate_approach:
+    label: "Before the North Gate"
+    adjacent: [gatehouse_yard]
+doors:
+  north_gate:
+    between: [north_gate_approach, gatehouse_yard]
+    open: false
+    locked: true
+achievement_defs:
+  - id: saw_the_board
+    when: { action: observe }
+  - id: asked_chap_what_it_wants
+    when: { actor: chap, action: open, target: north_gate, result: rejected }
+  - id: read_the_gate_card
+    # Reading a want's own card on the canvas. Not an action on the world, so it
+    # is not something chap can be asked for — it is the player looking.
+    when: { actor: you, action: inspect, target: north_gate, result: ok }
+next_goal_rules:
+  - if_missing: saw_the_board
+    goal:
+      text: "Look at the city. The board is visible from here"
+      hint: "rpg_observe — and then look at the canvas itself"
+      required_skill: rpg-observe
+  - if_missing: asked_chap_what_it_wants
+    goal:
+      text: "Ask chap to open the north gate"
+      hint: "It will fail, and the failure is the point — chap can act, it cannot tell you what the gate is waiting for"
+      required_skill: rpg-control
+  - if_missing: read_the_gate_card
+    goal:
+      text: "Read the gate's own card on the board"
+      hint: "Walk onto the gate's tile and open it. The field it is waiting on is blank"
+cleared_when: read_the_gate_card
+next_stage: fortress2
+narrations:
+  - match:
+      action: observe
+      requires_achievements: [read_the_gate_card]
+    situation: |
+      The gate's card is open in front of you. One field, named for the maker
+      who built it, and nothing in it.
+    conversations:
+      - speaker: you
+        text: "It's not broken. It's waiting for a name."
+      - speaker: chap
+        text: "I could not have told you that. I can act on the world; I cannot read what a want is for."
+      - speaker: you
+        text: "Then down there I was half blind the whole time."
+    lore: |
+      Underground, every question went through chap and every answer came back as
+      an action. Above ground there is a second surface — the board — and it
+      answers a different kind of question: not "do this" but "what is this".
+      Nothing on it needs asking. It needs looking at.
+
+  - match:
+      action: observe
+      requires_achievements: [asked_chap_what_it_wants]
+      missing_achievements: [read_the_gate_card]
+    conversations:
+      - speaker: chap
+        text: "The gate refused me. Not a lock — it has nothing to refuse me with. It is simply not answering."
+      - speaker: you
+        text: "Then something about it is unfinished. Can you tell me what?"
+      - speaker: chap
+        text: "No. Look at it yourself. It is standing right there on the board."
+
+  - match: { action: observe }
+    situation: |
+      The fortress city, in daylight, from inside the walls for the first time.
+      Lamps lit, pumps turning, carts moving. And laid over all of it, visible
+      the way it never was underground, the city's board — every want in the
+      district standing on its own tile.
+      Ahead is the north gate. It is shut.
+    conversations:
+      - speaker: you
+        text: "The whole city is running."
+      - speaker: chap
+        text: "Every want in this district reports healthy. I checked."
+      - speaker: you
+        text: "Then why is nothing moving through that gate?"
+    lore: |
+      [The Keymakers' notice, on the gatehouse wall, half scraped away]
+      Every gate in this city was built by one of us, and every one of us signed
+      what we built. If it will not answer you, do not force it.
+      Look at what it is asking for.
+
+  - match: { actor: chap, action: open, target: north_gate, result: rejected }
+    situation: |
+      chap put its hand to the gate. Nothing happened at all — no lock turning,
+      no refusal, no resistance. The way a bell rings when nobody is holding it.
+    conversations:
+      - speaker: chap
+        text: "I have privileges here. The gate is not denying me."
+      - speaker: you
+        text: "Then what is it doing?"
+      - speaker: chap
+        text: "Nothing. It is waiting for something it has not got, and I cannot see what."
+    why_rejected: |
+      chap reaches the world through the control system: it can open, close,
+      activate. What it cannot do is tell you what a want is waiting on — that is
+      not an action, it is a reading, and readings come from the board.
+    how_to_proceed:
+      - title: Look at the gate's card
+        body: |
+          Walk onto the gate's tile and open it. A want carries its own
+          parameters, and one of the gate's is blank.
+          This is the first thing in the game you do rather than ask for.
+
+locales:
+  ja:
+    title: "見える都市"
+    description: |
+      ようやくダンジョンの外。地上には都市そのものの盤面が見えている——
+      区画の want が、それぞれの場所に立っている。
+      地下では何もかもが chap を通っていた。ここでは、通らないものがある。
+    waypoints:
+      gatehouse_yard: { label: "門番小屋の庭" }
+      north_gate_approach: { label: "北門の前" }
+    next_goal_rules:
+      - goal:
+          text: "都市を見よう。ここから盤面が見える"
+          hint: "rpg_observe——そのあと canvas そのものを見る"
+      - goal:
+          text: "chap に北門を開けるよう頼もう"
+          hint: "失敗する。その失敗が要点——chap は動かせるが、門が何を待っているかは言えない"
+      - goal:
+          text: "門自身のカードを盤面で読もう"
+          hint: "門のタイルに乗って開く。待っている欄が空になっている"
+    narrations:
+      - situation: |
+          門のカードが目の前に開いている。欄が一つ、それを建てた作り手の名前で
+          呼ばれていて、中身が無い。
+        conversations:
+          - speaker: you
+            text: "壊れてない。名前を待ってるんだ。"
+          - speaker: chap
+            text: "それは私には言えませんでした。世界に働きかけることはできますが、want が何のためのものかは読めません。"
+          - speaker: you
+            text: "じゃあ地下にいた間、俺はずっと半分目を閉じてたわけだ。"
+        lore: |
+          地下では、あらゆる問いが chap を経由し、あらゆる答えが行為として返ってきた。
+          地上にはもう一つの面がある——盤面だ。そしてそれは別種の問いに答える。
+          「これをやれ」ではなく「これは何か」に。
+          頼む必要はない。見ればいい。
+      - conversations:
+          - speaker: chap
+            text: "門に拒否されました。錠ではありません——拒否するための錠が付いていない。ただ応えていないだけです。"
+          - speaker: you
+            text: "何かが未完成なんだな。何が足りない？"
+          - speaker: chap
+            text: "わかりません。ご自分で見てください。すぐそこの盤面に立っています。"
+      - situation: |
+          城塞都市、日中、初めて壁の内側から。
+          灯りがつき、ポンプが回り、荷車が動いている。そしてその全部に重なって、
+          地下では一度も見えなかった都市の盤面——区画の want が、
+          それぞれのタイルの上に立っている。
+          前方に北門。閉じている。
+        conversations:
+          - speaker: you
+            text: "都市全体が動いてる。"
+          - speaker: chap
+            text: "この区画の want はどれも健全だと報告しています。確認しました。"
+          - speaker: you
+            text: "じゃあなぜ、あの門を何も通らない？"
+        lore: |
+          【Keymakers の告示、門番小屋の壁、半分削り取られている】
+          この都市の門はどれも我々の誰かが建てたもので、我々は誰もが建てた物に署名した。
+          応えないなら、力ずくにするな。
+          何を求めているかを見ろ。
+      - situation: |
+          chap が門に手をかけた。何も起きない——錠が回る音も、拒絶も、抵抗もない。
+          誰も握っていない鈴が鳴るときのように。
+        conversations:
+          - speaker: chap
+            text: "ここでの権限はあります。門は私を拒んでいません。"
+          - speaker: you
+            text: "じゃあ何をしてる？"
+          - speaker: chap
+            text: "何も。持っていない何かを待っていて、それが何かは私には見えません。"

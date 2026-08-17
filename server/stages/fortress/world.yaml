@@ -1,0 +1,27 @@
+# World 2 — The Fortress City
+#
+# Design: docs/world-fortress.md
+#
+# The dungeon teaches MCP → Skills → Wants through doors. This world teaches the
+# board: naming values, and the roads between wants. Sixteen stages, one new
+# operation each, because someone who has never used mywant does not learn two
+# things at once.
+id: fortress
+title: "The Fortress City"
+description: |
+  Above ground. The city runs on the Monolith, every want in it reports healthy,
+  and nothing works — because the Empire took the names off everything the
+  Keymakers built, and is still taking them.
+first_stage: fortress1
+# The dungeon's last achievement. Gates the offer, not the switch: an explicit
+# POST /api/v1/worlds/switch always works (see docs/world-fortress.md).
+unlocked_by: escaped_darkness
+mywant_world: skills-rpg-fortress
+
+locales:
+  ja:
+    title: "城塞都市"
+    description: |
+      地上。都市はモノリスの上で動いていて、want はどれも健全だと報告していて、
+      それでいて何一つ機能していない。帝国が Keymakers の作った物すべてから
+      名前を剥がしたからで、そしてそれは今も続いている。

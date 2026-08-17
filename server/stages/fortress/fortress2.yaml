@@ -1,0 +1,222 @@
+id: fortress2
+title: "The Maker's Mark"
+description: |
+  The north gate is Lira's work and it will not open. Not broken — scraped clean
+  of the name it answers to. The mark in your pocket is the last copy of that
+  name, and the board does not read pockets.
+initial_position: north_gate_approach
+waypoints:
+  north_gate_approach:
+    label: "Before the North Gate"
+    adjacent: [gate_arch]
+  gate_arch:
+    label: "The Gate Arch"
+    adjacent: [north_gate_approach]
+doors:
+  north_gate:
+    between: [north_gate_approach, gate_arch]
+    open: false
+    locked: true
+    # Opens once a thing of subtype `maker` exists carrying the value struck on
+    # lira_mark. Naming it is the whole move; nothing has to be pinned yet.
+    # NOTE: predicate pending server support — see docs/world-fortress.md.
+    requires_thing_named:
+      subtype: maker
+      from_item: lira_mark
+items:
+  lira_mark:
+    held_by: you
+achievement_defs:
+  - id: read_the_mark
+    when: { actor: you, action: inspect, target: lira_mark, result: ok }
+  - id: named_lira
+    when: { actor: you, action: name_thing, subtype: maker, result: ok }
+  - id: passed_north_gate
+    when: { actor: you, action: move, target: gate_arch, result: ok }
+next_goal_rules:
+  - if_missing: read_the_mark
+    goal:
+      text: "Read the mark you carried out of the dungeon"
+      hint: "rpg_control_system actor=you action=inspect target=lira_mark"
+  - if_missing: named_lira
+    goal:
+      text: "The gate wants a maker. Give that name to the city"
+      hint: "Name the value on the mark as a thing of subtype `maker`. Naming is not using — it only has to exist"
+  - if_missing: passed_north_gate
+    goal:
+      text: "The gate answers its maker. Go through"
+      hint: "rpg_control_system actor=you action=move target=gate_arch"
+cleared_when: passed_north_gate
+next_stage: fortress3
+narrations:
+  - match:
+      action: observe
+      requires_achievements: [named_lira]
+      missing_achievements: [passed_north_gate]
+    situation: |
+      The gate is open, and something else has happened that nobody asked for:
+      a tile is standing on the board that was not there before, with her name on
+      it, and one road running from it to the gate.
+    conversations:
+      - speaker: you
+        text: "I didn't put that there."
+      - speaker: chap
+        text: "You did not. The gate is using the name, so the board is showing it. A value in use is drawn whether or not anyone placed it."
+      - speaker: you
+        text: "And when nothing is using it?"
+      - speaker: chap
+        text: "Then it is not drawn."
+    lore: |
+      A name and a road. That is the whole of what was missing from this gate for
+      as long as anyone in the city can remember.
+      Nothing was repaired. Something was said.
+
+  - match:
+      action: observe
+      requires_achievements: [read_the_mark]
+      missing_achievements: [named_lira]
+    conversations:
+      - speaker: you
+        text: "Her name is right here. It's been in my pocket since the dungeon."
+      - speaker: chap
+        text: "And nowhere else. The board cannot read what you are carrying — only what the city has been told."
+      - speaker: you
+        text: "Then I tell it."
+
+  - match: { action: observe }
+    situation: |
+      The north gate at close range. Where a maker's mark should be struck into
+      the frame there is a shallow, deliberate scar — the metal taken down a
+      millimetre and polished, so that what is missing looks like a finish rather
+      than a removal.
+    conversations:
+      - speaker: chap
+        text: "The gate is asking for a maker. There is no maker by that name anywhere in this city's records."
+      - speaker: you
+        text: "Because they took her out of them."
+      - speaker: chap
+        text: "That is consistent with what I can see."
+    lore: |
+      [The Imperial method, as the Keymakers came to understand it]
+      They did not break what we made. Breaking invites repair.
+      They took our names off it, and left it running.
+      A gate whose maker has no name is a gate nobody can call to,
+      and a city full of them cannot be accused of being broken.
+
+  - match: { actor: you, action: inspect, target: lira_mark, result: ok }
+    situation: |
+      A maker's mark, palm-sized, worn smooth at the edges from being carried.
+      Lira struck her name into every gate, pump and lift she ever built, and
+      this is the die she struck them with.
+    conversations:
+      - speaker: you
+        text: "She gave me this the week before they took her."
+      - speaker: chap
+        text: "Then it is the last place that name exists. Everywhere else, it has been removed."
+    lore: |
+      Tools endure. Intent endures.
+      But a tool whose maker has no name cannot be called.
+
+  - match: { actor: you, action: name_thing, subtype: maker, result: ok }
+    on_success: |
+      You gave the city her name, and the city took it.
+      Somewhere in the gate's mechanism a field that had been blank for years is
+      not blank, and the gate — with no fanfare at all, as though this had never
+      been difficult — opens.
+    conversations:
+      - speaker: chap
+        text: "The gate is answering. It has a maker again."
+      - speaker: you
+        text: "That's all it wanted."
+    lore: |
+      A thing is a value the city has been told the name of.
+      Until it is told, the value exists only in the head of whoever knows it —
+      which is exactly where the Empire prefers names to stay.
+
+locales:
+  ja:
+    title: "刻印"
+    description: |
+      北門は Lira の作で、開かない。壊れてはいない——応えるべき名前を
+      削り落とされている。ポケットの中の刻印がその名前の最後の一つで、
+      盤面はポケットを読まない。
+    waypoints:
+      north_gate_approach: { label: "北門の前" }
+      gate_arch: { label: "門の下" }
+    next_goal_rules:
+      - goal:
+          text: "ダンジョンから持ち出した刻印を読もう"
+          hint: "rpg_control_system actor=you action=inspect target=lira_mark"
+      - goal:
+          text: "門は作り手を求めている。その名前を都市に伝えよう"
+          hint: "刻印の値を subtype `maker` の thing として名付ける。名付けは使用ではない——存在すればいい"
+      - goal:
+          text: "門が作り手に応えた。くぐろう"
+          hint: "rpg_control_system actor=you action=move target=gate_arch"
+    narrations:
+      - situation: |
+          門が開いていて、誰も頼んでいないことがもう一つ起きている。
+          さっきまで無かったタイルが盤面に立っていて、彼女の名前が載っていて、
+          そこから門へ道が一本伸びている。
+        conversations:
+          - speaker: you
+            text: "俺が置いたんじゃない。"
+          - speaker: chap
+            text: "違います。門がその名前を使っているので、盤面が映しているのです。使われている値は、誰が置いたかに関係なく描かれます。"
+          - speaker: you
+            text: "誰も使っていないときは？"
+          - speaker: chap
+            text: "描かれません。"
+        lore: |
+          名前が一つと、道が一本。
+          この都市の誰が覚えているより前から、この門に足りなかったのはそれだけだ。
+          何も修理されていない。何かが言われただけだ。
+      - conversations:
+          - speaker: you
+            text: "彼女の名前はここにある。ダンジョンからずっとポケットの中だ。"
+          - speaker: chap
+            text: "そして他のどこにもありません。盤面はあなたが持っている物を読めません——都市が伝えられた物しか読めません。"
+          - speaker: you
+            text: "なら、伝える。"
+      - situation: |
+          北門を間近で見る。作り手の刻印が打たれているはずの枠に、浅く、
+          意図的な削り跡がある——金属を一ミリ落として磨いてあり、
+          欠けているものが、除去ではなく仕上げに見えるようにしてある。
+        conversations:
+          - speaker: chap
+            text: "門は作り手を求めています。その名前の作り手は、この都市の記録のどこにもいません。"
+          - speaker: you
+            text: "記録から外したからだ。"
+          - speaker: chap
+            text: "私に見える範囲では、それと矛盾しません。"
+        lore: |
+          【帝国のやり方、Keymakers が理解した通りに】
+          彼らは我々の作った物を壊さなかった。壊せば修理を招く。
+          名前を剥がして、動かしたまま置いた。
+          作り手の名前が無い門は、誰も呼びかけられない門であり、
+          それで埋まった都市は「壊れている」と告発できない。
+      - situation: |
+          手のひら大の刻印。持ち運ばれて縁が擦れ、丸くなっている。
+          Lira は自分の建てた門・ポンプ・昇降機のすべてに名前を打ち込んだ。
+          これがその打ち型だ。
+        conversations:
+          - speaker: you
+            text: "連れて行かれる一週間前に、これを渡された。"
+          - speaker: chap
+            text: "ではそれが、その名前の残る最後の場所です。他はすべて除去済みです。"
+        lore: |
+          道具は残る。意図も残る。
+          だが、作り手の名前が無い道具は、呼びかけられない。
+      - on_success: |
+          あなたは都市に彼女の名前を伝え、都市はそれを受け取った。
+          門の機構のどこかで、何年も空だった欄が空でなくなり——
+          そして門は、まるで一度も難しくなどなかったかのように、何の合図もなく開く。
+        conversations:
+          - speaker: chap
+            text: "門が応えています。作り手が戻りました。"
+          - speaker: you
+            text: "それだけのことだったのか。"
+        lore: |
+          thing とは、都市が名前を伝えられた値のことだ。
+          伝えられるまで、値はそれを知っている者の頭の中にしか無い——
+          帝国が名前に居てほしいのは、まさにその場所だ。

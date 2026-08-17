@@ -103,6 +103,14 @@ func loadStagesFromFS(f fs.FS, root string) (map[string]*Stage, map[string]map[s
 		if len(base) > 3 && base[len(base)-3:] == "-jp" {
 			continue
 		}
+		// world.yaml describes the world a stage directory belongs to — its
+		// title, its first stage, what unlocks it, which mywant world it maps
+		// to. It sits beside the stages because that is where it is about, but
+		// it is not one, and read as one it is a stage with no waypoints and
+		// nothing to clear.
+		if base == "world" {
+			continue
+		}
 		var raw stageRaw
 		path := filepath.Join(root, name)
 		if root == "." {
