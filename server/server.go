@@ -34,6 +34,10 @@ type Server struct {
 	settingsPath string
 	locales      map[string]map[string]*StageLocale // stageID → lang → locale
 	pristine     map[string]*Stage                  // stageID → unmodified definition from YAML
+	// Whether each board-reading door was satisfied at the last look, so a
+	// change can be told from a repeat. Reset with the world, since a door is a
+	// stage's.
+	doorSatisfied map[string]bool
 	// Which world is in play. Its progress is in a state file of its own, so
 	// switching cannot overwrite the world being left. See worlds.go.
 	world string
@@ -60,6 +64,9 @@ func NewServer(cfg Config) (*Server, error) {
 	if err := s.loadOrBootstrap(); err != nil {
 		return nil, err
 	}
+	// mywant says when the city changes; the game would otherwise only find out
+	// by being asked. See mywant_sse.go.
+	go s.watchMywant()
 	return s, nil
 }
 
@@ -205,6 +212,11 @@ func (s *Server) Control(in ControlInput) (ControlResult, int) {
 	}
 	if !res.OK {
 		return res, 409
+	}
+	// Walking into a stage takes a fresh baseline: its doors are not the ones
+	// whose state we were watching. See seedDoorSatisfiedLocked.
+	if in.Action == ActionAdvance || in.Action == ActionReturn {
+		s.seedDoorSatisfiedLocked()
 	}
 	if in.Action == ActionAdvance {
 		if stage := s.state.Stages[s.state.CurrentStage]; stage != nil && stage.MywantSetup != nil && s.cfg.MywantURL != "" {

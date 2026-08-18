@@ -70,6 +70,25 @@ next_goal_rules:
 cleared_when: passed_north_gate
 next_stage: fortress2
 narrations:
+  # The moment the city takes the name. Nobody asked the game anything — mywant
+  # said so, and the game was listening. See server/mywant_sse.go.
+  - match: { actor: city, action: answered, target: north_gate }
+    on_success: |
+      Somewhere in the gate's mechanism a field that had been blank for years is
+      not blank. And on the board, without anyone placing it, a tile is standing
+      with her name on it and one road running from it to the gate.
+    conversations:
+      - speaker: chap
+        text: "The city has taken the name. The gate has a maker again."
+      - speaker: you
+        text: "I didn't put that tile there."
+      - speaker: chap
+        text: "You did not. The gate is using the name, so the board is showing it. A value in use is drawn whether or not anyone placed it."
+    lore: |
+      A thing is a value the city has been told the name of.
+      Until it is told, the value exists only in the head of whoever knows it —
+      which is exactly where the Empire prefers names to stay.
+
   - match:
       action: observe
       requires_achievements: [named_lira]
@@ -182,6 +201,21 @@ locales:
           text: "門が作り手に応えた。くぐろう"
           hint: "rpg_control_system actor=you action=move target=gate_arch"
     narrations:
+      - on_success: |
+          門の機構のどこかで、何年も空だった欄が空でなくなった。
+          そして盤面には、誰も置いていないのに、彼女の名前が載ったタイルが立っていて、
+          そこから門へ道が一本伸びている。
+        conversations:
+          - speaker: chap
+            text: "街が名前を受け取りました。門に作り手が戻っています。"
+          - speaker: you
+            text: "あのタイル、俺が置いたんじゃない。"
+          - speaker: chap
+            text: "違います。門がその名前を使っているので、盤面が映しているのです。使われている値は、誰が置いたかに関係なく描かれます。"
+        lore: |
+          thing とは、都市が名前を伝えられた値のことだ。
+          伝えられるまで、値はそれを知っている者の頭の中にしか無い——
+          帝国が名前に居てほしいのは、まさにその場所だ。
       - situation: |
           門が開いていて、誰も頼んでいないことがもう一つ起きている。
           さっきまで無かったタイルが盤面に立っていて、彼女の名前が載っていて、

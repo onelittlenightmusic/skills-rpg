@@ -150,6 +150,7 @@ func (s *Server) loadWorldLocked(world string) error {
 		}
 		s.state = &st
 		s.world = world
+		s.seedDoorSatisfiedLocked()
 		return nil
 	} else if !os.IsNotExist(err) {
 		return err
@@ -161,6 +162,7 @@ func (s *Server) loadWorldLocked(world string) error {
 	}
 	s.state = gs
 	s.world = world
+	s.seedDoorSatisfiedLocked()
 	return s.persistLocked()
 }
 
@@ -195,6 +197,7 @@ func (s *Server) SwitchWorld(world, stage string) error {
 		if st := s.state.Stages[stage]; st != nil {
 			s.state.You.Position = st.InitialPosition
 		}
+		s.seedDoorSatisfiedLocked()
 	}
 	return s.persistLocked()
 }

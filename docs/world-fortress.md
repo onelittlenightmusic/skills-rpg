@@ -352,6 +352,39 @@ board fills with roads, and the Monolith's outer shell opens.
 
 ---
 
+## How a stage hears about mywant
+
+The doors read mywant, and until they were told when to look they only ever
+found out by being asked — a condition checked at the moment somebody tried a
+door. Enough to unlock one, and nothing to narrate with. The moment worth
+showing is when the player names a value and a tile appears with a road running
+to the gate, and a game that learns it later cannot say so.
+
+mywant streams `thing_changed` on /api/v1/events, so the game listens (see
+`server/mywant_sse.go`). On each one it re-reads the doors of the stage in play
+and records an ordinary event for any whose condition has **changed**:
+
+| | |
+|---|---|
+| `city` / `answered` | a condition that was unmet is met |
+| `city` / `forgot` | one that was met no longer is |
+
+`city` because neither `you` nor `chap` did it. Both directions, because a name
+can leave — which is not a non-event but the Empire's whole method, performed on
+a name the player restored, and the beat `fortress2` exists for.
+
+The watcher opens no doors, moves nobody and clears nothing. It records that the
+city changed, which is all narration and achievements have ever needed. **Every
+stage from here uses this**: a board condition worth narrating gets a
+`match: { actor: city, action: answered|forgot, target: <door> }` narration and
+needs nothing else.
+
+The baseline is taken on arrival, not on the first event to reach us — otherwise
+the first change after entering a stage is spent working out what "before" was,
+and the player's opening move goes unremarked.
+
+---
+
 ## What has to exist
 
 Every operation in Act 1 and Act 3 rests on affordances that already ship:

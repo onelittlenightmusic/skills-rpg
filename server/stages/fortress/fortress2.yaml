@@ -61,6 +61,36 @@ next_goal_rules:
 cleared_when: through_the_yard_door
 next_stage: fortress3
 narrations:
+  # The erasure, as it happens. Nobody asked the game anything: a name left the
+  # city and mywant said so. This is the beat the stage exists for, and it could
+  # not be shown until the game could hear about it — see server/mywant_sse.go.
+  - match: { actor: city, action: forgot, target: yard_door }
+    on_success: |
+      Her tile is not on the board any more. Nothing broke and nothing finished —
+      the name is simply gone from whatever was referring to it, and a name
+      nothing refers to is not drawn.
+    conversations:
+      - speaker: you
+        text: "It's been five minutes."
+      - speaker: chap
+        text: "The name still exists somewhere. But nothing refers to it now, so there is nothing to draw."
+      - speaker: you
+        text: "They don't have to destroy anything. They just have to keep tidying."
+
+  # And the answer to it. A pinned value is on the board on its own account.
+  - match: { actor: city, action: answered, target: yard_door }
+    on_success: |
+      You put her name down on the board yourself, in a place you chose, and it
+      stays there — not because the gate is using it, not because anything is.
+      Because you said so.
+    conversations:
+      - speaker: chap
+        text: "It is pinned. Nothing refers to her at this moment, and she is still on the board."
+      - speaker: you
+        text: "Then let them come."
+    lore: |
+      A value is drawn when something refers to it — or when you have pinned it.
+      The first is contingent on somebody else. The second is not.
   - match:
       action: observe
       requires_achievements: [through_the_yard_door]
@@ -183,6 +213,28 @@ locales:
           text: "中庭の扉は、留まる名前にしか応えない。くぐろう"
           hint: "rpg_control_system actor=you action=move target=pump_yard"
     narrations:
+      - on_success: |
+          彼女のタイルが盤面から消えている。壊れたのでも終わったのでもない——
+          参照していたものから名前が失われただけで、
+          何にも参照されていない名前は描かれない。
+        conversations:
+          - speaker: you
+            text: "五分だ。"
+          - speaker: chap
+            text: "名前自体はどこかに存在しています。ですが今それを参照するものが無いので、描くものが無いのです。"
+          - speaker: you
+            text: "壊す必要すらない。片付け続ければいいだけだ。"
+      - on_success: |
+          あなたは彼女の名前を、自分で選んだ場所に、自分の手で盤面に置いた。
+          そしてそれは留まる——何かが使っているからではなく、あなたがそう言ったからだ。
+        conversations:
+          - speaker: chap
+            text: "pin されています。今この瞬間、彼女を参照しているものは何もありません。そして彼女は盤面にいます。"
+          - speaker: you
+            text: "なら、来ればいい。"
+        lore: |
+          値が描かれるのは、何かが参照しているとき——あるいは pin したときだ。
+          前者は他人任せで、後者はそうではない。
       - situation: |
           削除班は門を二度目に、丁寧に処理して去った。
           彼女のタイルは、まだ盤面に立っている。
