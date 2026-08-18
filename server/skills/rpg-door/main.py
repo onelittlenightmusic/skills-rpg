@@ -117,9 +117,13 @@ def observe(arg: dict) -> dict:
     if is_open:
         summary = f"{door_id} is open"
     elif wants_subtype:
-        summary = (f"{door_id} answers to its {wants_subtype} — and the field is empty"
+        # Says the move, not just the lack. "the field is empty" is a diagnosis
+        # and leaves the player looking at a gate wondering what one does about
+        # it — and this is the first door in the game whose answer is an
+        # operation they have never performed. So the card names the operation.
+        summary = (f"name a {wants_subtype} to open {door_id}"
                    if wants_kind == "named"
-                   else f"{door_id} wants a {wants_subtype} that stays on the board")
+                   else f"pin a {wants_subtype} to open {door_id}")
     elif requires and not device_on:
         summary = f"{door_id} needs {requires} running"
     elif blocked_by and blocker_on:

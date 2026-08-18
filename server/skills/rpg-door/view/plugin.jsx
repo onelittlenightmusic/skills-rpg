@@ -86,7 +86,7 @@ function RpgDoorSection({ want }) {
   // with nothing on it — which is the whole of what fortress1 asks the player to
   // notice, and it cannot be noticed on a card that only ever says "locked".
   if (wantsThing) {
-    rows.push({ met: false, name: wantsThing, node: (y) =>
+    rows.push({ met: false, name: (wantsPinned ? 'pin a ' : 'name a ') + wantsThing, node: (y) =>
       React.createElement('g', { key: 'plate', transform: `translate(${COL_X - 2}, ${y - 2})` },
         React.createElement('rect', {
           x: 0, y: 0, width: 34, height: 18, rx: 2,
