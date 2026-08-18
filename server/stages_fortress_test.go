@@ -129,3 +129,38 @@ func TestFortressHasJapaneseLocale(t *testing.T) {
 		}
 	}
 }
+
+// A stage has to be finishable on the board, not just in the state machine.
+//
+// The canvas lays a stage's rooms in a chain and puts the exit portal in the
+// last one, so any door between rooms stands between the player and the way
+// out. A door whose condition the stage never satisfies is therefore a wall,
+// and the stage cannot be completed by walking — which is how it is played.
+//
+// fortress1 shipped exactly that: the north gate wanted a named maker, the
+// stage had no naming step (that was the next stage's job), and the exit sat
+// behind it. It cleared in the state machine and stranded anyone on the board.
+func TestFortressStagesAreWalkable(t *testing.T) {
+	stages, _ := loadFortress(t)
+
+	for id, st := range stages {
+		// What this stage can bring about itself.
+		acts := map[string]bool{}
+		for _, ad := range st.AchievementDefs {
+			acts[ad.When.Action] = true
+		}
+		for name, d := range st.Doors {
+			if d.Open {
+				continue
+			}
+			if c := d.RequiresThingNamed; c != nil && !acts[ActionNameThing] && !acts[ActionPinThing] {
+				t.Errorf("%s: door %q waits for a named %s, and the stage has no step that names anything — the exit is behind a wall",
+					id, name, c.Subtype)
+			}
+			if c := d.RequiresThingPinned; c != nil && !acts[ActionPinThing] {
+				t.Errorf("%s: door %q waits for a pinned %s, and the stage has no step that pins anything — the exit is behind a wall",
+					id, name, c.Subtype)
+			}
+		}
+	}
+}

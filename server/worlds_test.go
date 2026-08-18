@@ -154,15 +154,15 @@ func TestALockedWorldStillSwitches(t *testing.T) {
 
 func TestSwitchToAStageLandsThere(t *testing.T) {
 	s := testServer(t)
-	if err := s.SwitchWorld("fortress", "fortress3"); err != nil {
+	if err := s.SwitchWorld("fortress", "fortress2"); err != nil {
 		t.Fatalf("switch: %v", err)
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.state.CurrentStage != "fortress3" {
-		t.Errorf("landed on %q, want fortress3", s.state.CurrentStage)
+	if s.state.CurrentStage != "fortress2" {
+		t.Errorf("landed on %q, want fortress2", s.state.CurrentStage)
 	}
-	if s.state.You.Position != s.state.Stages["fortress3"].InitialPosition {
+	if s.state.You.Position != s.state.Stages["fortress2"].InitialPosition {
 		t.Error("landed on the stage but not at its entrance")
 	}
 }

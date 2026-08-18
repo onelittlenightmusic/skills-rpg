@@ -15,10 +15,18 @@ The fortress teaches **the board**: things, and the roads between wants. Every
 stage is one operation on the want canvas, performed by the character standing on
 it, with a result the player can see without asking anyone.
 
-Sixteen stages, because someone who has never used mywant learns exactly one new
+Fifteen stages, because someone who has never used mywant learns exactly one new
 thing at a time. The count is not padding — an earlier draft of this world fit
 the same material into eight and had to assume, at four separate points, that the
 player already knew something nobody had taught them.
+
+One constraint they have to respect, learned the hard way: **a stage has to be
+finishable by walking.** The canvas lays a stage's rooms in a chain and puts the
+exit portal in the last one, so any door between rooms stands between the player
+and the way out. An earlier draft split "read the gate's card and see what it
+wants" from "give it the name so it opens" into two stages over the same gate,
+which cleared in the state machine and walled the player in on the board.
+`TestFortressStagesAreWalkable` now fails on any door a stage cannot open.
 
 ---
 
@@ -62,50 +70,55 @@ the other half: **an intent with nothing named to act on, and no road to act
 along, scales to nothing.** Tools endure and intent endures, as the Keymakers
 wrote — but a tool whose maker has no name cannot be called.
 
-`fortress16` opens the Monolith's outer shell.
-
----
-
-## Act 0 — The board
-
-### fortress1 — The City You Can See
-
-**Learns**: the canvas is a place you *act on*, not a place you walk through.
-
-Underground, everything went through chap. Above ground you can see the city's
-own board for the first time — every want in the district, standing where it
-stands.
-
-The first thing that has to be done cannot be asked of chap, because it is not an
-action on the world: it is a change to how the world is laid out. The player has
-to reach into the board themselves.
-
-**Why a stage at all**: world 1 is played through Claude Code and the CLI. Opening
-world 2 with "name this value" assumes the player knows where anything is. This is
-the stage that hands them the surface.
+`fortress15` opens the Monolith's outer shell.
 
 ---
 
 ## Act 1 — Names
 
-### fortress2 — The Maker's Mark
+### fortress1 — The Maker's Mark
 
-**Learns**: naming a value. It exists to the system once it has a name.
+**Learns**: that the board answers questions chap cannot, and that naming a value
+is what puts it into the world.
+**Kata**: 留 initiated.
 
-The north gate is Lira's work and will not open — not broken, just scraped clean
-of the name it answers to. The mark in the player's inventory is the last copy of
-that name, and an item in your pocket is something *you* know; the board does not
-read pockets.
+| Item | Details |
+|---|---|
+| Rooms | `north_gate_approach` → `gate_arch` |
+| Blocker | `north_gate` — built by Lira, and it answers to its maker's name |
+| Item held | `lira_mark` — her maker's mark, carried out of the dungeon |
+| Clear Condition | `passed_north_gate` |
+| Next Stage | fortress2 |
+
+Above ground for the first time, and the city's own board is visible — every want
+in the district standing where it stands. The north gate is Lira's work and will
+not open. Not broken; the Empire scraped her name off it, and a gate whose maker
+has no name has nobody to answer to.
+
+Asked to open it, chap does nothing at all — no lock turning, no refusal, the way
+a bell rings when nobody is holding it. It can act on the world; it cannot read
+what a want is waiting for. **That is a reading, and readings come from the
+board** — which makes this the first thing in the game the player does rather
+than asks for: walk onto the gate's tile, open its card, and find one field named
+for a maker with nothing in it.
+
+The player has been carrying the answer without knowing it is one. The mark in
+their inventory is the last surviving copy of that name, and an item in your
+pocket is something *you* know; the board does not read pockets.
 
 Naming it puts the value into the world. The gate resolves and opens — and a tile
-appears on the board by itself, with one road running to the gate, **because the
-gate is now using it**. The player did not place it.
+appears by itself with one road running to the gate, **because the gate is now
+using it**. The player did not place it.
 
-**Goal**: observe → the gate names a maker it cannot find → read the mark → name the value → the gate opens.
+**Goal Steps**: observe → ask chap (nothing happens) → read the gate's card → read the mark → name the value → the gate opens → go through.
+
+**Why one stage and not two**: reading the card and naming the value are one
+continuous discovery, and an earlier draft that split them left a gate the first
+stage could not open standing between the player and its own exit.
 
 ---
 
-### fortress3 — The Name That Vanishes
+### fortress2 — The Name That Vanishes
 
 **Learns**: pinning, and what it is *for*.
 
@@ -141,7 +154,7 @@ can scrape that gate as often as they like.
 
 ---
 
-### fortress4 — The Third Road
+### fortress3 — The Third Road
 
 **Learns**: reading a thing tile — it shows who uses it, and a name reaches
 further than the one thing you gave it to.
@@ -158,7 +171,7 @@ down.
 
 ---
 
-### fortress5 — The Name You Typed
+### fortress4 — The Name You Typed
 
 **Learns**: things are usually made *implicitly* — type a value into a want's
 field and it is remembered.
@@ -175,7 +188,7 @@ must curate. It is mostly a record of what they have already typed.
 
 ---
 
-### fortress6 — Kinds of Name
+### fortress5 — Kinds of Name
 
 **Learns**: a thing has a **kind** (subtype), and kinds are what wants accept.
 
@@ -185,12 +198,12 @@ different *kinds of thing*, and every want declares which kinds it takes.
 
 **Goal**: try the wrong value in the wrong place → read what each asks for → see the kinds on the tiles → match them.
 
-**Why before seeding**: `fortress7` shows a list narrowing itself. Without this
+**Why before seeding**: `fortress6` shows a list narrowing itself. Without this
 stage the player sees the result and not the reason.
 
 ---
 
-### fortress7 — The Gate Nobody Built
+### fortress6 — The Gate Nobody Built
 
 **Learns**: seeding a want from a thing.
 
@@ -206,7 +219,7 @@ later; they are absent.
 
 ---
 
-### fortress8 — The Ward With No Address
+### fortress7 — The Ward With No Address
 
 **Learns**: grouping. One name for many things.
 
@@ -227,20 +240,20 @@ rather than a value.
 The player has deployed wants since `stage7` and has never once looked at one on
 the board. Act 3 is unreadable without this.
 
-### fortress9 — Green and Red
+### fortress8 — Green and Red
 
 **Learns**: a want tile is readable — it has a state, and the state is not the
 same as "doing something useful".
 
 A row of Lira's wants, some running, some stopped, one failed. The player learns
 to tell them apart by looking, and — more importantly — that **green does not mean
-working**. That single fact is what makes `fortress12` land.
+working**. That single fact is what makes `fortress11` land.
 
 **Goal**: find the failed one among the running ones → read why → restart it.
 
 ---
 
-### fortress10 — What It Has Made
+### fortress9 — What It Has Made
 
 **Learns**: a want holds results — what it has actually produced.
 
@@ -251,7 +264,7 @@ what it has been putting out, not at whether it is running.
 
 ---
 
-### fortress11 — Mouths
+### fortress10 — Mouths
 
 **Learns**: a want has **ends** — what it offers, and what it needs.
 
@@ -265,7 +278,7 @@ the other asks for one, and they are the only places a road can attach.
 
 ## Act 3 — Roads
 
-### fortress12 — Everything Green, Nothing Moving
+### fortress11 — Everything Green, Nothing Moving
 
 **Learns**: connecting two wants.
 
@@ -282,7 +295,7 @@ language as the roads a thing draws to its wants.
 
 ---
 
-### fortress13 — The Wrong Floor
+### fortress12 — The Wrong Floor
 
 **Learns**: disconnecting and rewiring. A connection can be wrong without being an
 error.
@@ -295,7 +308,7 @@ door behind you locks. Plausible and wrong teaches better than rejected.
 
 ---
 
-### fortress14 — The Value Nobody Makes
+### fortress13 — The Value Nobody Makes
 
 **Learns**: chains. Three wants in a row, deriving something none of them holds.
 
@@ -306,7 +319,7 @@ a second transforms, a third delivers.
 
 ---
 
-### fortress15 — The Name in the Middle
+### fortress14 — The Name in the Middle
 
 **Learns**: pinning something *you* produced. Act 1 and Act 3 on one board.
 
@@ -318,11 +331,11 @@ A chain of roads with a named tile standing in the middle of it.
 
 ---
 
-### fortress16 — Rewiring the District
+### fortress15 — Rewiring the District
 
 **Learns**: the two halves at scale. The finale.
 
-The eight buildings from `fortress8`, each needing its own named value, all fed
+The eight buildings from `fortress7`, each needing its own named value, all fed
 from one supply. The player wires the first two by hand and the tedium is
 deliberate — the same tedium `stage7` used to make wants worth having, now in this
 world's material.
@@ -345,14 +358,15 @@ Every operation in Act 1 and Act 3 rests on affordances that already ship:
 
 | Stage | Rests on |
 |---|---|
-| fortress2, 5 | naming a value explicitly, and implicitly by typing it into a want |
-| fortress3 | pinning; the drawing rule (pinned / placed / referred to by a want); and an `rpg_redactor` that clears a named parameter on cue |
-| fortress4 | a thing tile draws a road to every want naming it |
-| fortress6 | subtypes, and the accepted-subtype matching a want declares |
-| fortress7 | Add Want from a thing: filtered type list, seeded parameter |
-| fortress8 | thing groups, drawn as lines between members |
-| fortress9–11 | want state, results, expose/import |
-| fortress12–15 | want↔want connection, drawn as a road |
+| fortress1, 4 | naming a value explicitly, and implicitly by typing it into a want |
+| fortress2 | pinning; the drawing rule (pinned / placed / referred to by a want); and an `rpg_redactor` that clears a named parameter on cue |
+| fortress3 | a thing tile draws a road to every want naming it |
+| fortress5 | subtypes, and the accepted-subtype matching a want declares |
+| fortress6 | Add Want from a thing: filtered type list, seeded parameter |
+| fortress7 | thing groups, drawn as lines between members |
+| fortress8–10 | want state, results, expose/import |
+| fortress11–14 | want↔want connection, drawn as a road |
+| fortress15 | one want addressing many named values |
 
 What the RPG server needs is the ability to *notice* these, so a stage can be
 cleared by doing them. The existing gates are `requires_device` /
