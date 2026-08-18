@@ -2,7 +2,7 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
+
 	"strings"
 )
 
@@ -84,37 +84,4 @@ func (b mywantBoard) Pinned(subtype, value string) bool {
 		return false
 	}
 	return t.Labels[thingPinLabel] == "true"
-}
-
-func (b mywantBoard) Name(subtype, value string) (string, error) {
-	if t, ok := b.find(subtype, value); ok {
-		return t.ID, nil // already told; saying it twice is not an error
-	}
-	body, err := mywantPost(b.url, "/api/v1/things", map[string]any{
-		"catalog": subtype,
-		"value":   value,
-	})
-	if err != nil {
-		return "", fmt.Errorf("the city would not take the name: %w", err)
-	}
-	var out struct {
-		ID string `json:"id"`
-	}
-	_ = json.Unmarshal(body, &out)
-	return out.ID, nil
-}
-
-func (b mywantBoard) Pin(subtype, value string) error {
-	t, ok := b.find(subtype, value)
-	if !ok {
-		return fmt.Errorf("nothing named %q to pin", value)
-	}
-	_, err := mywantPost(b.url, "/api/v1/things/"+t.ID+"/labels", map[string]any{
-		"key":   thingPinLabel,
-		"value": "true",
-	})
-	if err != nil {
-		return fmt.Errorf("could not put %q on the board: %w", value, err)
-	}
-	return nil
 }

@@ -160,30 +160,26 @@ type Door struct {
 	RequiresThingPinned *ThingCond `yaml:"requires_thing_pinned,omitempty" json:"requires_thing_pinned,omitempty"`
 }
 
-// ThingCond names a value the world has to know about. The value can be given
-// outright, or taken from an item the stage defines — a mark carries the name
-// struck on it, and the door does not need to repeat it.
+// ThingCond names a value the world has to know about.
+//
+// The value is written here, plainly. An earlier version let a door defer to an
+// item instead — `from_item: lira_mark` — so that the card would not give away
+// a name the player was meant to go and read. What it gave away instead was an
+// internal id: "name the person on lira_mark" means nothing to somebody seeing
+// this for the first time, and no wording rescued it. A door that says which
+// name is missing can be understood; a door that says which item holds it
+// cannot.
 type ThingCond struct {
-	Subtype  string `yaml:"subtype,omitempty" json:"subtype,omitempty"`
-	Value    string `yaml:"value,omitempty" json:"value,omitempty"`
-	FromItem string `yaml:"from_item,omitempty" json:"from_item,omitempty"`
+	Subtype string `yaml:"subtype,omitempty" json:"subtype,omitempty"`
+	Value   string `yaml:"value,omitempty" json:"value,omitempty"`
 }
 
-// Want returns the value this condition is about, reading it off the named item
-// when the condition defers to one.
-func (c *ThingCond) Want(stage *Stage) string {
+// Want returns the value this condition is about.
+func (c *ThingCond) Want(*Stage) string {
 	if c == nil {
 		return ""
 	}
-	if c.Value != "" {
-		return c.Value
-	}
-	if c.FromItem != "" && stage != nil {
-		if it, ok := stage.Items[c.FromItem]; ok {
-			return it.Value
-		}
-	}
-	return ""
+	return c.Value
 }
 
 type Device struct {

@@ -135,32 +135,33 @@ func TestFortressHasJapaneseLocale(t *testing.T) {
 //
 // The canvas lays a stage's rooms in a chain and puts the exit portal in the
 // last one, so any door between rooms stands between the player and the way
-// out. A door whose condition the stage never satisfies is therefore a wall,
-// and the stage cannot be completed by walking — which is how it is played.
+// out. A door the stage gives the player no way past is therefore a wall.
 //
-// fortress1 shipped exactly that: the north gate wanted a named maker, the
-// stage had no naming step (that was the next stage's job), and the exit sat
-// behind it. It cleared in the state machine and stranded anyone on the board.
+// The fortress's doors are opened by facts about mywant, which the game does not
+// bring about — the player does, in mywant. So what the stage has to provide is
+// the moment of noticing: an achievement on the door being opened, and a goal
+// telling the player what the city is missing. A stage with a board-reading door
+// and no such achievement has nothing to say when the player gets stuck at it.
 func TestFortressStagesAreWalkable(t *testing.T) {
 	stages, _ := loadFortress(t)
 
 	for id, st := range stages {
-		// What this stage can bring about itself.
-		acts := map[string]bool{}
+		opens := map[string]bool{}
 		for _, ad := range st.AchievementDefs {
-			acts[ad.When.Action] = true
+			if ad.When.Action == ActionOpen && ad.When.Result == "ok" {
+				opens[ad.When.Target] = true
+			}
 		}
 		for name, d := range st.Doors {
 			if d.Open {
 				continue
 			}
-			if c := d.RequiresThingNamed; c != nil && !acts[ActionNameThing] && !acts[ActionPinThing] {
-				t.Errorf("%s: door %q waits for a named %s, and the stage has no step that names anything — the exit is behind a wall",
-					id, name, c.Subtype)
+			if d.RequiresThingNamed == nil && d.RequiresThingPinned == nil {
+				continue
 			}
-			if c := d.RequiresThingPinned; c != nil && !acts[ActionPinThing] {
-				t.Errorf("%s: door %q waits for a pinned %s, and the stage has no step that pins anything — the exit is behind a wall",
-					id, name, c.Subtype)
+			if !opens[name] {
+				t.Errorf("%s: door %q opens on something the player does in mywant, and the stage never notices it being opened — nothing will move the goal on",
+					id, name)
 			}
 		}
 	}

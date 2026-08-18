@@ -24,7 +24,7 @@ doors:
     # fortress3 is where that distinction earns its keep.
     requires_thing_named:
       subtype: person
-      from_item: lira_mark
+      value: "Lira"
 items:
   lira_mark:
     held_by: you
@@ -36,33 +36,33 @@ achievement_defs:
     when: { actor: chap, action: open, target: north_gate, result: rejected }
   - id: read_the_gate_card
     # Reading a want's own card on the board. Not an action on the world, so it
-    # is not something chap can be asked for — it is the player looking, and it
-    # is the first thing in this game you do rather than ask for.
+    # is not something chap can be asked for — it is the player looking.
     when: { actor: you, action: inspect, target: north_gate, result: ok }
-  - id: read_the_mark
-    when: { actor: you, action: inspect, target: lira_mark, result: ok }
-  - id: named_lira
-    when: { actor: you, action: name_thing, subtype: person, result: ok }
+  # The gate opening IS the achievement. There is no separate "you named it"
+  # step, because the game does not do the naming: the player does it in mywant,
+  # by whichever route they like, and the gate is what notices.
+  - id: gate_opened
+    when: { actor: chap, action: open, target: north_gate, result: ok }
   - id: passed_north_gate
     when: { actor: you, action: move, target: gate_arch, result: ok }
 next_goal_rules:
   - if_missing: asked_chap_what_it_wants
     goal:
       text: "Ask chap to open the north gate"
-      hint: "rpg_control_system actor=chap action=open target=north_gate — it will fail, and the failure is the point: chap can act, it cannot tell you what a want is waiting for"
+      hint: "rpg_control_system actor=chap action=open target=north_gate — it will fail, and the failure is the point"
       required_skill: rpg-control
   - if_missing: read_the_gate_card
     goal:
       text: "Read the gate's own card on the board"
-      hint: "rpg_control_system actor=you action=inspect target=north_gate — the field it is waiting on is blank"
-  - if_missing: read_the_mark
+      hint: "rpg_control_system actor=you action=inspect target=north_gate — it will tell you who built it"
+  - if_missing: gate_opened
     goal:
-      text: "Read the mark you carried out of the dungeon"
-      hint: "rpg_control_system actor=you action=inspect target=lira_mark"
-  - if_missing: named_lira
-    goal:
-      text: "The gate wants a maker. Give that name to the city"
-      hint: "rpg_control_system actor=you action=name_thing target=lira_mark args={\"subtype\":\"maker\"} — naming is not using; the value only has to exist"
+      text: "The city has no record of Lira. Add one, then ask chap again"
+      hint: |
+        Add a person called Lira to the city — in mywant, not here:
+          CLI: mywant thing add people Lira
+          GUI: Thing → Add Thing → category: person → name: Lira
+        Then: rpg_control_system actor=chap action=open target=north_gate
   - if_missing: passed_north_gate
     goal:
       text: "The gate answers its maker. Go through"
@@ -167,16 +167,17 @@ locales:
     next_goal_rules:
       - goal:
           text: "chap に北門を開けるよう頼もう"
-          hint: "rpg_control_system actor=chap action=open target=north_gate ——失敗する。その失敗が要点で、chap は動かせるが want が何を待っているかは言えない"
+          hint: "rpg_control_system actor=chap action=open target=north_gate ——失敗する。その失敗が要点"
       - goal:
           text: "門自身のカードを盤面で読もう"
-          hint: "rpg_control_system actor=you action=inspect target=north_gate——待っている欄が空になっている"
+          hint: "rpg_control_system actor=you action=inspect target=north_gate ——誰が建てたのかが書いてある"
       - goal:
-          text: "ダンジョンから持ち出した刻印を読もう"
-          hint: "rpg_control_system actor=you action=inspect target=lira_mark"
-      - goal:
-          text: "門は作り手を求めている。その名前を都市に伝えよう"
-          hint: "rpg_control_system actor=you action=name_thing target=lira_mark args={\"subtype\":\"maker\"} ——名付けは使用ではない。存在すればいい"
+          text: "街の名簿に Lira が居ない。登録して、もう一度 chap に頼もう"
+          hint: |
+            Lira という person を街に追加する（ここではなく mywant で）:
+              CLI: mywant thing add people Lira
+              GUI: Thing → Add Thing → カテゴリ: person → 名前: Lira
+            そのあと: rpg_control_system actor=chap action=open target=north_gate
       - goal:
           text: "門が作り手に応えた。くぐろう"
           hint: "rpg_control_system actor=you action=move target=gate_arch"

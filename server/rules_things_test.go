@@ -56,7 +56,7 @@ func withBoard(t *testing.T, b board) {
 // item carrying the name it is waiting for.
 func markStage(cond string) *Stage {
 	d := &Door{Between: [2]string{"here", "there"}, Locked: true}
-	c := &ThingCond{Subtype: "maker", FromItem: "lira_mark"}
+	c := &ThingCond{Subtype: "person", Value: "Lira"}
 	switch cond {
 	case "named":
 		d.RequiresThingNamed = c
@@ -85,120 +85,12 @@ func stateFor(st *Stage) *GameState {
 }
 
 // The condition reads the value off the item, so a stage does not have to write
-// the name twice and a goal hint does not have to spoil it.
-func TestThingCondReadsValueFromItem(t *testing.T) {
-	st := markStage("named")
-	if got := st.Doors["gate"].RequiresThingNamed.Want(st); got != "Lira" {
-		t.Fatalf("want value from item = %q, want %q", got, "Lira")
-	}
-}
-
 // fortress2: naming is the whole move. The door opens on the name existing —
-// nothing has to be pinned yet.
-func TestNamedDoorOpensOnceNamed(t *testing.T) {
-	b := newFakeBoard()
-	withBoard(t, b)
-	st := markStage("named")
-	state := stateFor(st)
-
-	_, res := applyControl(state, ControlInput{Actor: ActorChap, Action: ActionOpen, Target: "gate"}, nil)
-	if res.OK {
-		t.Fatal("gate opened before the city had been told the name")
-	}
-
-	_, res = applyControl(state, ControlInput{
-		Actor: ActorYou, Action: ActionNameThing, Target: "lira_mark",
-		Args: map[string]any{"subtype": "maker"},
-	}, nil)
-	if !res.OK {
-		t.Fatalf("naming failed: %s", res.Reason)
-	}
-
-	_, res = applyControl(state, ControlInput{Actor: ActorChap, Action: ActionOpen, Target: "gate"}, nil)
-	if !res.OK {
-		t.Fatalf("gate stayed shut after naming: %s", res.Reason)
-	}
-}
-
 // fortress3: naming is NOT enough. This is the distinction the whole stage is
 // built on — a name that is only referred to can be taken away, so the door
-// wants one that stands on its own.
-func TestPinnedDoorIsNotSatisfiedByNamingAlone(t *testing.T) {
-	b := newFakeBoard()
-	withBoard(t, b)
-	st := markStage("pinned")
-	state := stateFor(st)
-
-	_, res := applyControl(state, ControlInput{
-		Actor: ActorYou, Action: ActionNameThing, Target: "lira_mark",
-		Args: map[string]any{"subtype": "maker"},
-	}, nil)
-	if !res.OK {
-		t.Fatalf("naming failed: %s", res.Reason)
-	}
-
-	_, res = applyControl(state, ControlInput{Actor: ActorChap, Action: ActionOpen, Target: "gate"}, nil)
-	if res.OK {
-		t.Fatal("a merely-named value satisfied a door that asks for a pinned one")
-	}
-
-	_, res = applyControl(state, ControlInput{
-		Actor: ActorYou, Action: ActionPinThing, Target: "lira_mark",
-		Args: map[string]any{"subtype": "maker"},
-	}, nil)
-	if !res.OK {
-		t.Fatalf("pinning failed: %s", res.Reason)
-	}
-
-	_, res = applyControl(state, ControlInput{Actor: ActorChap, Action: ActionOpen, Target: "gate"}, nil)
-	if !res.OK {
-		t.Fatalf("gate stayed shut after pinning: %s", res.Reason)
-	}
-}
-
 // Pinning something the city has not been told about names it on the way.
-// Refusing would teach an ordering rule mywant does not have.
-func TestPinNamesOnTheWay(t *testing.T) {
-	b := newFakeBoard()
-	withBoard(t, b)
-	st := markStage("pinned")
-	state := stateFor(st)
-
-	_, res := applyControl(state, ControlInput{
-		Actor: ActorYou, Action: ActionPinThing, Target: "lira_mark",
-		Args: map[string]any{"subtype": "maker"},
-	}, nil)
-	if !res.OK {
-		t.Fatalf("pin without a prior name failed: %s", res.Reason)
-	}
-	if !b.Named("maker", "Lira") {
-		t.Error("pinning did not name it")
-	}
-}
-
 // Taking the pin away shuts the door again — which is what a redaction crew
 // amounts to from the door's point of view, and is worth pinning down so a
-// later change cannot make the gate latch open.
-func TestUnpinningShutsThePinnedDoor(t *testing.T) {
-	b := newFakeBoard()
-	withBoard(t, b)
-	st := markStage("pinned")
-	state := stateFor(st)
-
-	applyControl(state, ControlInput{
-		Actor: ActorYou, Action: ActionPinThing, Target: "lira_mark",
-		Args: map[string]any{"subtype": "maker"},
-	}, nil)
-	b.unpin("maker", "Lira")
-
-	st.Doors["gate"].Open = false
-	st.Doors["gate"].Locked = true
-	_, res := applyControl(state, ControlInput{Actor: ActorChap, Action: ActionOpen, Target: "gate"}, nil)
-	if res.OK {
-		t.Fatal("door opened for a value no longer on the board")
-	}
-}
-
 // fortress1: inspecting a door reports what it is waiting for, which is how the
 // player finds out that the field is blank. chap cannot tell them.
 func TestInspectDoorReportsWhatItWaitsFor(t *testing.T) {
@@ -211,7 +103,7 @@ func TestInspectDoorReportsWhatItWaitsFor(t *testing.T) {
 	if !res.OK {
 		t.Fatalf("inspect failed: %s", res.Reason)
 	}
-	if res.Changes["subtype"] != "maker" {
+	if res.Changes["subtype"] != "person" {
 		t.Errorf("inspect did not name the kind it wants: %v", res.Changes)
 	}
 	if res.Changes["satisfied"] != false {
@@ -234,33 +126,4 @@ func TestInspectItemReportsItsValue(t *testing.T) {
 }
 
 // The three fortress verbs belong to you. chap acts on the world; naming a value
-// and putting it on the board are things the player says about it.
-func TestFortressVerbsBelongToYou(t *testing.T) {
-	for _, a := range []string{ActionInspect, ActionNameThing, ActionPinThing} {
-		if !actorAllowed(ActorYou, a) {
-			t.Errorf("you cannot %s", a)
-		}
-		if actorAllowed(ActorChap, a) {
-			t.Errorf("chap should not be able to %s", a)
-		}
-	}
-}
-
 // Without a mywant the board says no and says why, rather than letting a stage
-// behave as though a name had been given.
-func TestNoMywantIsAnHonestRefusal(t *testing.T) {
-	withBoard(t, emptyBoard{})
-	st := markStage("named")
-	state := stateFor(st)
-
-	_, res := applyControl(state, ControlInput{
-		Actor: ActorYou, Action: ActionNameThing, Target: "lira_mark",
-		Args: map[string]any{"subtype": "maker"},
-	}, nil)
-	if res.OK {
-		t.Fatal("naming succeeded with no city to tell")
-	}
-	if res.Reason == "" {
-		t.Error("refused without saying why")
-	}
-}

@@ -57,6 +57,7 @@ function RpgDoorSection({ want }) {
   // the player is meant to discover that it is MISSING, not to be handed it.
   const wantsThing = state.wants_thing_subtype || '';
   const wantsPinned = state.wants_thing_kind === 'pinned';
+  const wantsValue = state.wants_thing_value || '';
 
   // The device gate, drawn as the machine itself rather than as a word: the
   // same generator and alarm that have their own cards, small, standing here.
@@ -86,7 +87,7 @@ function RpgDoorSection({ want }) {
   // with nothing on it — which is the whole of what fortress1 asks the player to
   // notice, and it cannot be noticed on a card that only ever says "locked".
   if (wantsThing) {
-    rows.push({ met: false, name: (wantsPinned ? 'pin a ' : 'name a ') + wantsThing, node: (y) =>
+    rows.push({ met: false, name: wantsValue + (wantsPinned ? ' — 消えやすい' : ' — 未登録'), node: (y) =>
       React.createElement('g', { key: 'plate', transform: `translate(${COL_X - 2}, ${y - 2})` },
         React.createElement('rect', {
           x: 0, y: 0, width: 34, height: 18, rx: 2,
