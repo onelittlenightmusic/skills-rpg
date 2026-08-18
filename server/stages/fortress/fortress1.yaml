@@ -49,7 +49,7 @@ next_goal_rules:
   - if_missing: asked_chap_what_it_wants
     goal:
       text: "Ask chap to open the north gate"
-      hint: "It will fail, and the failure is the point — chap can act, it cannot tell you what a want is waiting for"
+      hint: "rpg_control_system actor=chap action=open target=north_gate — it will fail, and the failure is the point: chap can act, it cannot tell you what a want is waiting for"
       required_skill: rpg-control
   - if_missing: read_the_gate_card
     goal:
@@ -167,7 +167,7 @@ locales:
     next_goal_rules:
       - goal:
           text: "chap に北門を開けるよう頼もう"
-          hint: "失敗する。その失敗が要点——chap は動かせるが、want が何を待っているかは言えない"
+          hint: "rpg_control_system actor=chap action=open target=north_gate ——失敗する。その失敗が要点で、chap は動かせるが want が何を待っているかは言えない"
       - goal:
           text: "門自身のカードを盤面で読もう"
           hint: "rpg_control_system actor=you action=inspect target=north_gate——待っている欄が空になっている"

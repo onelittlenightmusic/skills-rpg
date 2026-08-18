@@ -1,6 +1,7 @@
 package server
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -161,6 +162,75 @@ func TestFortressStagesAreWalkable(t *testing.T) {
 				t.Errorf("%s: door %q waits for a pinned %s, and the stage has no step that pins anything — the exit is behind a wall",
 					id, name, c.Subtype)
 			}
+		}
+	}
+}
+
+// Every goal has to say how, not only what.
+//
+// "Name it again" is not an instruction to somebody who has never named
+// anything: it leaves out the call, the kind of thing, and which of their
+// possessions the value is written on. This world's verbs are new — a player
+// arrives having only ever asked chap to open doors — so a fortress hint that
+// does not contain something runnable is a dead end, however well it explains
+// the idea.
+//
+// The dungeon is deliberately not held to this. Its hints name skills
+// (`/rpg-try-keys`, `rpg_observe`) that the player has by then been using for
+// stages, and several are deliberately prose because working it out is the
+// lesson.
+func TestFortressHintsSayHow(t *testing.T) {
+	stages, locales := loadFortress(t)
+
+	// Something the player can actually run: the MCP tool, a skill, or a CLI.
+	runnable := func(h string) bool {
+		for _, m := range []string{"rpg_control_system", "rpg_observe", "rpg-", "/mywant-", "mywant "} {
+			if strings.Contains(h, m) {
+				return true
+			}
+		}
+		return false
+	}
+
+	for id, st := range stages {
+		for i, r := range st.NextGoalRules {
+			if !runnable(r.Goal.Hint) {
+				t.Errorf("%s: goal %d (%q) has no runnable hint: %q",
+					id, i, r.Goal.Text, r.Goal.Hint)
+			}
+		}
+		// The Japanese hints are what most players read, and they are a separate
+		// list — a command added to one and not the other leaves half the
+		// audience with the old dead end.
+		ja := locales[id]["ja"]
+		if ja == nil {
+			continue
+		}
+		for i, r := range ja.NextGoalRules {
+			if r.Goal.Hint != "" && !runnable(r.Goal.Hint) {
+				t.Errorf("%s (ja): goal %d (%q) has no runnable hint: %q",
+					id, i, r.Goal.Text, r.Goal.Hint)
+			}
+		}
+	}
+}
+
+// The two goal lists are read as one: the Japanese locale replaces hints
+// position by position, so a goal added or removed on one side and not the
+// other silently pairs the wrong hint with the wrong step. That is how
+// fortress2 ended up telling Japanese players to wait for a patrol that had
+// been cut from the stage.
+func TestFortressLocaleGoalsLineUp(t *testing.T) {
+	stages, locales := loadFortress(t)
+
+	for id, st := range stages {
+		ja := locales[id]["ja"]
+		if ja == nil {
+			continue
+		}
+		if len(ja.NextGoalRules) != len(st.NextGoalRules) {
+			t.Errorf("%s: %d goals in English, %d in ja — the lists are applied by position",
+				id, len(st.NextGoalRules), len(ja.NextGoalRules))
 		}
 	}
 }

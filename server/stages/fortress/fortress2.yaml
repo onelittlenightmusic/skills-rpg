@@ -49,11 +49,11 @@ next_goal_rules:
   - if_missing: named_again
     goal:
       text: "Her name is gone from the board. Put it back"
-      hint: "Name it again — the mark is still yours, and they cannot take that"
+      hint: "rpg_control_system actor=you action=name_thing target=lira_mark args={\"subtype\":\"person\"} — the mark is still yours, and they cannot take that"
   - if_missing: pinned_lira
     goal:
       text: "It will go again when they come round. Make it stay"
-      hint: "Pin the thing. A pinned value stands on the board whether or not anything refers to it"
+      hint: "rpg_control_system actor=you action=pin_thing target=lira_mark args={\"subtype\":\"person\"} — a pinned value stands on the board whether or not anything refers to it"
   - if_missing: through_the_yard_door
     goal:
       text: "The yard door only answers a name that stays. Go through"
@@ -174,13 +174,13 @@ locales:
           hint: "振り返る。rpg_observe"
       - goal:
           text: "彼女の名前が盤面から消えた。戻そう"
-          hint: "もう一度名付ける——刻印はまだこちらの手にあり、それは奪えない"
+          hint: "rpg_control_system actor=you action=name_thing target=lira_mark args={\"subtype\":\"person\"} ——刻印はまだこちらの手にあり、それは奪えない"
       - goal:
           text: "次の巡回でまた消える。留まるようにしよう"
-          hint: "thing を pin する。pin された値は、何かに参照されているかどうかに関係なく盤面に立つ"
+          hint: "rpg_control_system actor=you action=pin_thing target=lira_mark args={\"subtype\":\"person\"} ——pin された値は、何かに参照されているかどうかに関係なく盤面に立つ"
       - goal:
-          text: "次の巡回を待とう"
-          hint: "彼らは門を削る。今度はタイルがどうなるかを見る"
+          text: "中庭の扉は、留まる名前にしか応えない。くぐろう"
+          hint: "rpg_control_system actor=you action=move target=pump_yard"
     narrations:
       - situation: |
           削除班は門を二度目に、丁寧に処理して去った。
