@@ -34,10 +34,11 @@ doors:
 achievement_defs:
   - id: saw_the_crew
     when: { action: observe }
-  # Again the door is the achievement: pinning happens in mywant, and the yard
-  # door is what notices that it stuck.
+  # Again the door is the achievement, and the door opens itself once the pin
+  # sticks. Matched on the city's event, not on chap opening it — chap does not
+  # open these.
   - id: yard_door_opened
-    when: { actor: chap, action: open, target: yard_door, result: ok }
+    when: { actor: city, action: answered, target: yard_door, result: ok }
   - id: through_the_yard_door
     when: { actor: you, action: move, target: pump_yard, result: ok }
 next_goal_rules:
@@ -53,7 +54,7 @@ next_goal_rules:
         Pin Lira, so it stands on the board whether or not anything refers to it:
           GUI: Thing → the Lira card → Pin
           CLI: mywant thing label people::Lira mywant.io/canvas true
-        Then: rpg_control_system actor=chap action=open target=yard_door
+        The yard door answers a name that stays; nobody has to push it.
   - if_missing: through_the_yard_door
     goal:
       text: "The yard door only answers a name that stays. Go through"
@@ -208,7 +209,7 @@ locales:
             Lira を pin する。参照されているかどうかに関係なく盤面に立つようになる:
               GUI: Thing → Lira のカード → Pin
               CLI: mywant thing label people::Lira mywant.io/canvas true
-            そのあと: rpg_control_system actor=chap action=open target=yard_door
+            中庭の扉は、留まる名前に自分で応える。誰かが押す必要はない。
       - goal:
           text: "中庭の扉は、留まる名前にしか応えない。くぐろう"
           hint: "rpg_control_system actor=you action=move target=pump_yard"

@@ -20,10 +20,15 @@ import (
 // mywant already says so out loud: /api/v1/events streams thing_changed and
 // want_changed. So the game listens.
 //
-// What it does with them is deliberately narrow. It does not open doors, move
-// anyone, or clear a stage — those stay the player's and chap's. It records that
-// the city answered, as an ordinary event, which is all narration and
-// achievements have ever needed to fire.
+// It opens the doors it is watching, and that is the point rather than an
+// overreach. In the dungeon chap opens doors because `you` has no privilege to;
+// a fortress gate is different — it answers to its maker, and what was missing
+// was the name, not somebody to push it. Requiring the player to name a value
+// and then ask chap to go and try the door adds a step that teaches nothing and
+// dilutes the one thing this world is about: naming is the act, and the gate
+// opening is its consequence.
+//
+// It still moves nobody and clears nothing. Walking is the player's.
 
 // ActorCity is the event actor for something the city did on its own — a value
 // named, a name removed. Neither `you` nor `chap` did it, and pretending
@@ -144,6 +149,14 @@ func (s *Server) reconcileBoardDoors() {
 		action := ActionForgot
 		if ch.met {
 			action = ActionAnswered
+		}
+		// The gate answers. A door held shut only by a name it did not have has
+		// nothing left to be shut about once the city has one — and a door whose
+		// name has gone is shut again, because that is the same rule read the
+		// other way.
+		if d := stage.Doors[ch.door]; d != nil {
+			d.Open = ch.met
+			d.Locked = !ch.met
 		}
 		ev := Event{
 			Actor:  ActorCity,

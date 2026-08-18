@@ -220,7 +220,16 @@ type AchievementMatcher struct {
 
 type GoalRule struct {
 	IfMissing string `yaml:"if_missing" json:"if_missing"`
-	Goal      Goal   `yaml:"goal" json:"goal"`
+	// Unless drops this rule once the named achievement is held, even though
+	// IfMissing is still unmet.
+	//
+	// For steps that can stop being reachable. fortress1's opening beat is chap
+	// trying the gate and nothing happening, which is only possible while the
+	// city has no Lira — name her first and the refusal can never occur, so a
+	// rule waiting for it would ask forever for something that cannot happen.
+	// Skipping a beat is allowed; being told to reproduce it is not.
+	Unless string `yaml:"unless,omitempty" json:"unless,omitempty"`
+	Goal   Goal   `yaml:"goal" json:"goal"`
 }
 
 type Event struct {

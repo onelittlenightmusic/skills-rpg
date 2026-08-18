@@ -32,37 +32,44 @@ items:
     # the stage says it once and the goal hints do not have to spoil it.
     value: "Lira"
 achievement_defs:
+  # The discovery: chap tries, and nothing happens. Only reachable while the
+  # city still has no Lira — so the goal below stands down once the gate has
+  # opened, rather than asking for a refusal that can no longer occur.
   - id: asked_chap_what_it_wants
     when: { actor: chap, action: open, target: north_gate, result: rejected }
   - id: read_the_gate_card
     # Reading a want's own card on the board. Not an action on the world, so it
     # is not something chap can be asked for — it is the player looking.
     when: { actor: you, action: inspect, target: north_gate, result: ok }
-  # The gate opening IS the achievement. There is no separate "you named it"
-  # step, because the game does not do the naming: the player does it in mywant,
-  # by whichever route they like, and the gate is what notices.
+  # The gate opening IS the achievement, and the gate opens itself: the city
+  # taking the name is what it was waiting for. Matched on the city's own event
+  # rather than on chap's open, which nobody performs any more — an achievement
+  # keyed to an act that no longer happens is an achievement that never fires,
+  # and every goal after it waits forever.
   - id: gate_opened
-    when: { actor: chap, action: open, target: north_gate, result: ok }
+    when: { actor: city, action: answered, target: north_gate, result: ok }
   - id: passed_north_gate
     when: { actor: you, action: move, target: gate_arch, result: ok }
 next_goal_rules:
   - if_missing: asked_chap_what_it_wants
+    unless: gate_opened
     goal:
       text: "Ask chap to open the north gate"
       hint: "rpg_control_system actor=chap action=open target=north_gate — it will fail, and the failure is the point"
       required_skill: rpg-control
   - if_missing: read_the_gate_card
+    unless: gate_opened
     goal:
       text: "Read the gate's own card on the board"
       hint: "rpg_control_system actor=you action=inspect target=north_gate — it will tell you who built it"
   - if_missing: gate_opened
     goal:
-      text: "The city has no record of Lira. Add one, then ask chap again"
+      text: "The city has no record of Lira. Add one"
       hint: |
         Add a person called Lira to the city — in mywant, not here:
           CLI: mywant thing add people Lira
           GUI: Thing → Add Thing → category: person → name: Lira
-        Then: rpg_control_system actor=chap action=open target=north_gate
+        The gate answers its maker on its own; nobody has to push it.
   - if_missing: passed_north_gate
     goal:
       text: "The gate answers its maker. Go through"
@@ -191,12 +198,12 @@ locales:
           text: "門自身のカードを盤面で読もう"
           hint: "rpg_control_system actor=you action=inspect target=north_gate ——誰が建てたのかが書いてある"
       - goal:
-          text: "街の名簿に Lira が居ない。登録して、もう一度 chap に頼もう"
+          text: "街の名簿に Lira が居ない。登録しよう"
           hint: |
             Lira という person を街に追加する（ここではなく mywant で）:
               CLI: mywant thing add people Lira
               GUI: Thing → Add Thing → カテゴリ: person → 名前: Lira
-            そのあと: rpg_control_system actor=chap action=open target=north_gate
+            門は作り手の名前に自分で応える。誰かが押す必要はない。
       - goal:
           text: "門が作り手に応えた。くぐろう"
           hint: "rpg_control_system actor=you action=move target=gate_arch"

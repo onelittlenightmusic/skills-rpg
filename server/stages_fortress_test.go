@@ -146,9 +146,11 @@ func TestFortressStagesAreWalkable(t *testing.T) {
 	stages, _ := loadFortress(t)
 
 	for id, st := range stages {
+		// The city opening a door is what the stage has to notice — chap does not
+		// open these, the name arriving does. See mywant_sse.go.
 		opens := map[string]bool{}
 		for _, ad := range st.AchievementDefs {
-			if ad.When.Action == ActionOpen && ad.When.Result == "ok" {
+			if ad.When.Actor == ActorCity && ad.When.Action == ActionAnswered {
 				opens[ad.When.Target] = true
 			}
 		}

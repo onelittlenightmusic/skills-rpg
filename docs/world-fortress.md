@@ -373,9 +373,21 @@ and records an ordinary event for any whose condition has **changed**:
 can leave — which is not a non-event but the Empire's whole method, performed on
 a name the player restored, and the beat `fortress2` exists for.
 
-The watcher opens no doors, moves nobody and clears nothing. It records that the
-city changed, which is all narration and achievements have ever needed. **Every
-stage from here uses this**: a board condition worth narrating gets a
+The watcher **opens the doors it watches**, and moves nobody and clears nothing.
+Opening them is the point rather than an overreach: in the dungeon chap opens
+doors because `you` has no privilege to, and a fortress gate is not like that —
+it answers to its maker, and what was missing was the name. Making the player
+name a value and then go and ask chap to try the door adds a step that teaches
+nothing and dilutes the one thing this world is about. Naming is the act; the
+gate opening is its consequence.
+
+Which means an achievement for a door opening matches the **city's** event, not
+chap's. Keying one to an act nobody performs any more is an achievement that
+never fires and a goal that waits forever — and a goal for a beat that can no
+longer happen (chap being refused, once the name is already in the city) needs
+`unless:` so it stands down instead of asking for the impossible.
+
+**Every stage from here uses this**: a board condition worth narrating gets a
 `match: { actor: city, action: answered|forgot, target: <door> }` narration and
 needs nothing else.
 

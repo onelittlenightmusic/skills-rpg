@@ -17,6 +17,11 @@ func computeNextGoal(state *GameState, locale *StageLocale) Goal {
 		return Goal{Text: "All stages cleared!", Cleared: true}
 	}
 	for i, rule := range stage.NextGoalRules {
+		// A step that has stopped being reachable is not a step to ask for.
+		// See GoalRule.Unless.
+		if rule.Unless != "" && has(state.Achievements, rule.Unless) {
+			continue
+		}
 		if !has(state.Achievements, rule.IfMissing) {
 			g := rule.Goal
 			if locale != nil && i < len(locale.NextGoalRules) {
