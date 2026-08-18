@@ -62,7 +62,7 @@ next_goal_rules:
   - if_missing: named_lira
     goal:
       text: "The gate wants a maker. Give that name to the city"
-      hint: "Name the value on the mark as a thing of subtype `maker`. Naming is not using — it only has to exist"
+      hint: "rpg_control_system actor=you action=name_thing target=lira_mark args={\"subtype\":\"maker\"} — naming is not using; the value only has to exist"
   - if_missing: passed_north_gate
     goal:
       text: "The gate answers its maker. Go through"
@@ -176,7 +176,7 @@ locales:
           hint: "rpg_control_system actor=you action=inspect target=lira_mark"
       - goal:
           text: "門は作り手を求めている。その名前を都市に伝えよう"
-          hint: "刻印の値を subtype `maker` の thing として名付ける。名付けは使用ではない——存在すればいい"
+          hint: "rpg_control_system actor=you action=name_thing target=lira_mark args={\"subtype\":\"maker\"} ——名付けは使用ではない。存在すればいい"
       - goal:
           text: "門が作り手に応えた。くぐろう"
           hint: "rpg_control_system actor=you action=move target=gate_arch"

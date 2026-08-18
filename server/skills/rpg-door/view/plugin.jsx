@@ -52,6 +52,11 @@ function RpgDoorSection({ want }) {
   const from = state.between_from || '';
   const to = state.between_to || '';
   const summary = state.summary || '';
+  // What kind of thing this door answers to, when it answers to one. The value
+  // is deliberately not carried here — the door knows it, and the card is where
+  // the player is meant to discover that it is MISSING, not to be handed it.
+  const wantsThing = state.wants_thing_subtype || '';
+  const wantsPinned = state.wants_thing_kind === 'pinned';
 
   // The device gate, drawn as the machine itself rather than as a word: the
   // same generator and alarm that have their own cards, small, standing here.
@@ -74,6 +79,25 @@ function RpgDoorSection({ want }) {
     rows.push({ met: keyHeld, name: key.replace(/^key_/, ''), node: (y) =>
       React.createElement('g', { key: 'key', transform: `translate(${COL_X}, ${y + 2}) scale(0.72)` },
         React.createElement(Key, { status: keyStatus }),
+      ),
+    });
+  }
+  // The empty nameplate. A gate scraped clean of its maker's name shows a plate
+  // with nothing on it — which is the whole of what fortress1 asks the player to
+  // notice, and it cannot be noticed on a card that only ever says "locked".
+  if (wantsThing) {
+    rows.push({ met: false, name: wantsThing, node: (y) =>
+      React.createElement('g', { key: 'plate', transform: `translate(${COL_X - 2}, ${y - 2})` },
+        React.createElement('rect', {
+          x: 0, y: 0, width: 34, height: 18, rx: 2,
+          fill: 'none', stroke: P.bad, strokeWidth: 1.2,
+          strokeDasharray: wantsPinned ? '3 2' : undefined,
+        }),
+        // The scrape: a groove where the name was struck, polished flat.
+        React.createElement('line', {
+          x1: 5, y1: 9, x2: 29, y2: 9,
+          stroke: P.bad, strokeWidth: 1, opacity: 0.45,
+        }),
       ),
     });
   }

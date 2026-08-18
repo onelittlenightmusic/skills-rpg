@@ -26,13 +26,19 @@ Neither can do the other's half.
 | `pickup` | ✅ | — |
 | `advance` | ✅ | — |
 | `return` | ✅ | — |
+| `inspect` | ✅ | — |
+| `name_thing` | ✅ | — |
+| `pin_thing` | ✅ | — |
 | `open` | — | ✅ |
 | `activate` | — | ✅ |
 | `deactivate` | — | ✅ |
 | `state` | — | ✅ |
 
 chap cannot walk and cannot pick anything up; you cannot open a door or touch a
-device. An action asked by the wrong actor is refused with
+device. The three fortress verbs are `you`'s for the same reason the split
+exists: naming a value, putting it on the board and reading a card are not
+interventions in the world, they are things the player says about it and sees in
+it. chap can be *asked about* them — it just cannot do them for you. An action asked by the wrong actor is refused with
 `"<actor> cannot perform \"<action>\""` — and, like every refusal, still records
 an event (see [Refusals are events](#refusals-are-events)).
 
@@ -94,6 +100,69 @@ Moves to the stage that leads here — `next_stage` inverted. No clear
 requirement: leaving a stage unfinished and coming back to it is ordinary.
 
 Refused with `no previous stage to return to` in the first stage.
+
+### `inspect` — `you`
+
+Read something without changing it: an item you are carrying, a door, a device.
+
+```
+{ "actor": "you", "action": "inspect", "target": "north_gate" }
+{ "actor": "you", "action": "inspect", "target": "lira_mark" }
+```
+
+A door reports what it is waiting for, which is the point of it. `waiting_for`,
+`subtype` and `satisfied` appear on a door whose condition is a named or pinned
+thing — that is how the player finds out a gate has a maker field with nothing
+in it, and it is not something chap can be asked, because it is a reading rather
+than an act.
+
+An item reports its `value` — what is written on it. A maker's mark carries a
+name; reading it is how you learn the name, and the board still does not know it
+until you say so.
+
+### `name_thing` — `you`
+
+Tell the city a value's name, so it exists as a **thing** and wants can refer to
+it.
+
+```
+{ "actor": "you", "action": "name_thing", "target": "lira_mark",
+  "args": { "subtype": "maker" } }
+```
+
+`subtype` is what kind of thing this is — a `maker`, a `station`, a `level`. The
+value comes from the item named in `target`, or from `args.value` when there is
+no item to read it off:
+
+```
+{ "actor": "you", "action": "name_thing",
+  "args": { "subtype": "level", "value": "3.5" } }
+```
+
+Naming is not using. The value exists to the system once it has a name, whether
+or not anything refers to it yet — and a want that was waiting for a value of
+that kind can resolve the moment it does.
+
+It needs a running mywant: this writes to the city's own catalog, not to the
+game's state. Without one the action is refused and says so.
+
+### `pin_thing` — `you`
+
+Put a named value on the board **to stay**.
+
+```
+{ "actor": "you", "action": "pin_thing", "target": "lira_mark",
+  "args": { "subtype": "maker" } }
+```
+
+The difference from `name_thing` is the whole of what the fortress's second
+stage is about. A value is drawn on the canvas when something refers to it **or**
+when it has been pinned. The first is contingent — remove the references and it
+is gone from the board — and the second is not.
+
+Pinning something the city has not been told about names it on the way, rather
+than refusing: mywant has no such ordering rule and neither does this.
+
 
 ## Travelling does not reset
 

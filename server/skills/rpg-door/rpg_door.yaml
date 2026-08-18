@@ -59,6 +59,10 @@ wantType:
     - { name: open,              description: whether the door stands open, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "open" }
     - { name: key,               description: key id that opens this door, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "key" }
     - { name: key_held_by_chap,  description: whether chap is carrying that key, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "key_held_by_chap" }
+    # The fortress's own conditions: a value the city must have been told the
+    # name of, or one that must be standing on the board by the player's choice.
+    - { name: wants_thing_subtype, description: kind of thing this door answers to, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "wants_thing_subtype" }
+    - { name: wants_thing_kind,    description: whether it must be named or pinned, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "wants_thing_kind" }
     - { name: requires_device,   description: device that must be running, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "requires_device" }
     - { name: device_on,         description: whether that device is running, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "device_on" }
     - { name: device_label,      description: that device's label, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "device_label" }

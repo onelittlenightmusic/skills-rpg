@@ -92,6 +92,20 @@ def observe(arg: dict) -> dict:
     requires = door.get("requires_device", "") or ""
     blocked_by = door.get("blocked_by_device", "") or ""
 
+    # What the fortress's doors wait for: a value the city has been told the
+    # name of, or one standing on the board on the player's own say-so. Read
+    # here because the card is where a player is meant to find it out — a gate
+    # that says only "locked" is a gate you can look straight at and learn
+    # nothing from, which is the one thing fortress1 cannot afford.
+    named = door.get("requires_thing_named") or {}
+    pinned = door.get("requires_thing_pinned") or {}
+    thing_cond = named or pinned
+    wants_subtype = (thing_cond.get("subtype") or "") if thing_cond else ""
+    # The value itself is deliberately NOT surfaced. The door knows it (it reads
+    # it off the item), and printing it on the card would hand the player the
+    # answer they are holding in their pocket and meant to go and read.
+    wants_kind = "named" if named else ("pinned" if pinned else "")
+
     locked = bool(door.get("locked", True))
     is_open = bool(door.get("open"))
 
@@ -102,6 +116,10 @@ def observe(arg: dict) -> dict:
 
     if is_open:
         summary = f"{door_id} is open"
+    elif wants_subtype:
+        summary = (f"{door_id} answers to its {wants_subtype} — and the field is empty"
+                   if wants_kind == "named"
+                   else f"{door_id} wants a {wants_subtype} that stays on the board")
     elif requires and not device_on:
         summary = f"{door_id} needs {requires} running"
     elif blocked_by and blocker_on:
@@ -116,6 +134,10 @@ def observe(arg: dict) -> dict:
         "open": is_open,
         "key": key,
         "key_held_by_chap": items.get(key, {}).get("held_by") == "chap" if key else False,
+        # Empty strings when the door has no such condition, so the card can
+        # simply not draw the row rather than drawing an empty one.
+        "wants_thing_subtype": wants_subtype,
+        "wants_thing_kind": wants_kind,
         "requires_device": requires,
         "device_on": device_on,
         "device_label": devices.get(requires, {}).get("label", "") if requires else "",

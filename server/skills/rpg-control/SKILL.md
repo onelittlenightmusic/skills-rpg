@@ -1,6 +1,6 @@
 ---
 name: rpg-control
-description: rpg-server に対してゲームアクション (open / activate / move / pickup / advance / return など) を実行する。既定は `chap`（`you` から拒否されたアクションの代行）。`actor` を `you` にすれば移動やステージ移動も呼べる。
+description: rpg-server に対してゲームアクション (open / activate / move / pickup / advance / return / inspect / name_thing / pin_thing など) を実行する。既定は `chap`（`you` から拒否されたアクションの代行）。`actor` を `you` にすれば移動・ステージ移動・調査・名付け・pin も呼べる。
 compatibility:
   python: ">=3.9"
 metadata:
@@ -11,7 +11,7 @@ metadata:
 
 `${CLAUDE_SKILL_DIR}/main.py` に JSON 引数 `{"actor": ..., "action": ..., "target": ..., "args": ...}` を渡すと、rpg-server の `/api/v1/control` を呼び出した結果を JSON で返す。
 
-アクターは2人で、できることが分かれている（chap は扉とデバイス、you は移動・取得・ステージ移動）。誰が何を実行できるか、前提条件は何かは [docs/actions.md](https://github.com/onelittlenightmusic/skills-rpg/blob/main/docs/actions.md) を参照。
+アクターは2人で、できることが分かれている（chap は扉とデバイス、you は移動・取得・ステージ移動・調査・名付け・pin）。誰が何を実行できるか、前提条件は何かは [docs/actions.md](https://github.com/onelittlenightmusic/skills-rpg/blob/main/docs/actions.md) を参照。
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/main.py" $ARGUMENTS
@@ -28,7 +28,7 @@ python3 "${CLAUDE_SKILL_DIR}/main.py" $ARGUMENTS
 | フィールド | 型 | 必須 | デフォルト | 説明 |
 |---|---|---|---|---|
 | `actor` | string | — | `chap` | 実行者。`chap`（扉・デバイス）か `you`（移動・取得・advance / return） |
-| `action` | string | ✓ | — | ゲームアクション名（observe / move / pickup / open / advance / return など） |
+| `action` | string | ✓ | — | ゲームアクション名（observe / move / pickup / open / advance / return / inspect / name_thing / pin_thing など） |
 | `target` | string | — | — | 対象（door id / item id / waypoint id など） |
 | `args` | object | — | — | アクション固有の追加引数 |
 
@@ -57,6 +57,29 @@ python3 "${CLAUDE_SKILL_DIR}/main.py" '{"action":"open","target":"door1"}'
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/main.py" '{"actor":"you","action":"move","target":"control_room"}'
 python3 "${CLAUDE_SKILL_DIR}/main.py" '{"actor":"you","action":"advance"}'
+```
+
+### 城塞都市（world: fortress）の3つ
+
+盤面を読む・値に名前をつける・盤面に留める。どれも `you` の動作で、chap は
+代行できない——世界への介入ではなく、プレイヤーが世界について「言う」ことだから。
+聞かれたら説明はできる。
+
+```bash
+# 何を待っているのか、カードを読む（door なら waiting_for / subtype / satisfied が返る）
+python3 "${CLAUDE_SKILL_DIR}/main.py" '{"actor":"you","action":"inspect","target":"north_gate"}'
+
+# 持ち物に書かれている値を読む
+python3 "${CLAUDE_SKILL_DIR}/main.py" '{"actor":"you","action":"inspect","target":"lira_mark"}'
+
+# その値に名前をつけて、都市に伝える（target の持ち物から値を読む）
+python3 "${CLAUDE_SKILL_DIR}/main.py" '{"actor":"you","action":"name_thing","target":"lira_mark","args":{"subtype":"maker"}}'
+
+# 持ち物ではなく直接、値を指定して名付ける
+python3 "${CLAUDE_SKILL_DIR}/main.py" '{"actor":"you","action":"name_thing","args":{"subtype":"level","value":"3.5"}}'
+
+# 名付けた値を盤面に留める（参照が無くなっても消えなくなる）
+python3 "${CLAUDE_SKILL_DIR}/main.py" '{"actor":"you","action":"pin_thing","target":"lira_mark","args":{"subtype":"maker"}}'
 ```
 
 ステージ間の移動は `advance` / `return` を使う。どちらも両ステージをそのまま残す
