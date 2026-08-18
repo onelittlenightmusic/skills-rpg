@@ -1,0 +1,79 @@
+wantType:
+  metadata:
+    name: rpg_world
+    title: RPG World
+    description: |
+      この mywant world が対応する skills-rpg の world に、ゲーム側を合わせ続ける。
+
+      生成された各 world にこの want が1つ入っている。mywant で world を開くと
+      この want も一緒に復元され、ゲーム側を盤面と同じ world にする。
+      ── つまり「mywant で world を開く」が「skills-rpg がその world になる」。
+
+      一度きりの実行ではなく、poll するたびに突き合わせる。mywant の world open
+      は want を保存時の状態ごと復元するので、一度走り終えた doer は achieved の
+      まま戻ってきて二度と動かない。加えて、生成時にしか動かない want では
+      あとから起きたズレを直せない。突き合わせ方式にはどちらの問題も無く、
+      一致しているとき（ほぼ常に）の費用は GET 1本だけ。
+    version: '1.0'
+    category: rpg
+    pattern: independent
+    labels:
+      child-role: doer
+      type-icon: "Map"
+      type-tone-color: "#7c3aed"
+      category-icon: "Swords"
+      category-bg-light: "linear-gradient(160deg, #fca5a5 0%, #fde8d8 100%)"
+      category-bg-dark: "linear-gradient(160deg, #b91c1c 0%, #7f1d1d 100%)"
+
+  finalResultField: summary
+
+  parameters:
+    - name: world
+      description: "この盤面が対応する skills-rpg の world ID（例: fortress）"
+      type: string
+      required: true
+
+  state:
+    - { name: world,          description: world this board is for, type: string, label: current, persistent: true, initialValue: "" }
+
+    # ── Mirrored from rpg-server on every poll ──
+    - { name: current_world,  description: world the game is actually in, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "current_world" }
+    - { name: in_sync,        description: whether the game is in this world, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "in_sync" }
+    # True only on the tick that actually moved the game, so the card can say
+    # "entered" once rather than for as long as it stays entered.
+    - { name: switched,       description: whether this tick switched the game, type: bool, label: current, persistent: false, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "switched" }
+    - { name: title,          description: that world's title, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "title" }
+    - { name: error,          description: why the last attempt failed, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "error" }
+    - { name: summary,        description: where the game is, in words, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "summary" }
+
+    # ── monitor_mrs_agent plumbing ──
+    - { name: skill_path,              type: string, label: current, persistent: true, initialValue: "" }
+    - { name: skill_json_arg_template, type: string, label: current, persistent: true, initialValue: "" }
+    - { name: skill_json_arg,          type: string, label: current, persistent: false, initialValue: "" }
+    - { name: skill_serve,             type: bool,   label: current, persistent: true, initialValue: true }
+    - { name: skill_timeout_seconds,   type: int,    label: goal,    persistent: true, initialValue: 15 }
+    # Slower than the door monitors: a world switch is a rare event and a heavy
+    # one, and there is nothing to see between them.
+    - { name: skill_poll_interval_ms,  type: int,    label: goal,    persistent: true, initialValue: 5000 }
+    - { name: mrs_raw_output,          type: object, label: current, persistent: false, initialValue: null }
+
+  onInitialize:
+    current:
+      world: '${world}'
+      skill_path: "~/.mywant/custom-types/rpg-world/main.py"
+      skill_json_arg_template: '{"world":"%{world}"}'
+      skill_serve: true
+    goal:
+      skill_timeout_seconds: 15
+      skill_poll_interval_ms: 5000
+
+  requires:
+    - monitor_mrs_agent
+
+  examples:
+    - name: fortress
+      description: この盤面が城塞都市であることを、ゲーム側にも保たせる
+      want:
+        metadata: { name: fortress-world, type: rpg_world }
+        spec:
+          params: { world: fortress }

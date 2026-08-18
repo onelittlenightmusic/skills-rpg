@@ -80,6 +80,7 @@ func main() {
 	worldName := flag.String("world", "skills-rpg", "target mywant world name")
 	mywantURL := flag.String("mywant-url", envOr("MYWANT_URL", "http://localhost:8080"), "mywant server base URL")
 	onlyAddMissing := flag.Bool("only-add-missing", false, "reconcile mode: add generated wants whose ID doesn't already exist in the currently active world, without opening a different world or clearing anything (safe to run against a world that has extra manually-deployed wants, e.g. a live coding-instance)")
+	rpgWorld := flag.String("rpg-world", "", "skills-rpg world this board is for; the generated board carries an rpg_world want that keeps the game in it (default: the stages dir's basename, or none for the flat dungeon dir)")
 	dryRun := flag.Bool("dry-run", false, "print the generated wants as YAML and exit, without opening, clearing or writing to any world")
 	flag.Parse()
 
@@ -166,7 +167,27 @@ func main() {
 			}},
 		})
 	}
-	fmt.Printf("Generated %d wants (wall+door+device+startpoint+next_stage) from %d stages\n", len(wants), len(stages))
+	// One want that keeps the game in the world this board is for. It sits
+	// with the board rather than being something the player has to run,
+	// because "which world skills-rpg is in" is a property of which board is
+	// open — see server/skills/rpg-world.
+	if w := resolveRPGWorld(*rpgWorld, *stagesDir); w != "" {
+		wants = append(wants, want{
+			Metadata: wantMetadata{
+				ID:   fmt.Sprintf("want-%s-world", w),
+				Name: fmt.Sprintf("%s-world", w),
+				Type: "rpg_world",
+				Labels: map[string]string{
+					// Off the walked area: it is machinery, not scenery.
+					"mywant.io/canvas-x": "-3",
+					"mywant.io/canvas-y": "-3",
+				},
+			},
+			Spec: wantSpec{Params: map[string]any{"world": w}},
+		})
+	}
+
+	fmt.Printf("Generated %d wants (wall+door+device+startpoint+next_stage+rpg_world) from %d stages\n", len(wants), len(stages))
 
 	if *dryRun {
 		data, err := yaml.Marshal(wants)
@@ -850,4 +871,24 @@ func envOr(key, def string) string {
 func fatalf(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(1)
+}
+
+// resolveRPGWorld names the skills-rpg world a generated board is for.
+//
+// Explicit flag first; otherwise the stages directory's own name, which is how
+// the server names worlds too. The flat stages/ directory is the dungeon —
+// the inverse of the server's worldDir(), which maps the dungeon back to ".".
+//
+// The dungeon needs this want as much as any other board does. It is where the
+// game starts, but a player standing in the fortress who opens the dungeon
+// board expects to be in the dungeon, and only a want on that board can do it.
+func resolveRPGWorld(flagVal, stagesDir string) string {
+	if flagVal != "" {
+		return flagVal
+	}
+	base := filepath.Base(filepath.Clean(stagesDir))
+	if base == "stages" || base == "." || base == "/" {
+		return "dungeon"
+	}
+	return base
 }
