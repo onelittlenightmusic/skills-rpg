@@ -17,6 +17,18 @@ doors:
     between: [north_gate_approach, gatehouse_yard]
     open: false
     locked: true
+    # The same gate fortress2 opens, waiting for the same thing. It carries the
+    # condition here so that reading its card shows a maker field with nothing
+    # in it — which is the whole of what this stage is for.
+    requires_thing_named:
+      subtype: maker
+      from_item: lira_mark
+items:
+  # Carried out of the dungeon. Not read until fortress2 — here it is only in
+  # the player's pocket, which is exactly where the board cannot see it.
+  lira_mark:
+    held_by: you
+    value: "Lira"
 achievement_defs:
   - id: saw_the_board
     when: { action: observe }

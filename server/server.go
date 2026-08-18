@@ -6,15 +6,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 )
 
-//go:embed stages/*.yaml skills/*
+//go:embed stages/*.yaml stages/*/*.yaml skills/*
 var DefaultDataFS embed.FS
 
 // DefaultStagesFS is a convenience alias for the embedded stages.
@@ -36,6 +34,9 @@ type Server struct {
 	settingsPath string
 	locales      map[string]map[string]*StageLocale // stageID → lang → locale
 	pristine     map[string]*Stage                  // stageID → unmodified definition from YAML
+	// Which world is in play. Its progress is in a state file of its own, so
+	// switching cannot overwrite the world being left. See worlds.go.
+	world string
 }
 
 func NewServer(cfg Config) (*Server, error) {
@@ -62,87 +63,30 @@ func NewServer(cfg Config) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) currentPath() string { return filepath.Join(s.cfg.DataDir, "current.yaml") }
+// currentPath is where the world in play keeps its progress.
+func (s *Server) currentPath() string { return s.statePathFor(s.world) }
 
 func (s *Server) loadOrBootstrap() error {
 	if err := os.MkdirAll(s.cfg.DataDir, 0o755); err != nil {
 		return err
 	}
-
-	// Always load stage defs + locale data fresh from stage YAMLs
-	// (locales are not stored in current.yaml).
-	var fileStages map[string]*Stage
-	var locales map[string]map[string]*StageLocale
-	var err error
-
-	if s.cfg.StagesDir == "" {
-		embedded, _ := fs.Sub(DefaultStagesFS, "stages")
-		fileStages, locales, _, err = loadStagesFromFS(embedded, ".")
-	} else {
-		fileStages, locales, _, err = loadStagesFromDir(s.cfg.StagesDir)
+	// The dungeon is where a game starts and where a save written before worlds
+	// existed belongs. Which world is in play is not persisted separately: it is
+	// whichever one was switched to, and on a cold start that is the dungeon.
+	if s.world == "" {
+		s.world = DungeonWorld
 	}
-	if err != nil {
-		return fmt.Errorf("load locales: %w", err)
-	}
-	s.locales = locales
-	s.pristine = fileStages
-
-	var st GameState
-	if err := readYAML(s.currentPath(), &st); err == nil {
-		// Merge stages added to the YAML set after this state was persisted,
-		// so new content becomes playable without resetting existing progress.
-		added := false
-		for id, def := range fileStages {
-			if _, ok := st.Stages[id]; !ok {
-				st.Stages[id] = copyStage(def)
-				added = true
-			}
-		}
-		s.state = &st
-		if added {
-			return s.persistLocked()
-		}
-		return nil
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-
-	var gs *GameState
-	if s.cfg.StagesDir == "" {
-		embedded, _ := fs.Sub(DefaultStagesFS, "stages")
-		gs, _, err = initialStateFromFS(embedded, ".")
-	} else {
-		gs, _, err = initialStateFromStages(s.cfg.StagesDir)
-	}
-	if err != nil {
-		return err
-	}
-	s.state = gs
-	return s.persistLocked()
+	return s.loadWorldLocked(s.world)
 }
 
 // Reset rebuilds state from stage YAMLs, discarding current.yaml.
 func (s *Server) Reset() error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	var gs *GameState
-	var locales map[string]map[string]*StageLocale
-	var err error
-
-	if s.cfg.StagesDir == "" {
-		embedded, _ := fs.Sub(DefaultStagesFS, "stages")
-		gs, locales, err = initialStateFromFS(embedded, ".")
-	} else {
-		gs, locales, err = initialStateFromStages(s.cfg.StagesDir)
-	}
-
-	if err != nil {
-		return err
-	}
-	s.state = gs
-	s.locales = locales
-	return s.persistLocked()
+	world := s.world
+	s.mu.Unlock()
+	// Rebuilds the world in play. Other worlds keep their progress — resetting
+	// the fortress to retest a stage should not throw away the dungeon.
+	return s.ResetWorld(world)
 }
 
 func (s *Server) persistLocked() error {

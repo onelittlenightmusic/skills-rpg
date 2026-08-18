@@ -20,6 +20,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/v1/saves/", s.handleSavesItem)
 	mux.HandleFunc("/api/v1/settings", s.handleSettings)
 	mux.HandleFunc("/api/v1/hooks/mywant", s.handleMywantHook)
+	mux.HandleFunc("/api/v1/worlds", s.handleWorlds)
+	mux.HandleFunc("/api/v1/worlds/switch", s.handleWorldSwitch)
+	mux.HandleFunc("/api/v1/worlds/reset", s.handleWorldReset)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"ok": true})
 	})
@@ -302,4 +305,77 @@ func (s *Server) handleMywantHook(w http.ResponseWriter, r *http.Request) {
 	}
 	s.HandleMywantHook(event)
 	writeJSON(w, 200, map[string]any{"ok": true})
+}
+
+// GET /api/v1/worlds — what there is to play, and where you are.
+func (s *Server) handleWorlds(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeErr(w, 405, "method not allowed")
+		return
+	}
+	writeJSON(w, 200, map[string]any{
+		"worlds":  s.Worlds(),
+		"current": s.CurrentWorld(),
+	})
+}
+
+// POST /api/v1/worlds/switch {"world":"fortress","stage":"fortress2"}
+//
+// The world being left keeps its progress: each world writes to a state file of
+// its own, so this cannot overwrite anything and there is no save step.
+//
+// A locked world switches anyway. unlocked_by gates what is offered, not what is
+// reachable — the same latitude debug/jump has, for the same reason.
+func (s *Server) handleWorldSwitch(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeErr(w, 405, "method not allowed")
+		return
+	}
+	var in struct {
+		World string `json:"world"`
+		Stage string `json:"stage"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeErr(w, 400, "invalid JSON: "+err.Error())
+		return
+	}
+	if in.World == "" {
+		writeErr(w, 400, "world is required")
+		return
+	}
+	if err := s.SwitchWorld(in.World, in.Stage); err != nil {
+		writeErr(w, 400, err.Error())
+		return
+	}
+	writeJSON(w, 200, map[string]any{
+		"ok":        true,
+		"world":     s.CurrentWorld(),
+		"next_goal": s.NextGoal(),
+	})
+}
+
+// POST /api/v1/worlds/reset {"world":"fortress"}
+//
+// One world back to its YAMLs, the others untouched — so retesting a fortress
+// stage does not throw away the dungeon.
+func (s *Server) handleWorldReset(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeErr(w, 405, "method not allowed")
+		return
+	}
+	var in struct {
+		World string `json:"world"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeErr(w, 400, "invalid JSON: "+err.Error())
+		return
+	}
+	if in.World == "" {
+		in.World = s.CurrentWorld()
+	}
+	if err := s.ResetWorld(in.World); err != nil {
+		writeErr(w, 400, err.Error())
+		return
+	}
+	writeJSON(w, 200, map[string]any{"ok": true, "world": in.World})
 }
