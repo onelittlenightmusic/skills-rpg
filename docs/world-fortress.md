@@ -379,7 +379,7 @@ doors:
   cistern:
     requires_thing_pinned:     { value: "..." }
   relay_gate:
-    requires_want_seeded_from: { thing_subtype: maker }
+    requires_want_seeded_from: { thing_subtype: person }
   ward_ledger:
     requires_thing_group:      { min_members: 8 }
   pressure_door:

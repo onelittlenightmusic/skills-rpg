@@ -29,15 +29,15 @@ doors:
     # merely referred to is one the crews can take away — so this one asks for a
     # name that stands on its own.
     requires_thing_pinned:
-      subtype: maker
+      subtype: person
       from_item: lira_mark
 achievement_defs:
   - id: saw_the_crew
     when: { action: observe }
   - id: named_again
-    when: { actor: you, action: name_thing, subtype: maker, result: ok }
+    when: { actor: you, action: name_thing, subtype: person, result: ok }
   - id: pinned_lira
-    when: { actor: you, action: pin_thing, subtype: maker, result: ok }
+    when: { actor: you, action: pin_thing, subtype: person, result: ok }
   - id: through_the_yard_door
     when: { actor: you, action: move, target: pump_yard, result: ok }
 next_goal_rules:
@@ -142,7 +142,7 @@ narrations:
       - speaker: you
         text: "And so it isn't anywhere."
 
-  - match: { actor: you, action: pin_thing, subtype: maker, result: ok }
+  - match: { actor: you, action: pin_thing, subtype: person, result: ok }
     on_success: |
       You put her name down on the board yourself, in a place you chose, and it
       stays there — not because the gate is using it, not because anything is.

@@ -19,11 +19,11 @@ doors:
     between: [north_gate_approach, gate_arch]
     open: false
     locked: true
-    # Opens once a thing of subtype `maker` exists carrying the value struck on
+    # Opens once a thing of subtype `person` exists carrying the value struck on
     # lira_mark. Naming it is the whole move; nothing has to be pinned yet —
     # fortress3 is where that distinction earns its keep.
     requires_thing_named:
-      subtype: maker
+      subtype: person
       from_item: lira_mark
 items:
   lira_mark:
@@ -42,7 +42,7 @@ achievement_defs:
   - id: read_the_mark
     when: { actor: you, action: inspect, target: lira_mark, result: ok }
   - id: named_lira
-    when: { actor: you, action: name_thing, subtype: maker, result: ok }
+    when: { actor: you, action: name_thing, subtype: person, result: ok }
   - id: passed_north_gate
     when: { actor: you, action: move, target: gate_arch, result: ok }
 next_goal_rules:
@@ -138,7 +138,7 @@ narrations:
       Tools endure. Intent endures.
       But a tool whose maker has no name cannot be called.
 
-  - match: { actor: you, action: name_thing, subtype: maker, result: ok }
+  - match: { actor: you, action: name_thing, subtype: person, result: ok }
     on_success: |
       You gave the city her name, and the city took it.
       Somewhere in the gate's mechanism a field that had been blank for years is

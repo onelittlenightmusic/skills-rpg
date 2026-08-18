@@ -130,7 +130,7 @@ it.
   "args": { "subtype": "maker" } }
 ```
 
-`subtype` is what kind of thing this is — a `maker`, a `station`, a `level`. The
+`subtype` is what kind of thing this is — a `person`, a `station`, a `level`. The
 value comes from the item named in `target`, or from `args.value` when there is
 no item to read it off:
 

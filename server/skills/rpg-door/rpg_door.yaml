@@ -63,6 +63,7 @@ wantType:
     # name of, or one that must be standing on the board by the player's choice.
     - { name: wants_thing_subtype, description: kind of thing this door answers to, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "wants_thing_subtype" }
     - { name: wants_thing_kind,    description: whether it must be named or pinned, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "wants_thing_kind" }
+    - { name: wants_thing_from_item, description: which of your things the name is written on, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "wants_thing_from_item" }
     - { name: requires_device,   description: device that must be running, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "requires_device" }
     - { name: device_on,         description: whether that device is running, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "device_on" }
     - { name: device_label,      description: that device's label, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "device_label" }
