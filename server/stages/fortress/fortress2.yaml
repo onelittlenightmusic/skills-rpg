@@ -20,17 +20,21 @@ devices:
   redaction_crew:
     label: "Imperial Redaction Crew"
     on: true
+  registry_terminal:
+    label: "City Registry"
+    # Pinned, not merely known. A name the crews can take away by removing what
+    # refers to it is a name this terminal will lose again; one the player has
+    # pinned stands on its own.
+    reads_thing:
+      subtype: person
+      value: "Lira"
+      pinned: true
 doors:
   yard_door:
     between: [gate_arch, pump_yard]
     open: false
     locked: true
-    # Not a lock that a key opens: the door reads the board, and a name that is
-    # merely referred to is one the crews can take away — so this one asks for a
-    # name that stands on its own.
-    requires_thing_pinned:
-      subtype: person
-      value: "Lira"
+    requires_device: registry_terminal
 achievement_defs:
   - id: saw_the_crew
     when: { action: observe }
@@ -38,7 +42,7 @@ achievement_defs:
   # sticks. Matched on the city's event, not on chap opening it — chap does not
   # open these.
   - id: yard_door_opened
-    when: { actor: city, action: answered, target: yard_door, result: ok }
+    when: { actor: city, action: answered, target: registry_terminal, result: ok }
   - id: through_the_yard_door
     when: { actor: you, action: move, target: pump_yard, result: ok }
 next_goal_rules:
@@ -49,15 +53,16 @@ next_goal_rules:
       required_skill: rpg-observe
   - if_missing: yard_door_opened
     goal:
-      text: "Lira is on the board only while something uses it. Make it stay"
+      text: "Pin Lira. The yard door will not take an unpinned name"
       hint: |
-        Pin Lira, so it stands on the board whether or not anything refers to it:
+        Pin the Lira thing:
           GUI: Thing → the Lira card → Pin
           CLI: mywant thing label people::Lira mywant.io/canvas true
-        The yard door answers a name that stays; nobody has to push it.
+        A pinned value stays on the board whether or not anything is using it —
+        which is the difference this door is testing for. It opens on its own.
   - if_missing: through_the_yard_door
     goal:
-      text: "The yard door only answers a name that stays. Go through"
+      text: "The door opened. Go through"
       hint: "rpg_control_system actor=you action=move target=pump_yard"
 cleared_when: through_the_yard_door
 next_stage: fortress3
@@ -65,7 +70,7 @@ narrations:
   # The erasure, as it happens. Nobody asked the game anything: a name left the
   # city and mywant said so. This is the beat the stage exists for, and it could
   # not be shown until the game could hear about it — see server/mywant_sse.go.
-  - match: { actor: city, action: forgot, target: yard_door }
+  - match: { actor: city, action: forgot, target: registry_terminal }
     on_success: |
       Her tile is not on the board any more. Nothing broke and nothing finished —
       the name is simply gone from whatever was referring to it, and a name
@@ -79,7 +84,7 @@ narrations:
         text: "They don't have to destroy anything. They just have to keep tidying."
 
   # And the answer to it. A pinned value is on the board on its own account.
-  - match: { actor: city, action: answered, target: yard_door }
+  - match: { actor: city, action: answered, target: registry_terminal }
     on_success: |
       You put her name down on the board yourself, in a place you chose, and it
       stays there — not because the gate is using it, not because anything is.
@@ -204,14 +209,15 @@ locales:
           text: "背後の門で何かが起きている"
           hint: "rpg_observe ——振り返る"
       - goal:
-          text: "Lira は、何かが使っている間しか盤面に残らない。留まるようにしよう"
+          text: "Lira を pin しよう。中庭の扉は pin されていない名前を受け取らない"
           hint: |
-            Lira を pin する。参照されているかどうかに関係なく盤面に立つようになる:
+            Lira という thing を pin する:
               GUI: Thing → Lira のカード → Pin
               CLI: mywant thing label people::Lira mywant.io/canvas true
-            中庭の扉は、留まる名前に自分で応える。誰かが押す必要はない。
+            pin された値は、何かに使われているかどうかに関係なく盤面に残る——
+            この扉が見ているのはその差。扉は自分で開く。
       - goal:
-          text: "中庭の扉は、留まる名前にしか応えない。くぐろう"
+          text: "扉が開いた。くぐろう"
           hint: "rpg_control_system actor=you action=move target=pump_yard"
     narrations:
       - on_success: |

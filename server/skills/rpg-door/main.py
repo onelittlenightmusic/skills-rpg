@@ -92,23 +92,6 @@ def observe(arg: dict) -> dict:
     requires = door.get("requires_device", "") or ""
     blocked_by = door.get("blocked_by_device", "") or ""
 
-    # What the fortress's doors wait for: a value the city has been told the
-    # name of, or one standing on the board on the player's own say-so. Read
-    # here because the card is where a player is meant to find it out — a gate
-    # that says only "locked" is a gate you can look straight at and learn
-    # nothing from, which is the one thing fortress1 cannot afford.
-    named = door.get("requires_thing_named") or {}
-    pinned = door.get("requires_thing_pinned") or {}
-    thing_cond = named or pinned
-    wants_subtype = (thing_cond.get("subtype") or "") if thing_cond else ""
-    # The value itself is deliberately NOT surfaced. The door knows it (it reads
-    # it off the item), and printing it on the card would hand the player the
-    # answer they are holding in their pocket and meant to go and read.
-    wants_kind = "named" if named else ("pinned" if pinned else "")
-    # The name the door is missing. Said plainly, because the door is the one
-    # thing in a position to say it and somebody meeting this for the first time
-    # has no other way to find out.
-    wants_value = (thing_cond.get("value") or "") if thing_cond else ""
 
     locked = bool(door.get("locked", True))
     is_open = bool(door.get("open"))
@@ -120,19 +103,6 @@ def observe(arg: dict) -> dict:
 
     if is_open:
         summary = f"{door_id} is open"
-    elif wants_subtype:
-        # Says the move, not just the lack. "the field is empty" is a diagnosis
-        # and leaves the player looking at a gate wondering what one does about
-        # it — and this is the first door in the game whose answer is an
-        # operation they have never performed. So the card names the operation.
-        # What is wrong, in words somebody can understand the first time they
-        # read them. Not the call: the door is a thing in the world and the goal
-        # hint is where a command belongs, so each says the half it is good at.
-        # Naming the API here was the previous attempt and it read as machinery
-        # bolted to a gate.
-        summary = (f"built by {wants_value} — no {wants_subtype} by that name in the city"
-                   if wants_kind == "named"
-                   else f"{wants_value} only stays on the board while something uses it")
     elif requires and not device_on:
         summary = f"{door_id} needs {requires} running"
     elif blocked_by and blocker_on:
@@ -147,11 +117,6 @@ def observe(arg: dict) -> dict:
         "open": is_open,
         "key": key,
         "key_held_by_chap": items.get(key, {}).get("held_by") == "chap" if key else False,
-        # Empty strings when the door has no such condition, so the card can
-        # simply not draw the row rather than drawing an empty one.
-        "wants_thing_subtype": wants_subtype,
-        "wants_thing_kind": wants_kind,
-        "wants_thing_value": wants_value,
         "requires_device": requires,
         "device_on": device_on,
         "device_label": devices.get(requires, {}).get("label", "") if requires else "",

@@ -129,8 +129,17 @@ def survey(state, stage_id, device_id):
                 "locked": bool(door.get("locked", True)),
             })
 
+    # A registry reader is not switched by anybody: it runs while the city holds
+    # what it is watching for. The card has to say so, because this is the one
+    # device whose "off" is not a switch somebody forgot to flip — it is a name
+    # the city has not been told, and the player is the only one who can tell it.
+    reads = device.get("reads_thing") or {}
+
     return {
         "on": bool(device.get("on")),
+        "reads_subtype": reads.get("subtype") or "",
+        "reads_value": reads.get("value") or "",
+        "reads_pinned": bool(reads.get("pinned")),
         "label": device.get("label") or device_id,
         "blocked_by": blocked_by,
         "blocked": blocked,
@@ -185,6 +194,17 @@ def observe(arg: dict) -> dict:
         summary = f"{desired}: {error}"
     elif view["blocked"]:
         summary = f'{view["label"]} is held by {view["blocked_by"]}'
+    elif view["reads_subtype"] and not view["on"]:
+        # Says the move, not the mechanism. A player who has never pinned
+        # anything cannot act on "runs while the city holds the value", and this
+        # card is the only thing in a position to tell them what is missing.
+        summary = (
+            f'pin the {view["reads_subtype"]} {view["reads_value"]} to power this'
+            if view["reads_pinned"]
+            else f'no {view["reads_subtype"]} called {view["reads_value"]} in the registry'
+        )
+    elif view["reads_subtype"]:
+        summary = f'reading {view["reads_value"]} — powered'
     else:
         summary = f'{view["label"]} is {"on" if view["on"] else "off"}'
 

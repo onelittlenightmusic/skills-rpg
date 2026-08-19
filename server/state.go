@@ -1,5 +1,7 @@
 package server
 
+import "encoding/json"
+
 const SchemaVersion = 1
 
 type GameState struct {
@@ -141,23 +143,12 @@ type Waypoint struct {
 }
 
 type Door struct {
-	Between         [2]string `yaml:"between" json:"between"`
+	Between [2]string `yaml:"between" json:"between"`
 	Open            bool      `yaml:"open" json:"open"`
 	Locked          bool      `yaml:"locked" json:"locked"`
 	Key             string    `yaml:"key,omitempty" json:"key,omitempty"`
 	RequiresDevice  string    `yaml:"requires_device,omitempty" json:"requires_device,omitempty"`
 	BlockedByDevice string    `yaml:"blocked_by_device,omitempty" json:"blocked_by_device,omitempty"`
-
-	// The fortress's doors read the board rather than a lock. Both take the
-	// same shape as the device conditions above: a fact about the world that
-	// has to hold before the door will answer.
-	//
-	// Named is satisfied by the value existing in mywant's catalog at all.
-	// Pinned additionally requires it to be standing on the board on the
-	// player's own say-so — which is a different thing, and the difference is
-	// what fortress3 is about.
-	RequiresThingNamed  *ThingCond `yaml:"requires_thing_named,omitempty" json:"requires_thing_named,omitempty"`
-	RequiresThingPinned *ThingCond `yaml:"requires_thing_pinned,omitempty" json:"requires_thing_pinned,omitempty"`
 }
 
 // ThingCond names a value the world has to know about.
@@ -172,6 +163,9 @@ type Door struct {
 type ThingCond struct {
 	Subtype string `yaml:"subtype,omitempty" json:"subtype,omitempty"`
 	Value   string `yaml:"value,omitempty" json:"value,omitempty"`
+	// Pinned asks for the stronger fact: not merely known to the city, but
+	// standing on the board because the player put it there.
+	Pinned bool `yaml:"pinned,omitempty" json:"pinned,omitempty"`
 }
 
 // Want returns the value this condition is about.
@@ -183,9 +177,49 @@ func (c *ThingCond) Want(*Stage) string {
 }
 
 type Device struct {
-	Label           string `yaml:"label" json:"label"`
-	On              bool   `yaml:"on" json:"on"`
+	Label string `yaml:"label" json:"label"`
+	// On is the switch for devices chap operates. A device that reads the city
+	// ignores it and answers from there instead — read IsOn(), never this.
+	On              bool   `yaml:"on" json:"-"`
 	BlockedByDevice string `yaml:"blocked_by_device,omitempty" json:"blocked_by_device,omitempty"`
+
+	// Reads makes this device a reader of the city's registry: it is running
+	// exactly while the value it names is known, or pinned. The door in front of
+	// it says only `requires_device`, as every door in this game does.
+	//
+	// The condition lives here and not on the door because a door is a door.
+	// World 1 established the shape — stage4's power_door requires a generator,
+	// stage5's is blocked by an alarm — and a door that judged the state of the
+	// city itself was a second, parallel mechanism for the same idea, with the
+	// judgement in the one place nobody would look for it.
+	Reads *ThingCond `yaml:"reads_thing,omitempty" json:"reads_thing,omitempty"`
+}
+
+// IsOn reports whether the device is running.
+//
+// A registry reader is running while the city holds what it is watching for;
+// everything else keeps the switch chap flips.
+func (d *Device) IsOn() bool {
+	if d == nil {
+		return false
+	}
+	if c := d.Reads; c != nil {
+		if c.Pinned {
+			return currentBoard.Pinned(c.Subtype, c.Value)
+		}
+		return currentBoard.Named(c.Subtype, c.Value)
+	}
+	return d.On
+}
+
+// MarshalJSON reports the device as it actually stands — clients read `on` out
+// of the state, and a reader's answer has to be what they get.
+func (d Device) MarshalJSON() ([]byte, error) {
+	type plain Device
+	return json.Marshal(struct {
+		plain
+		On bool `json:"on"`
+	}{plain(d), d.IsOn()})
 }
 
 type Item struct {

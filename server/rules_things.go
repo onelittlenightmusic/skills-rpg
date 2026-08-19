@@ -81,48 +81,27 @@ func doInspect(state *GameState, stage *Stage, in ControlInput) (map[string]any,
 			"open":   d.Open,
 			"locked": d.Locked,
 		}
-		// What this door is waiting on, in the door's own terms. fortress1 is
-		// cleared by reading exactly this and finding the field blank.
-		if c := d.RequiresThingNamed; c != nil {
-			out["waiting_for"] = "a named " + c.Subtype
-			out["subtype"] = c.Subtype
-			out["satisfied"] = currentBoard.Named(c.Subtype, c.Want(stage))
-		}
-		if c := d.RequiresThingPinned; c != nil {
-			out["waiting_for"] = "a pinned " + c.Subtype
-			out["subtype"] = c.Subtype
-			out["satisfied"] = currentBoard.Pinned(c.Subtype, c.Want(stage))
+		if d.RequiresDevice != "" {
+			out["requires_device"] = d.RequiresDevice
+			if dev, ok := stage.Devices[d.RequiresDevice]; ok {
+				out["device_on"] = dev.IsOn()
+				out["waiting_for"] = dev.Label
+			}
 		}
 		return out, nil
 	}
 
 	if dev, ok := stage.Devices[id]; ok {
-		return map[string]any{"device": id, "on": dev.On, "label": dev.Label}, nil
+		out := map[string]any{"device": id, "on": dev.IsOn(), "label": dev.Label}
+		// What this one is watching the city for — the thing fortress1 asks the
+		// player to read off it.
+		if c := dev.Reads; c != nil {
+			out["reads_subtype"] = c.Subtype
+			out["reads_value"] = c.Value
+			out["reads_pinned"] = c.Pinned
+		}
+		return out, nil
 	}
 
 	return nil, fmt.Errorf("nothing here called %q to look at", id)
-}
-
-// thingGate is the door check for the two board conditions, shaped like the
-// device checks in doOpen so a door reads the same whichever world it is in.
-func thingGate(stage *Stage, id string, door *Door) error {
-	if c := door.RequiresThingNamed; c != nil {
-		v := c.Want(stage)
-		if v == "" {
-			return fmt.Errorf("door %q wants a named %s and the stage does not say which", id, c.Subtype)
-		}
-		if !currentBoard.Named(c.Subtype, v) {
-			return fmt.Errorf("%s built this, and the city has no %s by that name — add one and try again", v, c.Subtype)
-		}
-	}
-	if c := door.RequiresThingPinned; c != nil {
-		v := c.Want(stage)
-		if v == "" {
-			return fmt.Errorf("door %q wants a pinned %s and the stage does not say which", id, c.Subtype)
-		}
-		if !currentBoard.Pinned(c.Subtype, v) {
-			return fmt.Errorf("%s is on the board only while something uses it — pin it so it stays, then try again", v)
-		}
-	}
-	return nil
 }

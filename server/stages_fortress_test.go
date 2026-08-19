@@ -137,33 +137,33 @@ func TestFortressHasJapaneseLocale(t *testing.T) {
 // last one, so any door between rooms stands between the player and the way
 // out. A door the stage gives the player no way past is therefore a wall.
 //
-// The fortress's doors are opened by facts about mywant, which the game does not
-// bring about — the player does, in mywant. So what the stage has to provide is
-// the moment of noticing: an achievement on the door being opened, and a goal
-// telling the player what the city is missing. A stage with a board-reading door
-// and no such achievement has nothing to say when the player gets stuck at it.
+// A fortress door is powered by a registry reader, which the game does not
+// switch on — the player does, in mywant, by naming or pinning what it watches
+// for. So what the stage has to provide is the moment of noticing: an
+// achievement on the reader coming alive, and a goal saying what the city is
+// missing. A stage with a reader and no such achievement has nothing to say
+// when the player gets stuck at its door.
 func TestFortressStagesAreWalkable(t *testing.T) {
 	stages, _ := loadFortress(t)
 
 	for id, st := range stages {
-		// The city opening a door is what the stage has to notice — chap does not
-		// open these, the name arriving does. See mywant_sse.go.
-		opens := map[string]bool{}
+		noticed := map[string]bool{}
 		for _, ad := range st.AchievementDefs {
 			if ad.When.Actor == ActorCity && ad.When.Action == ActionAnswered {
-				opens[ad.When.Target] = true
+				noticed[ad.When.Target] = true
 			}
 		}
 		for name, d := range st.Doors {
-			if d.Open {
+			if d.Open || d.RequiresDevice == "" {
 				continue
 			}
-			if d.RequiresThingNamed == nil && d.RequiresThingPinned == nil {
+			dev := st.Devices[d.RequiresDevice]
+			if dev == nil || dev.Reads == nil {
 				continue
 			}
-			if !opens[name] {
-				t.Errorf("%s: door %q opens on something the player does in mywant, and the stage never notices it being opened — nothing will move the goal on",
-					id, name)
+			if !noticed[d.RequiresDevice] {
+				t.Errorf("%s: door %q is powered by %q, which comes alive from something the player does in mywant, and the stage never notices it — nothing will move the goal on",
+					id, name, d.RequiresDevice)
 			}
 		}
 	}

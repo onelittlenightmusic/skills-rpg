@@ -341,20 +341,15 @@ func doOpen(state *GameState, stage *Stage, in ControlInput) (map[string]any, er
 	}
 	if door.RequiresDevice != "" {
 		dev, ok := stage.Devices[door.RequiresDevice]
-		if !ok || !dev.On {
+		if !ok || !dev.IsOn() {
 			return nil, fmt.Errorf("door %q requires device %q to be active", id, door.RequiresDevice)
 		}
 	}
 	if door.BlockedByDevice != "" {
 		dev, ok := stage.Devices[door.BlockedByDevice]
-		if ok && dev.On {
+		if ok && dev.IsOn() {
 			return nil, fmt.Errorf("door %q is blocked while device %q is active", id, door.BlockedByDevice)
 		}
-	}
-	// The fortress's conditions: facts about the board rather than about this
-	// stage. See rules_things.go.
-	if err := thingGate(stage, id, door); err != nil {
-		return nil, err
 	}
 	door.Open = true
 	door.Locked = false

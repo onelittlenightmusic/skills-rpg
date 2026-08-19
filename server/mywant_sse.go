@@ -98,47 +98,58 @@ func (s *Server) streamMywantEvents() error {
 	return sc.Err()
 }
 
-// reconcileBoardDoors records an event for each door in the current stage whose
-// board condition has changed since last look — met, or no longer met.
+// reconcileBoardDoors records an event for each registry-reading device whose
+// answer has changed since the last look — running, or no longer running.
 //
-// Both directions, and remembered per door rather than latched, because a name
-// can come and go: pinned, unpinned, deleted, named again. Latching would have
-// said "the gate answered" once and then narrated nothing for the rest of the
-// world, including the beat fortress2 exists for.
+// Only to narrate it. The device answers from the city whenever it is asked
+// (Device.IsOn), and the door in front of it reads the device exactly as every
+// other door in this game reads one — so nothing here opens or switches
+// anything. What a stream of changes is good for is knowing that something
+// CHANGED, which a derived value cannot tell you on its own, and which is what
+// a story needs.
+//
+// Both directions, because a name can come and go: pinned, unpinned, deleted,
+// named again. And no stage anywhere in here — the city has no stages, and
+// scoping this to the one the game thinks it is in was how a device on the same
+// canvas, one room over, stayed silent when the value it watched was pinned.
 func (s *Server) reconcileBoardDoors() {
 	s.mu.Lock()
-	stage := s.state.Stages[s.state.CurrentStage]
-	if stage == nil {
-		s.mu.Unlock()
-		return
-	}
 	type change struct {
-		door, value string
-		met         bool
+		device, value string
+		on            bool
 	}
 	var news []change
-	for id, d := range stage.Doors {
-		c := d.RequiresThingNamed
-		pinned := false
-		if c == nil {
-			c, pinned = d.RequiresThingPinned, true
+	for _, stage := range s.state.Stages {
+		for id, dev := range stage.Devices {
+			if dev.Reads == nil {
+				continue
+			}
+			on := dev.IsOn()
+			// Keyed by stage as well as by device: both fortress stages have a
+			// device called registry_terminal, and one map entry for the two of
+			// them meant the first stage's change ate the second's — the yard
+			// door sat shut with its reader plainly running.
+			key := stage.ID + "/" + id
+			if was, seen := s.doorSatisfied[key]; seen && was == on {
+				continue
+			}
+			if s.doorSatisfied == nil {
+				s.doorSatisfied = map[string]bool{}
+			}
+			s.doorSatisfied[key] = on
+			// The gate takes power, and swings. World 1 needs chap here because
+			// `you` has no privilege to work a door; a fortress gate answers its
+			// maker, and what was missing was the name — so once the reader is
+			// running there is nobody left to wait for. Losing the name shuts it
+			// again, which is the same sentence read backwards.
+			for _, d := range stage.Doors {
+				if d.RequiresDevice == id {
+					d.Open = on
+					d.Locked = !on
+				}
+			}
+			news = append(news, change{device: id, value: dev.Reads.Value, on: on})
 		}
-		if c == nil {
-			continue
-		}
-		v := c.Want(stage)
-		met := currentBoard.Named(c.Subtype, v)
-		if pinned {
-			met = currentBoard.Pinned(c.Subtype, v)
-		}
-		if was, seen := s.doorSatisfied[id]; seen && was == met {
-			continue
-		}
-		if s.doorSatisfied == nil {
-			s.doorSatisfied = map[string]bool{}
-		}
-		s.doorSatisfied[id] = met
-		news = append(news, change{door: id, value: v, met: met})
 	}
 	if len(news) == 0 {
 		s.mu.Unlock()
@@ -147,21 +158,13 @@ func (s *Server) reconcileBoardDoors() {
 	locale := s.currentLocaleLocked()
 	for _, ch := range news {
 		action := ActionForgot
-		if ch.met {
+		if ch.on {
 			action = ActionAnswered
-		}
-		// The gate answers. A door held shut only by a name it did not have has
-		// nothing left to be shut about once the city has one — and a door whose
-		// name has gone is shut again, because that is the same rule read the
-		// other way.
-		if d := stage.Doors[ch.door]; d != nil {
-			d.Open = ch.met
-			d.Locked = !ch.met
 		}
 		ev := Event{
 			Actor:  ActorCity,
 			Action: action,
-			Target: ch.door,
+			Target: ch.device,
 			Args:   map[string]any{"value": ch.value},
 			Result: "ok",
 		}
@@ -182,35 +185,24 @@ func (s *Server) reconcileBoardDoors() {
 	}
 }
 
-// seedDoorSatisfiedLocked records what each board-reading door's condition says
-// right now, without narrating any of it.
-//
-// This is the baseline, and it has to be taken on arrival rather than on the
-// first thing_changed to reach us. Taking it lazily meant the first change after
-// entering a stage was spent establishing what "before" was — so the player
-// pinned a value, which is the whole move of fortress2, and the game recorded it
-// silently and said nothing.
-//
-// Called with s.mu held, from wherever the stage in play changes.
+// seedDoorSatisfiedLocked records what every registry reader says right now, so
+// the next change can be told from a repeat. Nothing applied, nothing narrated.
+// Called with s.mu held.
 func (s *Server) seedDoorSatisfiedLocked() {
 	s.doorSatisfied = map[string]bool{}
-	stage := s.state.Stages[s.state.CurrentStage]
-	if stage == nil {
-		return
-	}
-	for id, d := range stage.Doors {
-		c, pinned := d.RequiresThingNamed, false
-		if c == nil {
-			c, pinned = d.RequiresThingPinned, true
-		}
-		if c == nil {
-			continue
-		}
-		v := c.Want(stage)
-		if pinned {
-			s.doorSatisfied[id] = currentBoard.Pinned(c.Subtype, v)
-		} else {
-			s.doorSatisfied[id] = currentBoard.Named(c.Subtype, v)
+	for _, stage := range s.state.Stages {
+		for id, dev := range stage.Devices {
+			if dev.Reads == nil {
+				continue
+			}
+			on := dev.IsOn()
+			s.doorSatisfied[stage.ID+"/"+id] = on
+			for _, d := range stage.Doors {
+				if d.RequiresDevice == id {
+					d.Open = on
+					d.Locked = !on
+				}
+			}
 		}
 	}
 }

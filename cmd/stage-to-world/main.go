@@ -639,6 +639,12 @@ func deviceWants(stage *server.Stage, info stageInfo) []want {
 }
 
 func deviceWant(stage *server.Stage, devID string, at cell, controllable bool) want {
+	// A registry reader answers to the city and to nobody else, so it is never
+	// clickable. A switch on it would be a switch that does nothing — or worse,
+	// one that looks like the way past a door whose real answer is in mywant.
+	if dev := stage.Devices[devID]; dev != nil && dev.Reads != nil {
+		controllable = false
+	}
 	slug := strings.ReplaceAll(devID, "_", "-")
 	return want{
 		Metadata: wantMetadata{
@@ -666,6 +672,13 @@ func deviceWant(stage *server.Stage, devID string, at cell, controllable bool) w
 // running). Where a device gates nothing, its resting state says the same —
 // alarms start on, generators start off.
 func deviceWantType(stage *server.Stage, devID string) string {
+	// A registry reader is not switched by anybody: it runs while the city holds
+	// what it watches for. It is drawn as a generator because that is what it is
+	// from the door's side — the thing that has to be running — and world 1
+	// taught that reading already.
+	if dev := stage.Devices[devID]; dev != nil && dev.Reads != nil {
+		return "rpg_generator"
+	}
 	for _, d := range stage.Doors {
 		if d.BlockedByDevice == devID {
 			return "rpg_alarm"

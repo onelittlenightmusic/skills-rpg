@@ -55,13 +55,10 @@ func withBoard(t *testing.T, b board) {
 // A minimal stage in the fortress's shape: a door that reads the board, and an
 // item carrying the name it is waiting for.
 func markStage(cond string) *Stage {
-	d := &Door{Between: [2]string{"here", "there"}, Locked: true}
-	c := &ThingCond{Subtype: "person", Value: "Lira"}
-	switch cond {
-	case "named":
-		d.RequiresThingNamed = c
-	case "pinned":
-		d.RequiresThingPinned = c
+	d := &Door{Between: [2]string{"here", "there"}, Locked: true, RequiresDevice: "registry"}
+	dev := &Device{Label: "City Registry", Reads: &ThingCond{Subtype: "person", Value: "Lira"}}
+	if cond == "pinned" {
+		dev.Reads.Pinned = true
 	}
 	return &Stage{
 		ID:              "t",
@@ -70,7 +67,8 @@ func markStage(cond string) *Stage {
 			"here":  {Adjacent: []string{"there"}},
 			"there": {Adjacent: []string{"here"}},
 		},
-		Doors: map[string]*Door{"gate": d},
+		Doors:   map[string]*Door{"gate": d},
+		Devices: map[string]*Device{"registry": dev},
 		Items: map[string]*Item{"lira_mark": {HeldBy: "you", Value: "Lira"}},
 	}
 }
@@ -103,11 +101,13 @@ func TestInspectDoorReportsWhatItWaitsFor(t *testing.T) {
 	if !res.OK {
 		t.Fatalf("inspect failed: %s", res.Reason)
 	}
-	if res.Changes["subtype"] != "person" {
-		t.Errorf("inspect did not name the kind it wants: %v", res.Changes)
+	// A door reports the device powering it, and that device's state — which is
+	// what a player standing at a dead gate needs to know.
+	if res.Changes["requires_device"] != "registry" {
+		t.Errorf("inspect did not name the device: %v", res.Changes)
 	}
-	if res.Changes["satisfied"] != false {
-		t.Errorf("inspect claimed satisfied before anything was named: %v", res.Changes)
+	if res.Changes["device_on"] != false {
+		t.Errorf("inspect claimed the reader was running before anything was named: %v", res.Changes)
 	}
 }
 
