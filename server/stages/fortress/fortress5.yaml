@@ -1,0 +1,144 @@
+id: fortress5
+title: "Kinds of Name"
+description: |
+  Two fittings, two values, and neither value is wrong. The assay bench wants the
+  name of whoever signed the work; the pressure stop wants a setting. Put them the
+  other way round and nothing complains, nothing errors, and both readers stay
+  dark — because a level is not a person, and every field says which kind it takes.
+rooms:
+  - { id: assay_hall, label: "The Assay Hall" }
+  - { id: stop_room, label: "The Pressure Stop",
+      door: { id: assay_door, device: person_reader } }
+  - { id: weighbridge, label: "The Weighbridge",
+      door: { id: stop_door, device: level_reader } }
+devices:
+  person_reader:
+    label: "Assay Reader"
+    # The same string typed into the level field makes a level called Kesh, and
+    # this stays dark next to a board that visibly holds the name. That is the
+    # stage: the reader is asking for a kind, not for a spelling.
+    reads_thing:
+      subtype: person
+      value: "Kesh"
+    need_hint: |
+      Kesh signed the assay bench. Her name goes in the bench's `maker` field —
+      the field that files what it is given as a person.
+  level_reader:
+    label: "Stop Reader"
+    reads_thing:
+      subtype: level
+      value: "7"
+    need_hint: |
+      The pressure stop is set to 7. That goes in the stop's `level` field, which
+      files what it is given as a level.
+next_goal_rules:
+  - if_missing: person_reader_running
+    goal:
+      text: "The assay reader wants a person called Kesh"
+      hint: |
+        Put the name in the field that files people:
+          the assay_bench card on the board → maker → Kesh
+        If it lands in the wrong field the city will hold a Kesh of the wrong
+        kind, and this will still be dark. Check with: mywant thing list
+  - if_missing: level_reader_running
+    goal:
+      text: "The stop reader wants a level of 7"
+      hint: |
+        And the setting in the field that files levels:
+          the pressure_stop card on the board → level → 7
+        Check which catalog it landed in: mywant thing list
+  - if_missing: reached_weighbridge
+    goal:
+      text: "Both readers are running. Go through"
+      hint: "rpg_control_system actor=you action=move target=weighbridge"
+next_stage: fortress6
+mywant_setup:
+  cleanup_label:
+    game: fortress5
+  wants:
+    - name: assay_bench
+      type: rpg_fixture
+      labels: { game: fortress5, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "44" }
+      params: { label: "Assay Bench" }
+    - name: pressure_stop
+      type: rpg_fixture
+      labels: { game: fortress5, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "44" }
+      params: { label: "Pressure Stop" }
+narrations:
+  - match: { actor: city, action: answered, target: level_reader }
+    on_success: |
+      Both readers alight. On the board the two values stand apart from each
+      other, filed under different kinds, each with a road to the fitting that
+      takes that kind.
+    conversations:
+      - speaker: chap
+        text: "Same board, two catalogs. A field does not take a value — it takes a kind of value."
+      - speaker: you
+        text: "So the field decides what the thing is."
+      - speaker: chap
+        text: "The field it was typed into, yes. Not the string."
+    lore: |
+      Every value the city holds is filed under a kind, and the kind comes from
+      the field it was typed into. This is why a want's form narrows: it is not
+      being helpful, it is saying which catalog it can read from.
+  - match: { action: observe }
+    situation: |
+      A bench with a signature line and a stop with a dial, and two readers, both
+      dark. Nothing here is broken.
+    conversations:
+      - speaker: you
+        text: "I have both values. They just won't take."
+      - speaker: chap
+        text: "You have both values in one field's idea of what they are."
+locales:
+  ja:
+    title: "名前の種類"
+    description: |
+      二つの取り付け口、二つの値、そしてどちらの値も間違っていない。
+      検定台は署名した者の名前を求め、圧力止めは設定値を求める。逆に入れても
+      文句も出ず、エラーにもならず、それでいて両方の reader は暗いままだ——
+      level は person ではないし、どの欄も「受け取る種類」を宣言しているから。
+    waypoints:
+      assay_hall: { label: "検定室" }
+      stop_room: { label: "圧力止め" }
+      weighbridge: { label: "計量台" }
+    next_goal_rules:
+      - goal:
+          text: "検定 reader は Kesh という person を求めている"
+          hint: |
+            person として記録される欄に名前を入れる:
+              盤面の assay_bench のカード → maker → Kesh
+            違う欄に入ると、都市は違う種類の Kesh を持つことになり、
+            これは暗いままになる。確認: mywant thing list
+      - goal:
+          text: "圧力 reader は 7 という level を求めている"
+          hint: |
+            設定値は level として記録される欄へ:
+              盤面の pressure_stop のカード → level → 7
+            どのカタログに入ったか確認: mywant thing list
+      - goal:
+          text: "両方点いた。進もう"
+          hint: "rpg_control_system actor=you action=move target=weighbridge"
+    narrations:
+      - on_success: |
+          reader が二つとも点く。盤面では二つの値が別々の種類の下に分かれて立ち、
+          それぞれ、その種類を受け取る取り付け口へ道を伸ばしている。
+        conversations:
+          - speaker: chap
+            text: "同じ盤面、二つのカタログ。欄が受け取るのは値ではなく、値の種類です。"
+          - speaker: you
+            text: "つまり、それが何であるかを決めるのは欄の方か。"
+          - speaker: chap
+            text: "打ち込まれた欄が、です。文字列ではなく。"
+        lore: |
+          都市が持つ値はすべて種類の下に file され、その種類は打ち込まれた欄から来る。
+          want のフォームが候補を絞るのはこのため——親切でそうしているのではなく、
+          どのカタログから読めるかを言っている。
+      - situation: |
+          署名欄のある台と、ダイヤルのある止め。reader は二つとも暗い。
+          壊れているものは何も無い。
+        conversations:
+          - speaker: you
+            text: "値は両方持ってる。入らないだけだ。"
+          - speaker: chap
+            text: "片方の欄の解釈で、両方持っておられます。"

@@ -1,0 +1,146 @@
+id: fortress11
+title: "Everything Green, Nothing Moving"
+description: |
+  A head tank producing exactly what the district main needs, two metres away
+  from the district main, and both of them running. The door beyond takes its
+  power from the main and the main has nothing in it. Everything on this board
+  is working and nothing is happening.
+rooms:
+  - { id: head_tank_floor, label: "The Head Tank Floor" }
+  - { id: main_corridor, label: "The Main Corridor",
+      door: { id: main_door, device: road_meter } }
+devices:
+  road_meter:
+    label: "Road Meter"
+    # There is nothing wrong with either want and nothing to fix on either card.
+    # What is missing is between them, and between them there is nothing at all.
+    reads_connection:
+      from: head_tank
+      to: district_main
+    need_hint: |
+      Neither want is broken. Deploying a third will not help. What is missing is
+      the road: mywant wants connect head_tank district_main
+achievement_defs:
+  - id: read_the_meter
+    when: { actor: you, action: inspect, target: road_meter, result: ok }
+next_goal_rules:
+  - if_missing: read_the_meter
+    goal:
+      text: "Both green. The main is empty. Read the meter"
+      hint: |
+        rpg_control_system actor=you action=inspect target=road_meter
+        Then look at the two wants:
+          mywant wants get head_tank
+          mywant wants get district_main
+        Nothing is wrong with either of them.
+  - if_missing: road_meter_running
+    goal:
+      text: "The two are not related, and nobody has said they are. Say so"
+      hint: |
+        Join the tank's output to the main's intake:
+          mywant wants connect head_tank district_main
+          GUI: drag from the tank's offering end to the main's asking end
+        A road appears between them, in the same lines a thing draws to the
+        wants using it. Deploying more wants will not do this — being next to
+        each other is not a relationship.
+  - if_missing: reached_main_corridor
+    goal:
+      text: "The main has pressure. Go through"
+      hint: "rpg_control_system actor=you action=move target=main_corridor"
+next_stage: fortress12
+mywant_setup:
+  cleanup_label:
+    game: fortress11
+  wants:
+    - name: head_tank
+      type: rpg_fixture
+      labels: { game: fortress11, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "101" }
+      params: { label: "Head Tank", level: "5" }
+    - name: district_main
+      type: rpg_fixture
+      labels: { game: fortress11, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "101" }
+      params: { label: "District Main" }
+narrations:
+  - match: { actor: city, action: answered, target: road_meter }
+    on_success: |
+      A line runs between the two tiles and the main fills. It is the same line
+      the city draws from a name to the things using it — you have been reading
+      these since the cistern.
+    conversations:
+      - speaker: you
+        text: "I kept trying to deploy something."
+      - speaker: chap
+        text: "The dungeon taught you that. When something did not work, you added a want."
+      - speaker: you
+        text: "And here there was nothing to add."
+      - speaker: chap
+        text: "There was something to say. That these two have to do with each other."
+    lore: |
+      Two wants standing beside each other are two wants standing beside each
+      other. A road is a statement — this one's output is that one's input — and
+      until somebody makes it, nothing crosses the gap, however small it is.
+  - match: { action: observe }
+    situation: |
+      A full tank, an empty main, two metres of clean floor between them, and two
+      cards both reporting that all is well.
+    conversations:
+      - speaker: you
+        text: "What's between them?"
+      - speaker: chap
+        text: "Floor."
+locales:
+  ja:
+    title: "全部緑、何も動かない"
+    description: |
+      区の本管が必要とするものをちょうど作っている貯水槽が、
+      その本管から二メートルのところにあり、どちらも動いている。
+      その先の扉は本管から電気を取っていて、本管には何も入っていない。
+      この盤面のすべてが正常に動いていて、何も起きていない。
+    waypoints:
+      head_tank_floor: { label: "貯水槽の床" }
+      main_corridor: { label: "本管廊" }
+    next_goal_rules:
+      - goal:
+          text: "両方緑。本管は空。メーターを読もう"
+          hint: |
+            rpg_control_system actor=you action=inspect target=road_meter
+            それから二つの want を見る:
+              mywant wants get head_tank
+              mywant wants get district_main
+            どちらにも悪いところは無い。
+      - goal:
+          text: "二つは無関係で、関係があると誰も言っていない。言おう"
+          hint: |
+            貯水槽の出力を本管の取り口に繋ぐ:
+              mywant wants connect head_tank district_main
+              GUI: 貯水槽の差し出す口から本管の求める口へドラッグ
+            thing が、それを使う want へ引くのと同じ線が、二つの間に現れる。
+            want を足しても解決しない——隣にあることは関係ではない。
+      - goal:
+          text: "本管に圧が来た。進もう"
+          hint: "rpg_control_system actor=you action=move target=main_corridor"
+    narrations:
+      - on_success: |
+          二つのタイルの間に線が走り、本管が満ちる。名前から、それを使うものへ
+          都市が引くのと同じ線だ——貯水槽の時からずっと読んできたもの。
+        conversations:
+          - speaker: you
+            text: "ずっと何か deploy しようとしてた。"
+          - speaker: chap
+            text: "ダンジョンがそう教えました。動かない時は want を足す、と。"
+          - speaker: you
+            text: "で、ここには足すものが無かった。"
+          - speaker: chap
+            text: "言うことがありました。この二つは互いに関係がある、と。"
+        lore: |
+          隣り合って立っている want 二つは、隣り合って立っている want 二つでしかない。
+          道は主張だ——こちらの出力があちらの入力である、という——
+          そして誰かがそれを言うまで、どんなに近くても何も渡らない。
+      - situation: |
+          満杯の貯水槽、空の本管、その間の二メートルの綺麗な床、
+          そして問題無しと報告している二枚のカード。
+        conversations:
+          - speaker: you
+            text: "この間にあるものは？"
+          - speaker: chap
+            text: "床です。"

@@ -38,6 +38,9 @@ type Server struct {
 	// change can be told from a repeat. Reset with the world, since a door is a
 	// stage's.
 	doorSatisfied map[string]bool
+	// Asks for a look at the board. Buffered by one: a burst of mywant events
+	// is one reconciliation, not one per event. See mywant_sse.go.
+	reconcile chan struct{}
 	// Which world is in play. Its progress is in a state file of its own, so
 	// switching cannot overwrite the world being left. See worlds.go.
 	world string
@@ -53,13 +56,13 @@ func NewServer(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("load settings: %w", err)
 	}
 
-	s := &Server{cfg: cfg, settingsPath: settingsPath, settings: settings}
+	s := &Server{cfg: cfg, settingsPath: settingsPath, settings: settings, reconcile: make(chan struct{}, 1)}
 	// The fortress's doors ask mywant what the city has been told the name of.
 	// Without a mywant they get a board that answers "no" to everything and says
 	// so when acted on, which is better than a stage quietly behaving as though
 	// a name had been given. See rules_things.go.
 	if cfg.MywantURL != "" {
-		setBoard(mywantBoard{url: cfg.MywantURL})
+		setBoard(&mywantBoard{url: cfg.MywantURL})
 	}
 	if err := s.loadOrBootstrap(); err != nil {
 		return nil, err

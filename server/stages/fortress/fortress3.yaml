@@ -1,0 +1,145 @@
+id: fortress3
+title: "The Third Road"
+description: |
+  The cistern is draining and nobody has touched it. Her tile had one road
+  running out of it a minute ago; now it has three. Putting her name back did not
+  open one door — it woke everything she ever signed, and one of those things is
+  pulling the water down.
+rooms:
+  - { id: cistern_floor, label: "The Cistern Floor" }
+  - { id: cistern_stair, label: "The Stair Out",
+      door: { id: cistern_hatch, device: cistern_gauge } }
+devices:
+  cistern_gauge:
+    label: "Cistern Gauge"
+    # The water comes back up when the thing pulling it down is gone. Which
+    # thing that is, the stage does not say and the gauge does not either — the
+    # roads out of Lira's tile say it, and reading them is the lesson.
+    reads_want:
+      name: cistern_drain
+      absent: true
+    need_hint: |
+      Look at Lira's tile: every want using her name has a road running to it.
+      One of them is emptying the cistern.
+achievement_defs:
+  # Standing on the board and reading a tile. Nothing changes; the player simply
+  # now knows there are three roads. The rest — the gauge answering, the stair
+  # being reached, clearing the stage — comes from `rooms:` above.
+  - id: read_the_roads
+    when: { actor: you, action: inspect, target: cistern_gauge, result: ok }
+next_goal_rules:
+  - if_missing: read_the_roads
+    goal:
+      text: "The water is going down. Find out what is pulling it"
+      hint: |
+        Read the gauge, then read Lira's tile on the board:
+          rpg_control_system actor=you action=inspect target=cistern_gauge
+          mywant thing get person
+        A thing tile draws one road per want using it. She had one road. Count
+        them now.
+  - if_missing: cistern_gauge_running
+    goal:
+      text: "Three roads leave her tile. One of them is the drain. Stop it"
+      hint: |
+        Follow the roads to the wants at the far end, then stop the one draining
+        the cistern:
+          mywant wants list
+          mywant wants delete cistern_drain
+        The gauge is reading the board, not you. It comes up on its own.
+  - if_missing: reached_cistern_stair
+    goal:
+      text: "The water is back. Take the stair"
+      hint: "rpg_control_system actor=you action=move target=cistern_stair"
+next_stage: fortress4
+mywant_setup:
+  cleanup_label:
+    game: fortress3
+  # The three things her name is on. Two of them are harmless; one is the drain.
+  # They exist as wants because everything on this board does, and because the
+  # roads the player is being asked to count are drawn from a want's parameters.
+  wants:
+    - name: north_gate_frame
+      type: rpg_fixture
+      labels: { game: fortress3, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "24" }
+      params: { label: "North Gate Frame", maker: "Lira" }
+    - name: relief_valve
+      type: rpg_fixture
+      labels: { game: fortress3, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "24" }
+      params: { label: "Relief Valve", maker: "Lira" }
+    - name: cistern_drain
+      type: rpg_fixture
+      labels: { game: fortress3, "mywant.io/canvas-x": "4", "mywant.io/canvas-y": "21" }
+      params: { label: "Cistern Drain", maker: "Lira" }
+narrations:
+  - match: { actor: city, action: answered, target: cistern_gauge }
+    on_success: |
+      The gauge climbs. One road fewer leaves her tile, and the two that are left
+      are holding the district up rather than emptying it.
+    conversations:
+      - speaker: chap
+        text: "The drain is off the board. Nothing else changed."
+      - speaker: you
+        text: "I put one name back and three things woke up. I only wanted the gate."
+    lore: |
+      A name is not a label on the thing you gave it to. Every want that holds
+      the value is joined to it, and the tile draws one road to each — so the
+      tile is the list of everything that name is currently doing.
+  - match: { action: observe }
+    situation: |
+      Water going down, fast, in a cistern with no leak in it. On the board her
+      tile has three roads out of it where an hour ago it had one.
+    conversations:
+      - speaker: you
+        text: "I gave her name to the gate. Not to this."
+      - speaker: chap
+        text: "You gave it to the city. The gate is only one of the things holding it."
+locales:
+  ja:
+    title: "三本目の道"
+    description: |
+      貯水槽が減っていく。誰も触っていない。さっきまで彼女のタイルから出ている道は
+      一本だった。今は三本ある。名前を戻したのは門一つを開けたのではなく、
+      彼女が署名したものすべてを起こしたのであって、そのうち一つが水を抜いている。
+    waypoints:
+      cistern_floor: { label: "貯水槽の底" }
+      cistern_stair: { label: "上りの階段" }
+    next_goal_rules:
+      - goal:
+          text: "水が減っている。何が引いているのか突き止めよう"
+          hint: |
+            ゲージを読み、盤面の Lira のタイルを読む:
+              rpg_control_system actor=you action=inspect target=cistern_gauge
+              mywant thing get person
+            thing のタイルは、それを使っている want の数だけ道を引く。
+            さっきは一本だった。今、数えてみること。
+      - goal:
+          text: "彼女のタイルから道が三本。うち一本が排水だ。止めよう"
+          hint: |
+            道の先の want を辿って、貯水槽を抜いているものを止める:
+              mywant wants list
+              mywant wants delete cistern_drain
+            ゲージが見ているのは盤面であって、あなたではない。勝手に戻る。
+      - goal:
+          text: "水が戻った。階段を上ろう"
+          hint: "rpg_control_system actor=you action=move target=cistern_stair"
+    narrations:
+      - on_success: |
+          ゲージが上がる。彼女のタイルから出る道が一本減り、残る二本は
+          区画を潰すのではなく支えている方だ。
+        conversations:
+          - speaker: chap
+            text: "排水は盤面から消えました。他は何も変わっていません。"
+          - speaker: you
+            text: "名前を一つ戻したら三つ動き出した。欲しかったのは門だけだ。"
+        lore: |
+          名前は、渡した相手に貼ったラベルではない。その値を持つ want すべてが
+          その名前と繋がり、タイルはその一つ一つに道を引く——つまりタイルは、
+          その名前が今やっていることの一覧だ。
+      - situation: |
+          漏れの無い貯水槽で、水位が速く落ちていく。盤面では彼女のタイルから
+          道が三本出ている。一時間前は一本だった。
+        conversations:
+          - speaker: you
+            text: "門に名前を渡したんだ。これにじゃない。"
+          - speaker: chap
+            text: "都市に渡したのです。門はそれを持っているものの一つにすぎません。"

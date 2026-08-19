@@ -404,37 +404,146 @@ Every operation in Act 1 and Act 3 rests on affordances that already ship:
 | Stage | Rests on |
 |---|---|
 | fortress1, 4 | naming a value explicitly, and implicitly by typing it into a want |
-| fortress2 | pinning; the drawing rule (pinned / placed / referred to by a want); and an `rpg_redactor` that clears a named parameter on cue |
+| fortress2 | pinning; the drawing rule (pinned / placed / referred to by a want) |
 | fortress3 | a thing tile draws a road to every want naming it |
-| fortress5 | subtypes, and the accepted-subtype matching a want declares |
+| fortress5 | subtypes: the catalog a value is filed under comes from the field it was typed into |
 | fortress6 | Add Want from a thing: filtered type list, seeded parameter |
-| fortress7 | thing groups, drawn as lines between members |
-| fortress8–10 | want state, results, expose/import |
+| fortress7 | thing groups (mywant calls them constellations), drawn as lines between members |
+| fortress8–10 | want state, produced values, expose/import ends |
 | fortress11–14 | want↔want connection, drawn as a road |
 | fortress15 | one want addressing many named values |
 
-What the RPG server needs is the ability to *notice* these, so a stage can be
-cleared by doing them. The existing gates are `requires_device` /
-`blocked_by_device`; these are the same shape:
+The scenery is wants, because everything on a mywant canvas is. `rpg_fixture`
+(`server/skills/rpg-fixture/`) is the one type they are all made of: a `maker`
+field subtyped `person`, a `level` field subtyped `level`, an `about` list of
+thing ids, and no agent at all. It does nothing on purpose — a fixture is read,
+named, grouped, connected and stopped, and every one of those is an operation on
+the want rather than something the want performs. A stage puts its fixtures on
+the board with `mywant_setup.wants`.
 
-```yaml
-doors:
-  north_gate:
-    requires_thing_named:      { from_item: lira_mark }
-  cistern:
-    requires_thing_pinned:     { value: "..." }
-  relay_gate:
-    requires_want_seeded_from: { thing_subtype: person }
-  ward_ledger:
-    requires_thing_group:      { min_members: 8 }
-  pressure_door:
-    requires_connection:       { from: supply, to: sink }
+## Three rules the first two stages settled
+
+Written down because each was arrived at the hard way, and every stage from
+here obeys them.
+
+**A door is a door.** It says `requires_device` and nothing else — the same
+sentence stage4's power_door says. A door that also weighed up the state of the
+city was a second mechanism for something world 1 already had a shape for, and
+it showed: doors only ever knew about the current stage, so a player standing at
+one a room over (the boards put every stage on one canvas) could satisfy it and
+watch nothing happen.
+
+**An activator holds the condition, and says what is missing.** The device is
+what reads the city, and it is running exactly while the city holds what it
+watches for. Its card is the only thing in a position to tell the player what to
+do, so every condition answers three questions and not one:
+
+```go
+satisfied() bool   // is it running
+checks() []Check   // the parts of the question, each true or false on its own
+need() string      // the one job outstanding right now, in the imperative
 ```
 
-The plumbing is in place: the RPG server holds a mywant client
-(`server/mywant_client.go`) and receives lifecycle webhooks
-(`/api/v1/hooks/mywant`), which is how a stage sees a want created, a thing
-pinned, or a connection made.
+`checks()` and `need()` live in Go next to the condition (`server/device_cond.go`),
+not in the skill that draws the card: the thing that owns the fact answers for
+it. The device's JSON carries `on`, `checks` and `need`; `rpg-device/main.py`
+relays them and `view/plugin.jsx` renders a tick list and a sentence, neither of
+them knowing what kind of condition produced it. Adding a kind is one struct and
+three methods — no Python, no JSX, no want-type schema change.
+
+Two things `need()` has to get right, both learned from fortress1 and 2:
+
+- name the job that is **actually outstanding**, not the one the condition
+  mentions. A value the city has never heard of cannot be pinned; saying "pin
+  it" sends somebody hunting for a button that does not exist. A chain condition
+  names the *first* missing hop and not all of them;
+- say it as an instruction, not as the rule behind it. "Lira only stays on the
+  board while something uses it" is true and useless to somebody who has never
+  pinned anything. The stage may add a `need_hint:` — the concrete how-to that
+  only the stage knows ("the sluice in this gallery has a level field") — which
+  is appended to the generated statement of what.
+
+**The RPG server reads mywant and never writes on the player's behalf.** Naming
+a value, pinning it, connecting two wants are mywant's own operations, done in
+mywant — by the CLI, the Thing page, the canvas. An RPG verb wrapping the same
+call taught a player something that works nowhere else. It follows that a stage
+cannot require its own route: whatever route the player takes, the activator
+notices. (`mywant_setup` does write, but it writes scenery on stage entry, not
+the player's move.)
+
+### The conditions, as they ended up
+
+Every one is a fact about mywant, and every one is something the player can see
+on the board:
+
+```yaml
+devices:
+  registry_terminal:
+    reads_thing: { subtype: person, value: "Lira" }               # named
+  ward_registry:
+    reads_thing: { subtype: person, value: "Lira", pinned: true } # and pinned
+  level_register:
+    reads_thing: { subtype: level }                     # any value of that kind
+  relay_meter:
+    reads_thing_used_by: { subtype: person, value: "Kesh", min_users: 2 }
+  district_ledger:
+    reads_group: { name: district_a, min_members: 8 }
+  row_monitor:
+    reads_want: { type: rpg_fixture, state: suspended, absent: true }
+  pressure_assay:
+    reads_want_state: { name: pressure_stack_b, field: level, equals: "9" }
+  road_meter:
+    reads_connection: { from: head_tank, to: district_main }
+  chain_reader:
+    reads_connection: { chain: [ore_face, smelter, assay_feed] }
+  crosstalk_check:
+    reads_connection: { from: spare_winch, to: lift_carriage, absent: true }
+  district_meter:
+    reads_connection: { from: district_supply, min_count: 8 }
+```
+
+The board interface (`server/rules_things.go`) is the whole of what the game
+knows about the city, and it is deliberately small — `CountNamed`, `Pinned`,
+`UsedBy`, `GroupMembers`, `CountWants`, `WantState`, `Connected`,
+`ConnectionsFrom`. Each is answered by asking mywant (`server/board_mywant.go`)
+rather than computed here, so the line a door waits for and the line the player
+sees are the same line.
+
+The door in front of each device says `requires_device`, the SSE watcher notices
+when any activator's answer changes and narrates it, and the door opens because
+its device came alive. The plumbing: the RPG server holds a mywant client
+(`server/mywant_client.go`), subscribes to `/api/v1/events`
+(`server/mywant_sse.go`), and receives lifecycle webhooks at
+`/api/v1/hooks/mywant`.
+
+## A stage's spine, written once
+
+Every stage is the same shape — a line of rooms, a door between each pair, a
+reader powering each door, and the player walking to the last room. Written
+longhand that is a waypoint block with the adjacency spelled both ways, a door
+block repeating the two room ids, an achievement per reader, an achievement per
+room, and a `cleared_when` naming the last of them: thirty-odd lines in which
+the only interesting words are the ids.
+
+So a stage writes its rooms instead (`server/stage_rooms.go`):
+
+```yaml
+rooms:
+  - { id: cistern_floor, label: "The Cistern Floor" }
+  - { id: cistern_stair, label: "The Stair Out",
+      door: { id: cistern_hatch, device: cistern_gauge } }
+```
+
+and the loader derives the waypoints, the doors, the achievements
+`<device>_running` and `reached_<room>`, the initial position and the
+`cleared_when`. Those two ids are part of the contract, because goals and
+narrations refer to them. Anything the stage writes by hand wins, and a stage
+whose shape this cannot describe — a loop, a room off to one side, a door that
+starts open — writes `waypoints:` and `doors:` longhand as fortress1 and 2 still
+do.
+
+`cmd/stage-to-world` expands the same shorthand before laying a stage out, so a
+stage using `rooms:` is a stage with a board.
 
 ---
 

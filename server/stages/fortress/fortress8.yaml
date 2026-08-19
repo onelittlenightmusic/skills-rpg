@@ -1,0 +1,152 @@
+id: fortress8
+title: "Green and Red"
+description: |
+  A row of Lira's pumps, and the district behind them is dry. Every want on this
+  board has been something you deployed and walked away from; none of them has
+  ever been something you looked at. That stops here, because one of these four
+  is not doing anything and it does not look any different from a distance.
+rooms:
+  - { id: pump_row, label: "The Pump Row" }
+  - { id: pump_house, label: "The Pump House",
+      door: { id: pump_door, device: row_monitor } }
+devices:
+  row_monitor:
+    label: "Row Monitor"
+    # Not "which one" — "any at all". Naming the stopped pump here would be
+    # answering the question the stage is asking, and the answer is legible on
+    # the board itself: the cards say what state they are in.
+    reads_want:
+      type: rpg_fixture
+      state: suspended
+      absent: true
+    need_hint: |
+      Read the four pump cards. Three are running and one is not, and the one
+      that is not will say so on its own card. Resume it: mywant wants resume <name>
+achievement_defs:
+  - id: read_the_row
+    when: { actor: you, action: inspect, target: row_monitor, result: ok }
+next_goal_rules:
+  - if_missing: read_the_row
+    goal:
+      text: "The district is dry and all four pumps are standing there"
+      hint: |
+        Look at the monitor, then at the pumps themselves:
+          rpg_control_system actor=you action=inspect target=row_monitor
+          mywant wants list
+        A want has a state and it is written on it. This is the first time in
+        this game it has mattered.
+  - if_missing: row_monitor_running
+    goal:
+      text: "One of the four is not running. Start it"
+      hint: |
+        Find the one whose state is not the same as the others, and resume it:
+          mywant wants list
+          mywant wants resume ward_pump_3
+        Read the state before you trust the row: three of them being fine says
+        nothing about the fourth.
+  - if_missing: reached_pump_house
+    goal:
+      text: "Water. Go through"
+      hint: "rpg_control_system actor=you action=move target=pump_house"
+next_stage: fortress9
+mywant_setup:
+  cleanup_label:
+    game: fortress8
+  wants:
+    - name: ward_pump_1
+      type: rpg_fixture
+      labels: { game: fortress8, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "71" }
+      params: { label: "Ward Pump 1", maker: "Lira" }
+    - name: ward_pump_2
+      type: rpg_fixture
+      labels: { game: fortress8, "mywant.io/canvas-x": "2", "mywant.io/canvas-y": "71" }
+      params: { label: "Ward Pump 2", maker: "Lira" }
+    - name: ward_pump_3
+      type: rpg_fixture
+      labels: { game: fortress8, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "71" }
+      params: { label: "Ward Pump 3", maker: "Lira" }
+    - name: ward_pump_4
+      type: rpg_fixture
+      labels: { game: fortress8, "mywant.io/canvas-x": "4", "mywant.io/canvas-y": "71" }
+      params: { label: "Ward Pump 4", maker: "Lira" }
+  # The stage's own hand on the board: one pump stopped, so there is something
+  # to find. Done here rather than in the want's own parameters because being
+  # suspended is a state and not a setting — which is the distinction the stage
+  # is about.
+  on_start_run:
+    - "sleep 2 && mywant wants suspend ward_pump_3"
+narrations:
+  - match: { actor: city, action: answered, target: row_monitor }
+    on_success: |
+      The third pump takes up the beat of the other three and the line pressurises.
+      From where you are standing it looks exactly as it did a minute ago.
+    conversations:
+      - speaker: you
+        text: "It was sitting in the row like the rest of them."
+      - speaker: chap
+        text: "It was. Being in the row is not a state. Running is a state, and it says so on its card."
+    lore: |
+      A want on the board is not a picture of a machine. It is a thing with a
+      state, and the state is written on it — which means a district can be dry
+      while everything in it looks fine, and the difference is one card away.
+  - match: { action: observe }
+    situation: |
+      Four pumps in a row, all upright, all clean, one of them silent. The mains
+      behind them is empty.
+    conversations:
+      - speaker: you
+        text: "They all look the same."
+      - speaker: chap
+        text: "They look the same. They do not read the same."
+locales:
+  ja:
+    title: "緑と赤"
+    description: |
+      Lira のポンプが一列。その先の区は干上がっている。この盤面の want は
+      どれも、deploy してそのまま立ち去ったものばかりで、一度も見たことがない。
+      それはここで終わる。四つのうち一つが何もしていないのに、
+      離れて見る限り他と何も変わらないからだ。
+    waypoints:
+      pump_row: { label: "ポンプ列" }
+      pump_house: { label: "ポンプ小屋" }
+    next_goal_rules:
+      - goal:
+          text: "区が干上がっていて、ポンプは四つとも立っている"
+          hint: |
+            monitor を見て、それからポンプ自体を見る:
+              rpg_control_system actor=you action=inspect target=row_monitor
+              mywant wants list
+            want には状態があり、それは want に書いてある。
+            このゲームでそれが問題になるのは、これが初めて。
+      - goal:
+          text: "四つのうち一つが動いていない。動かそう"
+          hint: |
+            他と状態の違うものを見つけて resume する:
+              mywant wants list
+              mywant wants resume ward_pump_3
+            列を信じる前に状態を読むこと。三つが正常だということは、
+            四つ目について何も言っていない。
+      - goal:
+          text: "水が来た。進もう"
+          hint: "rpg_control_system actor=you action=move target=pump_house"
+    narrations:
+      - on_success: |
+          三番目のポンプが他の三つと拍子を合わせ、管に圧がかかる。
+          立っている場所から見る限り、一分前と全く同じに見える。
+        conversations:
+          - speaker: you
+            text: "他と同じように列に収まってた。"
+          - speaker: chap
+            text: "収まっていました。列にいることは状態ではありません。動いていることが状態で、それはカードに書いてあります。"
+        lore: |
+          盤面の want は機械の絵ではない。状態を持つものであり、
+          状態はそこに書かれている——つまり、見た目が全部正常なまま区は干上がりうるし、
+          その差はカード一枚のところにある。
+      - situation: |
+          四つのポンプが並び、どれも真っ直ぐで、綺麗で、一つだけ音がしない。
+          背後の本管は空だ。
+        conversations:
+          - speaker: you
+            text: "全部同じに見える。"
+          - speaker: chap
+            text: "同じに見えます。同じには読めません。"

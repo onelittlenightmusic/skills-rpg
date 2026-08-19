@@ -55,14 +55,14 @@ wantType:
 
     # ── Mirrored from rpg-server on every poll ──
     - { name: on,          description: whether the device is running, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "on" }
-    # A registry reader watches the city instead of taking a switch. Empty on
-    # every other device, so a card can simply not draw the row.
-    - { name: reads_subtype, description: kind of thing this reads the registry for, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "reads_subtype" }
-    - { name: reads_value,   description: the name it reads the registry for, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "reads_value" }
-    - { name: reads_pinned,  description: whether that name must be pinned, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "reads_pinned" }
-    # The two halves of the answer, so the card can name the job outstanding.
-    - { name: reads_named,     description: whether the city knows that name at all, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "reads_named" }
-    - { name: reads_is_pinned, description: whether it is pinned to the board, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "reads_is_pinned" }
+    # A reader watches the city instead of taking a switch, and the server says
+    # what it is watching for: `checks` is the condition's parts, each answered
+    # on its own, and `need` is the one job outstanding, in the imperative. Both
+    # are empty on every device that is merely a switch, so a card can simply not
+    # draw the row — and neither names a kind of condition, so a new kind needs
+    # no change here.
+    - { name: checks, description: "{label, ok} for each part of the condition", type: array, label: current, persistent: true, initialValue: [], fetchFrom: mrs_raw_output, onFetchData: "checks" }
+    - { name: need,   description: what the player has to do for this to run, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "need" }
     - { name: label,       description: device label from the server, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "label" }
     - { name: blocked_by,  description: device holding this one shut, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "blocked_by" }
     - { name: blocked,     description: whether that blocking device is currently on, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "blocked" }

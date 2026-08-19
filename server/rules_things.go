@@ -14,14 +14,35 @@ import "fmt"
 // stay a pure function of (state, input, board), which is what lets a stage be
 // tested without a mywant running — and there is a lot of stage to test.
 
-// board is what the rules need to know about the city's named values.
+// board is what the rules need to know about the city — the whole of it, and
+// deliberately small. Every question here is one a player can answer by looking
+// at the canvas, because every one of them is a stage's win condition.
 type board interface {
-	// Named reports whether the city holds this value under this subtype.
-	Named(subtype, value string) bool
-	// Pinned reports whether it is standing on the canvas by the user's own
+	// CountNamed counts the values the city holds under this subtype. An empty
+	// value counts them all, which is how a stage asks for "any level" without
+	// dictating which.
+	CountNamed(subtype, value string) int
+	// Pinned reports whether a value is standing on the canvas by the user's own
 	// decision, rather than merely being drawn because something refers to it.
 	// The distinction is the subject of fortress2 and is not a detail.
 	Pinned(subtype, value string) bool
+	// UsedBy counts the live wants naming this value. A thing tile draws one
+	// road per user, so this is the same number the player can see on the board
+	// — which is the point of the stage that reads it.
+	UsedBy(subtype, value string) int
+	// GroupMembers counts what has been gathered under one name.
+	GroupMembers(name string) int
+	// CountWants counts wants by type, name and state; empty fields match
+	// anything.
+	CountWants(wantType, name, state string) int
+	// WantState reads one field out of a want's current state — what it has
+	// made, as against whether it is running.
+	WantState(name, field string) string
+	// Connected reports whether a road runs from one want to another, carrying
+	// the named field (empty: any).
+	Connected(from, to, field string) bool
+	// ConnectionsFrom counts the roads leaving a want.
+	ConnectionsFrom(name string) int
 }
 
 // Read-only on purpose. The game asks mywant what the city knows and never
@@ -33,8 +54,14 @@ type board interface {
 // stage silently behaving as though the city had been told something it has not.
 type emptyBoard struct{}
 
-func (emptyBoard) Named(string, string) bool  { return false }
-func (emptyBoard) Pinned(string, string) bool { return false }
+func (emptyBoard) CountNamed(string, string) int         { return 0 }
+func (emptyBoard) Pinned(string, string) bool            { return false }
+func (emptyBoard) UsedBy(string, string) int             { return 0 }
+func (emptyBoard) GroupMembers(string) int               { return 0 }
+func (emptyBoard) CountWants(string, string, string) int { return 0 }
+func (emptyBoard) WantState(string, string) string       { return "" }
+func (emptyBoard) Connected(string, string, string) bool { return false }
+func (emptyBoard) ConnectionsFrom(string) int            { return 0 }
 
 // currentBoard is swapped in by the server at startup. A package-level hook
 // rather than a parameter threaded through applyControl, because every existing
@@ -93,12 +120,14 @@ func doInspect(state *GameState, stage *Stage, in ControlInput) (map[string]any,
 
 	if dev, ok := stage.Devices[id]; ok {
 		out := map[string]any{"device": id, "on": dev.IsOn(), "label": dev.Label}
-		// What this one is watching the city for — the thing fortress1 asks the
-		// player to read off it.
-		if c := dev.Reads; c != nil {
-			out["reads_subtype"] = c.Subtype
-			out["reads_value"] = c.Value
-			out["reads_pinned"] = c.Pinned
+		// What this one is watching the city for, and the one job outstanding —
+		// the thing fortress1 asks the player to read off it. Whatever kind of
+		// condition it turns out to be: the device answers, this only relays.
+		if checks := dev.Checks(); len(checks) > 0 {
+			out["checks"] = checks
+		}
+		if need := dev.Need(); need != "" {
+			out["need"] = need
 		}
 		return out, nil
 	}

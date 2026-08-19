@@ -1,0 +1,150 @@
+id: fortress14
+title: "The Name in the Middle"
+description: |
+  The figure coming out of the smelter is worth having again. Act 1 was about
+  putting somebody else's name back on the board; this is the same move on
+  something you made an hour ago, standing in the middle of a chain you built.
+rooms:
+  - { id: smelter_gallery, label: "The Smelter Gallery" }
+  - { id: casting_hall, label: "The Casting Hall",
+      door: { id: casting_door, device: middle_anchor } }
+  - { id: mould_floor, label: "The Mould Floor",
+      door: { id: mould_door, device: seeded_from_middle } }
+devices:
+  middle_anchor:
+    label: "Middle Anchor"
+    # Pinned, and not merely named: the smelter's output is on the board only for
+    # as long as the smelter refers to it, which is fortress2's lesson pointed at
+    # something the player produced rather than something they inherited.
+    reads_thing:
+      subtype: level
+      value: "6"
+      pinned: true
+    need_hint: |
+      The value in the middle of your chain is the smelter's output. Pin it and
+      it stands on the board on its own — not for as long as the smelter happens
+      to be running.
+  seeded_from_middle:
+    label: "Mould Register"
+    # Two users: the smelter that made it, and the mould built from its tile.
+    reads_thing_used_by:
+      subtype: level
+      value: "6"
+      min_users: 2
+    need_hint: |
+      Build the mould's want from the pinned tile, so it arrives holding the
+      value instead of being told it afterwards.
+achievement_defs:
+  - id: read_the_middle
+    when: { actor: you, action: inspect, target: middle_anchor, result: ok }
+next_goal_rules:
+  - if_missing: read_the_middle
+    goal:
+      text: "Something in the middle of your chain is worth keeping"
+      hint: |
+        rpg_control_system actor=you action=inspect target=middle_anchor
+        Then look at what the smelter is putting out:
+          mywant wants get smelter
+  - if_missing: middle_anchor_running
+    goal:
+      text: "Pin the smelter's output"
+      hint: |
+        Pin it:
+          GUI: Thing → the level 6 card → Pin
+          CLI: mywant thing label levels::6 mywant.io/canvas true
+        The same act as Lira, on a value you made yourself.
+  - if_missing: seeded_from_middle_running
+    goal:
+      text: "Build the mould from that tile"
+      hint: |
+        Start from the pinned tile, as you did at the relay:
+          GUI: the level 6 tile → Add Want from here → rpg_fixture → deploy
+          CLI: mywant wants create -t rpg_fixture -i   (and answer level: 6)
+        A named tile standing in the middle of a chain, with roads on both sides
+        of it — that is Act 1 and Act 3 on one board.
+  - if_missing: reached_mould_floor
+    goal:
+      text: "The mould has its figure. Go through"
+      hint: "rpg_control_system actor=you action=move target=mould_floor"
+next_stage: fortress15
+narrations:
+  - match: { actor: city, action: answered, target: seeded_from_middle }
+    on_success: |
+      The tile stands in the middle of your own chain now, with a road running
+      into it and roads running out. Nobody handed you that value.
+    conversations:
+      - speaker: you
+        text: "This one isn't an heirloom. I made it this morning."
+      - speaker: chap
+        text: "It is on the board the same way hers is. The board does not care where a name came from."
+    lore: |
+      The two halves of this world are one thing. A value you derive can be named
+      and pinned exactly like a value you inherit, and once it is, it can seed the
+      next want — which is how a chain stops being a chain and starts being a
+      district.
+  - match: { action: observe }
+    situation: |
+      Your chain, running, with a figure passing through the middle of it that
+      exists only while both roads stand.
+    conversations:
+      - speaker: you
+        text: "If I break either road, that number is gone."
+      - speaker: chap
+        text: "Yes. Unless you say otherwise."
+locales:
+  ja:
+    title: "真ん中の名前"
+    description: |
+      炉から出てくる数字は、また使う価値がある。第一幕は他人の名前を
+      盤面に戻す話だった。これは同じ手を、一時間前に自分が作ったもの——
+      自分で組んだ連なりの真ん中に立っているもの——に対して打つ話だ。
+    waypoints:
+      smelter_gallery: { label: "炉の回廊" }
+      casting_hall: { label: "鋳造室" }
+      mould_floor: { label: "鋳型の床" }
+    next_goal_rules:
+      - goal:
+          text: "自分の連なりの真ん中に、取っておく価値のあるものがある"
+          hint: |
+            rpg_control_system actor=you action=inspect target=middle_anchor
+            それから炉が何を出しているか見る:
+              mywant wants get smelter
+      - goal:
+          text: "炉の出力を pin しよう"
+          hint: |
+            pin する:
+              GUI: Thing → level 6 のカード → Pin
+              CLI: mywant thing label levels::6 mywant.io/canvas true
+            Lira にしたのと同じ手を、自分で作った値に。
+      - goal:
+          text: "そのタイルから鋳型を建てよう"
+          hint: |
+            中継のときと同じく、pin したタイルから始める:
+              GUI: level 6 のタイル → ここから want を追加 → rpg_fixture → deploy
+              CLI: mywant wants create -t rpg_fixture -i  （level に 6 と答える）
+            連なりの真ん中に名前の付いたタイルが立ち、その両側に道がある——
+            それが第一幕と第三幕を一つの盤面に載せたもの。
+      - goal:
+          text: "鋳型に数字が入った。進もう"
+          hint: "rpg_control_system actor=you action=move target=mould_floor"
+    narrations:
+      - on_success: |
+          タイルは今、自分の連なりの真ん中に立っている。入ってくる道があり、
+          出ていく道がある。この値は誰にも手渡されていない。
+        conversations:
+          - speaker: you
+            text: "これは形見じゃない。今朝作った。"
+          - speaker: chap
+            text: "彼女のと同じ形で盤面にあります。名前がどこから来たかを盤面は気にしません。"
+        lore: |
+          この world の二つの半分は一つのものだ。導出した値も、受け継いだ値と
+          全く同じに名付けて pin でき、そうすれば次の want の種になる——
+          連なりが連なりであることをやめ、区画になり始めるのはそこから。
+      - situation: |
+          動いている自分の連なり。その真ん中を、両方の道が立っている間だけ
+          存在する数字が通っている。
+        conversations:
+          - speaker: you
+            text: "どっちかの道を切ったら、この数字は消える。"
+          - speaker: chap
+            text: "はい。あなたがそうでないと言わない限りは。"

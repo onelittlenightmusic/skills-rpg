@@ -1,7 +1,5 @@
 package server
 
-import "encoding/json"
-
 const SchemaVersion = 1
 
 type GameState struct {
@@ -30,10 +28,15 @@ type Chap struct {
 }
 
 type Stage struct {
-	ID              string               `yaml:"id" json:"id"`
-	Title           string               `yaml:"title" json:"title"`
-	Description     string               `yaml:"description,omitempty" json:"description,omitempty"`
-	InitialPosition string               `yaml:"initial_position" json:"initial_position"`
+	ID              string `yaml:"id" json:"id"`
+	Title           string `yaml:"title" json:"title"`
+	Description     string `yaml:"description,omitempty" json:"description,omitempty"`
+	InitialPosition string `yaml:"initial_position" json:"initial_position"`
+	// Rooms is the stage's spine in shorthand — see stage_rooms.go. Waypoints,
+	// doors, the achievements for entering a room and for a reader coming alive,
+	// and cleared_when are all derived from it at load. Empty on a stage that
+	// writes them out longhand.
+	Rooms           []Room               `yaml:"rooms,omitempty" json:"rooms,omitempty"`
 	Waypoints       map[string]*Waypoint `yaml:"waypoints" json:"waypoints"`
 	Doors           map[string]*Door     `yaml:"doors,omitempty" json:"doors,omitempty"`
 	Devices         map[string]*Device   `yaml:"devices,omitempty" json:"devices,omitempty"`
@@ -67,8 +70,8 @@ type MywantSetupWant struct {
 	Type   string            `yaml:"type" json:"type"`
 	Labels map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
 	// Owner is the name of the parent want (ownerReference controller).
-	Owner  string            `yaml:"owner,omitempty" json:"owner,omitempty"`
-	Params map[string]any    `yaml:"params,omitempty" json:"params,omitempty"`
+	Owner  string         `yaml:"owner,omitempty" json:"owner,omitempty"`
+	Params map[string]any `yaml:"params,omitempty" json:"params,omitempty"`
 }
 
 // MywantHook reacts to lifecycle events pushed from mywant (e.g. want_created).
@@ -79,16 +82,16 @@ type MywantSetupWant struct {
 // Dynamic hooks are registered via rpg_hook want type and arrive with Rule.Metadata
 // in the payload — those bypass static matching entirely.
 type MywantHook struct {
-	Event                string            `yaml:"event" json:"event"`
-	MatchName            string            `yaml:"match_name,omitempty" json:"match_name,omitempty"`
-	MatchType            string            `yaml:"match_type,omitempty" json:"match_type,omitempty"`
-	MatchLabel           map[string]string `yaml:"match_label,omitempty" json:"match_label,omitempty"`
-	MatchOwner           string            `yaml:"match_owner,omitempty" json:"match_owner,omitempty"`
-	MatchChildRole       string            `yaml:"match_child_role,omitempty" json:"match_child_role,omitempty"`
-	SkipIfAchievement    string            `yaml:"skip_if_achievement,omitempty" json:"skip_if_achievement,omitempty"`
-	RequireAchievements  []string          `yaml:"require_achievements,omitempty" json:"require_achievements,omitempty"`
-	Activate             string            `yaml:"activate,omitempty" json:"activate,omitempty"`
-	Run                  []string          `yaml:"run,omitempty" json:"run,omitempty"`
+	Event               string            `yaml:"event" json:"event"`
+	MatchName           string            `yaml:"match_name,omitempty" json:"match_name,omitempty"`
+	MatchType           string            `yaml:"match_type,omitempty" json:"match_type,omitempty"`
+	MatchLabel          map[string]string `yaml:"match_label,omitempty" json:"match_label,omitempty"`
+	MatchOwner          string            `yaml:"match_owner,omitempty" json:"match_owner,omitempty"`
+	MatchChildRole      string            `yaml:"match_child_role,omitempty" json:"match_child_role,omitempty"`
+	SkipIfAchievement   string            `yaml:"skip_if_achievement,omitempty" json:"skip_if_achievement,omitempty"`
+	RequireAchievements []string          `yaml:"require_achievements,omitempty" json:"require_achievements,omitempty"`
+	Activate            string            `yaml:"activate,omitempty" json:"activate,omitempty"`
+	Run                 []string          `yaml:"run,omitempty" json:"run,omitempty"`
 }
 
 // MywantRuleRef is the rule info embedded in the lifecycle payload by mywant
@@ -143,37 +146,12 @@ type Waypoint struct {
 }
 
 type Door struct {
-	Between [2]string `yaml:"between" json:"between"`
+	Between         [2]string `yaml:"between" json:"between"`
 	Open            bool      `yaml:"open" json:"open"`
 	Locked          bool      `yaml:"locked" json:"locked"`
 	Key             string    `yaml:"key,omitempty" json:"key,omitempty"`
 	RequiresDevice  string    `yaml:"requires_device,omitempty" json:"requires_device,omitempty"`
 	BlockedByDevice string    `yaml:"blocked_by_device,omitempty" json:"blocked_by_device,omitempty"`
-}
-
-// ThingCond names a value the world has to know about.
-//
-// The value is written here, plainly. An earlier version let a door defer to an
-// item instead — `from_item: lira_mark` — so that the card would not give away
-// a name the player was meant to go and read. What it gave away instead was an
-// internal id: "name the person on lira_mark" means nothing to somebody seeing
-// this for the first time, and no wording rescued it. A door that says which
-// name is missing can be understood; a door that says which item holds it
-// cannot.
-type ThingCond struct {
-	Subtype string `yaml:"subtype,omitempty" json:"subtype,omitempty"`
-	Value   string `yaml:"value,omitempty" json:"value,omitempty"`
-	// Pinned asks for the stronger fact: not merely known to the city, but
-	// standing on the board because the player put it there.
-	Pinned bool `yaml:"pinned,omitempty" json:"pinned,omitempty"`
-}
-
-// Want returns the value this condition is about.
-func (c *ThingCond) Want(*Stage) string {
-	if c == nil {
-		return ""
-	}
-	return c.Value
 }
 
 type Device struct {
@@ -193,46 +171,26 @@ type Device struct {
 	// city itself was a second, parallel mechanism for the same idea, with the
 	// judgement in the one place nobody would look for it.
 	Reads *ThingCond `yaml:"reads_thing,omitempty" json:"reads_thing,omitempty"`
-}
-
-// IsOn reports whether the device is running.
-//
-// A registry reader is running while the city holds what it is watching for;
-// everything else keeps the switch chap flips.
-func (d *Device) IsOn() bool {
-	if d == nil {
-		return false
-	}
-	if c := d.Reads; c != nil {
-		if c.Pinned {
-			return currentBoard.Pinned(c.Subtype, c.Value)
-		}
-		return currentBoard.Named(c.Subtype, c.Value)
-	}
-	return d.On
-}
-
-// MarshalJSON reports the device as it actually stands — clients read `on` out
-// of the state, and a reader's answer has to be what they get.
-//
-// A reader also reports the two halves of its answer separately, because they
-// are two different jobs for the player and "off" does not say which one is
-// outstanding. A name the city has never heard of cannot be pinned; telling
-// somebody to pin it is telling them to do the impossible in the wrong order.
-func (d Device) MarshalJSON() ([]byte, error) {
-	type plain Device
-	out := struct {
-		plain
-		On     bool  `json:"on"`
-		Named  *bool `json:"reads_named,omitempty"`
-		Pinned *bool `json:"reads_is_pinned,omitempty"`
-	}{plain: plain(d), On: d.IsOn()}
-	if c := d.Reads; c != nil {
-		named := currentBoard.Named(c.Subtype, c.Value)
-		pinned := currentBoard.Pinned(c.Subtype, c.Value)
-		out.Named, out.Pinned = &named, &pinned
-	}
-	return json.Marshal(out)
+	// ReadsUsed makes this device a meter on the roads leaving a thing tile: it
+	// runs once the value is named by at least MinUsers live wants. The board
+	// draws one road per user, so what the meter reads is what the player can
+	// count.
+	ReadsUsed *UsageCond `yaml:"reads_thing_used_by,omitempty" json:"reads_thing_used_by,omitempty"`
+	// ReadsGroup runs on a group holding enough members: one name standing for
+	// many values.
+	ReadsGroup *GroupCond `yaml:"reads_group,omitempty" json:"reads_group,omitempty"`
+	// ReadsWant runs on wants matching a description being present — or, with
+	// `absent`, gone.
+	ReadsWant *WantCond `yaml:"reads_want,omitempty" json:"reads_want,omitempty"`
+	// ReadsState runs on what a want is actually producing, rather than on
+	// whether it is running.
+	ReadsState *StateCond `yaml:"reads_want_state,omitempty" json:"reads_want_state,omitempty"`
+	// ReadsConn runs on a road between two wants.
+	ReadsConn *ConnCond `yaml:"reads_connection,omitempty" json:"reads_connection,omitempty"`
+	// NeedHint is the stage's own sentence about HOW, appended to the generated
+	// statement of what is outstanding. The condition knows the city is missing
+	// a level; only the stage knows there is a sluice over there to type it into.
+	NeedHint string `yaml:"need_hint,omitempty" json:"need_hint,omitempty"`
 }
 
 type Item struct {

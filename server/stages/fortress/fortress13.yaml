@@ -1,0 +1,141 @@
+id: fortress13
+title: "The Value Nobody Makes"
+description: |
+  The assay door wants a figure that exists nowhere in this city. Nothing holds
+  it, nothing produces it, and no amount of reading cards will find it — because
+  it is not held anywhere. It is what you get when one thing's output goes
+  through another and comes out the far side.
+rooms:
+  - { id: ore_floor, label: "The Ore Floor" }
+  - { id: assay_landing, label: "The Assay Landing",
+      door: { id: assay_gate, device: chain_reader } }
+devices:
+  chain_reader:
+    label: "Chain Reader"
+    # One condition, three wants: the reader names the whole run, and its checks
+    # show which hop is missing. A player who has only built one road at a time
+    # needs to see that a chain is the same move done twice.
+    reads_connection:
+      chain: [ore_face, smelter, assay_feed]
+    need_hint: |
+      No single want here holds what the door wants. Build the run one road at a
+      time — the reader's ticks show which hop is still missing.
+achievement_defs:
+  - id: read_the_chain
+    when: { actor: you, action: inspect, target: chain_reader, result: ok }
+next_goal_rules:
+  - if_missing: read_the_chain
+    goal:
+      text: "The door wants a figure nothing in the city holds. Read the run"
+      hint: |
+        rpg_control_system actor=you action=inspect target=chain_reader
+          mywant wants get ore_face
+          mywant wants get smelter
+          mywant wants get assay_feed
+        One produces, one transforms, one delivers. None of them holds the
+        answer on its own.
+  - if_missing: chain_reader_running
+    goal:
+      text: "Build the run: face to smelter, smelter to feed"
+      hint: |
+        Two roads, one at a time:
+          mywant wants connect ore_face smelter
+          mywant wants connect smelter assay_feed
+        The reader ticks each hop as it lands, so you can watch the run close.
+  - if_missing: reached_assay_landing
+    goal:
+      text: "The figure reaches the door. Go through"
+      hint: "rpg_control_system actor=you action=move target=assay_landing"
+next_stage: fortress14
+mywant_setup:
+  cleanup_label:
+    game: fortress13
+  wants:
+    - name: ore_face
+      type: rpg_fixture
+      labels: { game: fortress13, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "121" }
+      params: { label: "Ore Face", level: "2" }
+    - name: smelter
+      type: rpg_fixture
+      labels: { game: fortress13, "mywant.io/canvas-x": "2", "mywant.io/canvas-y": "121" }
+      params: { label: "Smelter", level: "6" }
+    - name: assay_feed
+      type: rpg_fixture
+      labels: { game: fortress13, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "121" }
+      params: { label: "Assay Feed" }
+narrations:
+  - match: { actor: city, action: answered, target: chain_reader }
+    on_success: |
+      Two roads, end to end, and a figure comes out of the far end of them that
+      was not in the city when you started.
+    conversations:
+      - speaker: you
+        text: "I looked for it everywhere."
+      - speaker: chap
+        text: "It was not anywhere. It was derivable, which is a different thing to be."
+    lore: |
+      A chain is not a bigger want. It is the same statement twice — this feeds
+      that — and what comes out the end of it is a value nobody stored, held
+      up by the roads for as long as they stand.
+  - match: { action: observe }
+    situation: |
+      A rock face, a smelter, a feed pipe, and a door asking for a number none of
+      them has ever shown.
+    conversations:
+      - speaker: you
+        text: "Nothing here has it."
+      - speaker: chap
+        text: "Nothing here has it yet."
+locales:
+  ja:
+    title: "誰も作らない値"
+    description: |
+      検定扉が求める数字は、この都市のどこにも存在しない。
+      持っているものも、作っているものも無く、カードを何枚読んでも見つからない——
+      どこにも保持されていないからだ。それは、あるものの出力を別のものに通し、
+      向こう側から出てきたときに得られるものだ。
+    waypoints:
+      ore_floor: { label: "鉱床の床" }
+      assay_landing: { label: "検定の踊り場" }
+    next_goal_rules:
+      - goal:
+          text: "扉が求める数字を、都市の何も持っていない。連なりを読もう"
+          hint: |
+            rpg_control_system actor=you action=inspect target=chain_reader
+              mywant wants get ore_face
+              mywant wants get smelter
+              mywant wants get assay_feed
+            一つが作り、一つが変え、一つが届ける。
+            単体で答えを持っているものは無い。
+      - goal:
+          text: "連なりを作ろう: 鉱床から炉へ、炉から送りへ"
+          hint: |
+            道を二本、一本ずつ:
+              mywant wants connect ore_face smelter
+              mywant wants connect smelter assay_feed
+            reader は繋がるたびに一つずつ印を付けるので、
+            連なりが閉じるのを見ていられる。
+      - goal:
+          text: "数字が扉に届いた。進もう"
+          hint: "rpg_control_system actor=you action=move target=assay_landing"
+    narrations:
+      - on_success: |
+          道が二本、端と端で繋がり、その向こう端から、始めたときには都市に
+          無かった数字が出てくる。
+        conversations:
+          - speaker: you
+            text: "どこもかしこも探したのに。"
+          - speaker: chap
+            text: "どこにも無かったのです。導出可能だった、というのはそれとは別のことです。"
+        lore: |
+          連なりは大きな want ではない。同じ主張を二回——これがあれを養う——
+          しただけであり、その端から出てくるのは誰も保存していない値であって、
+          道が立っている間だけ支えられている。
+      - situation: |
+          岩の切羽、炉、送り管、そしてそのどれも見せたことのない数字を
+          求めている扉。
+        conversations:
+          - speaker: you
+            text: "ここの何も持ってない。"
+          - speaker: chap
+            text: "まだ持っていません。"

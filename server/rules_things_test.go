@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -12,17 +13,60 @@ import (
 type fakeBoard struct {
 	named  map[string]bool
 	pinned map[string]bool
+	used   map[string]int
+	groups map[string]int
+	wants  map[string]int
+	roads  map[string]bool
+	states map[string]string
 	fail   bool
 }
 
 func newFakeBoard() *fakeBoard {
-	return &fakeBoard{named: map[string]bool{}, pinned: map[string]bool{}}
+	return &fakeBoard{
+		named:  map[string]bool{},
+		pinned: map[string]bool{},
+		used:   map[string]int{},
+		groups: map[string]int{},
+		wants:  map[string]int{},
+		roads:  map[string]bool{},
+		states: map[string]string{},
+	}
 }
 
 func fbKey(subtype, value string) string { return subtype + "::" + value }
 
-func (b *fakeBoard) Named(s, v string) bool  { return b.named[fbKey(s, v)] }
-func (b *fakeBoard) Pinned(s, v string) bool { return b.pinned[fbKey(s, v)] }
+func (b *fakeBoard) CountNamed(s, v string) int {
+	if b.named[fbKey(s, v)] {
+		return 1
+	}
+	if v == "" {
+		n := 0
+		for k := range b.named {
+			if strings.HasPrefix(k, s+"::") {
+				n++
+			}
+		}
+		return n
+	}
+	return 0
+}
+func (b *fakeBoard) Pinned(s, v string) bool   { return b.pinned[fbKey(s, v)] }
+func (b *fakeBoard) UsedBy(s, v string) int    { return b.used[fbKey(s, v)] }
+func (b *fakeBoard) GroupMembers(n string) int { return b.groups[n] }
+func (b *fakeBoard) CountWants(t, n, st string) int {
+	return b.wants[t+"::"+n+"::"+st]
+}
+func (b *fakeBoard) Connected(f, t, field string) bool { return b.roads[f+"→"+t] }
+func (b *fakeBoard) WantState(n, f string) string      { return b.states[n+"."+f] }
+func (b *fakeBoard) ConnectionsFrom(n string) int {
+	c := 0
+	for k := range b.roads {
+		if strings.HasPrefix(k, n+"→") {
+			c++
+		}
+	}
+	return c
+}
 func (b *fakeBoard) Name(s, v string) (string, error) {
 	if b.fail {
 		return "", fmt.Errorf("no city")
@@ -69,7 +113,7 @@ func markStage(cond string) *Stage {
 		},
 		Doors:   map[string]*Door{"gate": d},
 		Devices: map[string]*Device{"registry": dev},
-		Items: map[string]*Item{"lira_mark": {HeldBy: "you", Value: "Lira"}},
+		Items:   map[string]*Item{"lira_mark": {HeldBy: "you", Value: "Lira"}},
 	}
 }
 

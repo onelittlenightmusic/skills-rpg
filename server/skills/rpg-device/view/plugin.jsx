@@ -104,19 +104,16 @@ function DeviceSection({ want, isFocused, isExpanded }) {
 
   const held = blocked && blockedBy;
 
-  // What a registry reader is waiting for, in the two states that are two
-  // different jobs. Every other device is switched by chap and has nothing to
-  // say here; this one cannot be switched at all, so if the card does not say
-  // what the city is missing, nothing does.
-  const readsKind   = state.reads_subtype || '';
-  const readsValue  = state.reads_value || '';
-  const needsPin    = state.reads_pinned === true;
-  const isNamed     = state.reads_named === true;
-  const isPinned    = state.reads_is_pinned === true;
-  const needText = !readsKind ? ''
-    : !isNamed  ? `add a ${readsKind} called ${readsValue} to the registry`
-    : needsPin && !isPinned ? `${readsValue} is in the registry — pin it`
-    : '';
+  // What a reader is waiting for. Every other device is switched by chap and has
+  // nothing to say here; this one cannot be switched at all, so if the card does
+  // not say what the city is missing, nothing does.
+  //
+  // Both lines come from the server, which is where the condition lives: the
+  // ticks are its parts, each answered on its own, and the sentence is the one
+  // job outstanding. This file renders them and knows nothing about what kind of
+  // condition produced them.
+  const checks = Array.isArray(state.checks) ? state.checks : [];
+  const needText = state.need || '';
 
   return window.__mywant.createCardLayout({
     className: 'rounded-lg overflow-hidden',
@@ -154,16 +151,15 @@ function DeviceSection({ want, isFocused, isExpanded }) {
       },
         React.createElement(Art, { status: artStatus, label }),
       ),
-      readsKind && React.createElement('div', {
+      checks.length > 0 && React.createElement('div', {
         style: {
           display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0,
           fontFamily: P.mono, fontSize: 8, lineHeight: 1.3,
         },
       },
-        React.createElement('div', { style: { color: isNamed ? P.ok : P.bad } },
-          `${isNamed ? '✓' : '✗'} ${readsKind}: ${readsValue}`),
-        needsPin && React.createElement('div', { style: { color: isPinned ? P.ok : P.bad } },
-          `${isPinned ? '✓' : '✗'} pinned`),
+        ...checks.map((c, i) => React.createElement('div', {
+          key: i, style: { color: c.ok ? P.ok : P.bad },
+        }, `${c.ok ? '✓' : '✗'} ${c.label}`)),
       ),
       doorStrip,
     ),

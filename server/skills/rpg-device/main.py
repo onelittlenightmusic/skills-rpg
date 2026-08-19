@@ -100,10 +100,6 @@ def control(action: str, target: str) -> str:
     return data.get("reason") or "rejected"
 
 
-def name_of(view) -> str:
-    return view.get("reads_value") or ""
-
-
 def survey(state, stage_id, device_id):
     """The device, and every door it gates, as the card needs them."""
     stage = state.get("stages", {}).get(stage_id, {})
@@ -133,21 +129,16 @@ def survey(state, stage_id, device_id):
                 "locked": bool(door.get("locked", True)),
             })
 
-    # A registry reader is not switched by anybody: it runs while the city holds
-    # what it is watching for. The card has to say so, because this is the one
-    # device whose "off" is not a switch somebody forgot to flip — it is a name
-    # the city has not been told, and the player is the only one who can tell it.
-    reads = device.get("reads_thing") or {}
-
+    # A reader is not switched by anybody: it runs while the city is in some
+    # state, and the player is the only one who can put it there. So the card
+    # carries two things the server worked out — `checks`, the parts of the
+    # condition each answered on its own, and `need`, the one job outstanding —
+    # and reproduces neither. Whatever kind of condition a new stage invents,
+    # this passes it through unchanged.
     return {
         "on": bool(device.get("on")),
-        "reads_subtype": reads.get("subtype") or "",
-        "reads_value": reads.get("value") or "",
-        "reads_pinned": bool(reads.get("pinned")),
-        # The two halves, so the card can name the job that is actually
-        # outstanding rather than the one the condition happens to mention.
-        "reads_named": bool(device.get("reads_named")),
-        "reads_is_pinned": bool(device.get("reads_is_pinned")),
+        "checks": device.get("checks") or [],
+        "need": device.get("need") or "",
         "label": device.get("label") or device_id,
         "blocked_by": blocked_by,
         "blocked": blocked,
@@ -202,19 +193,14 @@ def observe(arg: dict) -> dict:
         summary = f"{desired}: {error}"
     elif view["blocked"]:
         summary = f'{view["label"]} is held by {view["blocked_by"]}'
-    elif view["reads_subtype"] and not view["on"]:
-        # Names the job that is actually outstanding. A value the city has never
-        # heard of cannot be pinned, so a reader wanting a pinned name has two
-        # different things to ask for and only one of them is true at a time —
-        # saying "pin it" to somebody who has nothing to pin sends them looking
-        # for a button that is not there.
-        kind, name = view["reads_subtype"], view["reads_value"]
-        if not view["reads_named"]:
-            summary = f'no {kind} called {name} in the registry — add one'
-        else:
-            summary = f'{name} is in the registry but not pinned — pin it'
-    elif view["reads_subtype"]:
-        summary = f'reading {name_of(view)} — powered'
+    elif view["need"]:
+        # The server's own sentence, in the imperative, naming the job that is
+        # actually outstanding — not the whole condition. Written where the
+        # condition lives, so it is right for kinds this script has never heard
+        # of.
+        summary = view["need"]
+    elif view["checks"]:
+        summary = f'{view["label"]} — powered'
     else:
         summary = f'{view["label"]} is {"on" if view["on"] else "off"}'
 

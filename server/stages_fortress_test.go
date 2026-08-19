@@ -109,6 +109,31 @@ func TestFortressChainIsWhole(t *testing.T) {
 	}
 }
 
+// Every stage file has to be on the chain that starts at the world's first
+// stage. A stage nobody walks into is a stage nobody plays — and the canvas
+// generator walks that same chain, so an orphan is also a stage with no board.
+func TestFortressChainReachesEveryStage(t *testing.T) {
+	stages, _ := loadFortress(t)
+
+	seen := map[string]bool{}
+	for id := "fortress1"; id != ""; {
+		if seen[id] {
+			t.Fatalf("the chain loops at %s", id)
+		}
+		seen[id] = true
+		st, ok := stages[id]
+		if !ok {
+			t.Fatalf("the chain runs into %q, which does not exist", id)
+		}
+		id = st.NextStage
+	}
+	for id := range stages {
+		if !seen[id] {
+			t.Errorf("%s is written but nothing leads to it", id)
+		}
+	}
+}
+
 // The Japanese locale is the one most players will read. A stage that ships
 // without it silently falls back to English mid-sentence.
 func TestFortressHasJapaneseLocale(t *testing.T) {
@@ -158,7 +183,7 @@ func TestFortressStagesAreWalkable(t *testing.T) {
 				continue
 			}
 			dev := st.Devices[d.RequiresDevice]
-			if dev == nil || dev.Reads == nil {
+			if dev == nil || dev.cond() == nil {
 				continue
 			}
 			if !noticed[d.RequiresDevice] {

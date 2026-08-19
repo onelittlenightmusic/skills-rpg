@@ -1,0 +1,156 @@
+id: fortress10
+title: "Mouths"
+description: |
+  The Keymakers' workshop, left as it was. The wants standing here have openings
+  on them — small marks on one side and the other — and you have been walking
+  past them since the dungeon reading them as decoration. They are not. One side
+  offers a value; the other asks for one; and they are the only places anything
+  can be attached.
+rooms:
+  - { id: workshop_floor, label: "The Workshop Floor" }
+  - { id: fitting_room, label: "The Fitting Room",
+      door: { id: fitting_door, device: fitting_shutter } }
+devices:
+  # A switch, not a reader. There is nothing in the city for this to read: the
+  # stage asks the player to understand something, and understanding is not a
+  # fact mywant holds. So the door takes an ordinary device, chap works it, and
+  # what stands between the player and the next room is the goal list — read
+  # both benches, then go.
+  fitting_shutter:
+    label: "Fitting Shutter"
+    on: false
+items:
+  fitting_gauge:
+    held_by: you
+    value: "level"
+achievement_defs:
+  - id: read_the_offer
+    when: { actor: you, action: inspect, target: fitting_shutter, result: ok }
+  - id: read_the_gauge
+    when: { actor: you, action: inspect, target: fitting_gauge, result: ok }
+  - id: shutter_up
+    when: { actor: chap, action: activate, target: fitting_shutter, result: ok }
+next_goal_rules:
+  - if_missing: read_the_offer
+    goal:
+      text: "Two benches, and marks on both of them you have never read"
+      hint: |
+        Read the shutter first, then the benches on the board:
+          rpg_control_system actor=you action=inspect target=fitting_shutter
+          mywant wants get offer_bench
+          mywant wants get intake_bench
+        One of them holds a value it can hand on. The other has a field standing
+        empty, waiting to be handed one.
+  - if_missing: read_the_gauge
+    goal:
+      text: "Read the gauge in your hand. It says which kind travels"
+      hint: "rpg_control_system actor=you action=inspect target=fitting_gauge"
+  - if_missing: shutter_up
+    goal:
+      text: "You can say which two would join. Have chap open the shutter"
+      hint: |
+        Nothing gets connected here — this stage is the reading.
+          rpg_control_system actor=chap action=activate target=fitting_shutter
+  - if_missing: reached_fitting_room
+    goal:
+      text: "Go through"
+      hint: "rpg_control_system actor=you action=move target=fitting_room"
+next_stage: fortress11
+mywant_setup:
+  cleanup_label:
+    game: fortress10
+  wants:
+    - name: offer_bench
+      type: rpg_fixture
+      labels: { game: fortress10, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "91" }
+      params: { label: "Offer Bench", level: "5" }
+    - name: intake_bench
+      type: rpg_fixture
+      labels: { game: fortress10, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "91" }
+      params: { label: "Intake Bench" }
+narrations:
+  - match: { actor: chap, action: activate, target: fitting_shutter, result: ok }
+    on_success: |
+      The shutter goes up. Behind you the two benches stand exactly as they did,
+      unconnected, and you can now see which end of one would meet which end of
+      the other.
+    conversations:
+      - speaker: you
+        text: "One of them has a level. The other has a hole where a level goes."
+      - speaker: chap
+        text: "Yes. That is all a road ever is — one of those, joined to one of those."
+      - speaker: you
+        text: "And nothing here joins them."
+      - speaker: chap
+        text: "Nothing here joins anything. That is the next room's problem."
+    lore: |
+      Every want has ends: what it offers, and what it needs. A road can only be
+      attached at those, and only where the kinds agree — the same rule as the
+      fittings in the assay hall, applied to wants instead of to values.
+  - match: { action: observe }
+    situation: |
+      Benches, tools, and two wants standing on the board with small marks along
+      their edges. Nothing is running. Nothing is broken.
+    conversations:
+      - speaker: you
+        text: "I've walked past a hundred of these."
+      - speaker: chap
+        text: "You have. The marks were on all of them."
+locales:
+  ja:
+    title: "口"
+    description: |
+      Keymakers の工房が、そのまま残っている。ここに立っている want には
+      口が付いている——縁のあちら側とこちら側にある小さな印で、
+      ダンジョンからずっと、装飾だと思って通り過ぎてきたもの。装飾ではない。
+      片側は値を差し出し、もう片側は値を求める。そして、何かを取り付けられるのは
+      その口だけだ。
+    waypoints:
+      workshop_floor: { label: "工房の床" }
+      fitting_room: { label: "取付室" }
+    next_goal_rules:
+      - goal:
+          text: "作業台が二つ。どちらにも、読んだことのない印がある"
+          hint: |
+            まずシャッターを読み、それから盤面の作業台を読む:
+              rpg_control_system actor=you action=inspect target=fitting_shutter
+              mywant wants get offer_bench
+              mywant wants get intake_bench
+            片方は渡せる値を持っている。もう片方は欄が空いていて、
+            渡されるのを待っている。
+      - goal:
+          text: "手元のゲージを読もう。どの種類が流れるかが書いてある"
+          hint: "rpg_control_system actor=you action=inspect target=fitting_gauge"
+      - goal:
+          text: "どの二つが繋がりうるか言える。chap にシャッターを上げてもらおう"
+          hint: |
+            ここでは何も繋がない——このステージは読むことそのもの。
+              rpg_control_system actor=chap action=activate target=fitting_shutter
+      - goal:
+          text: "進もう"
+          hint: "rpg_control_system actor=you action=move target=fitting_room"
+    narrations:
+      - on_success: |
+          シャッターが上がる。背後で二つの作業台はさっきと全く同じに、
+          繋がらないまま立っていて、そして今はどちらの口がどちらの口に合うかが見える。
+        conversations:
+          - speaker: you
+            text: "片方は level を持ってる。もう片方は level が入る穴を持ってる。"
+          - speaker: chap
+            text: "はい。道とは常にそれだけのものです——その一方を、その一方に繋いだもの。"
+          - speaker: you
+            text: "で、ここには繋ぐものが無い。"
+          - speaker: chap
+            text: "ここには何も繋ぐものがありません。それは次の部屋の問題です。"
+        lore: |
+          want には口がある——差し出すものと、求めるもの。
+          道はその口にしか取り付けられず、種類が合う所にしか付かない——
+          検定室の取り付け口と同じ規則を、値ではなく want に適用したものだ。
+      - situation: |
+          作業台、工具、そして縁に小さな印を並べた want が二つ、盤面に立っている。
+          動いているものは無い。壊れているものも無い。
+        conversations:
+          - speaker: you
+            text: "こういうのを百は通り過ぎてきた。"
+          - speaker: chap
+            text: "はい。印はその全部に付いていました。"

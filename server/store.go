@@ -122,6 +122,9 @@ func loadStagesFromFS(f fs.FS, root string) (map[string]*Stage, map[string]map[s
 		if raw.ID == "" {
 			return nil, nil, nil, fmt.Errorf("%s: stage missing id", name)
 		}
+		if err := ExpandRooms(&raw.Stage); err != nil {
+			return nil, nil, nil, err
+		}
 		out[raw.ID] = &raw.Stage
 		if len(raw.Locales) > 0 {
 			locales[raw.ID] = raw.Locales

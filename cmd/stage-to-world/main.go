@@ -291,6 +291,13 @@ func loadStages(dir string) ([]*server.Stage, error) {
 		if err := yaml.Unmarshal(data, &st); err != nil {
 			return nil, fmt.Errorf("%s: %w", f, err)
 		}
+		// A stage may write its rooms in shorthand; the waypoints and doors
+		// this lays out are the ones that expands to. Without this a stage
+		// using `rooms:` reads here as a stage with no rooms at all, and drops
+		// off the board silently.
+		if err := server.ExpandRooms(&st); err != nil {
+			return nil, fmt.Errorf("%s: %w", f, err)
+		}
 		if st.ID == "" || len(st.Waypoints) == 0 {
 			continue
 		}
@@ -642,7 +649,7 @@ func deviceWant(stage *server.Stage, devID string, at cell, controllable bool) w
 	// A registry reader answers to the city and to nobody else, so it is never
 	// clickable. A switch on it would be a switch that does nothing — or worse,
 	// one that looks like the way past a door whose real answer is in mywant.
-	if dev := stage.Devices[devID]; dev != nil && dev.Reads != nil {
+	if dev := stage.Devices[devID]; dev != nil && dev.IsReader() {
 		controllable = false
 	}
 	slug := strings.ReplaceAll(devID, "_", "-")
@@ -676,7 +683,7 @@ func deviceWantType(stage *server.Stage, devID string) string {
 	// what it watches for. It is drawn as a generator because that is what it is
 	// from the door's side — the thing that has to be running — and world 1
 	// taught that reading already.
-	if dev := stage.Devices[devID]; dev != nil && dev.Reads != nil {
+	if dev := stage.Devices[devID]; dev != nil && dev.IsReader() {
 		return "rpg_generator"
 	}
 	for _, d := range stage.Doors {

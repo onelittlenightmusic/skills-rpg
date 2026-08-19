@@ -1,0 +1,130 @@
+id: fortress4
+title: "The Name You Typed"
+description: |
+  A sluice with nothing set on it, and a level to set. So far naming has been a
+  deliberate act on an heirloom, done on purpose, with ceremony. That is the rare
+  case. Type a number into a field here and the city has been told something,
+  whether or not you meant to tell it.
+rooms:
+  - { id: sluice_gallery, label: "The Sluice Gallery" }
+  - { id: tailrace, label: "The Tailrace",
+      door: { id: sluice_door, device: level_register } }
+devices:
+  level_register:
+    label: "Level Register"
+    # Any level at all. The stage is not about which number is right — it is
+    # about the fact that typing one made a thing, so dictating the value would
+    # be dictating the answer to a question the player is not being asked.
+    reads_thing:
+      subtype: level
+    need_hint: |
+      The sluice in this gallery has a level field. Set it to whatever you like —
+      the register is watching for the fact that the city now holds a level, not
+      for a particular one.
+achievement_defs:
+  - id: read_the_new_tile
+    when: { actor: you, action: inspect, target: level_register, result: ok }
+next_goal_rules:
+  - if_missing: level_register_running
+    goal:
+      text: "The sluice is unset. Set it"
+      hint: |
+        Type a level into the sluice, by hand:
+          the sluice_gate card on the board → level → type a number → save
+        Then read it back: mywant wants get sluice_gate
+        Nothing here asks you to name anything. Just set it.
+  - if_missing: read_the_new_tile
+    goal:
+      text: "The door took power. Look at the board before you go through"
+      hint: |
+        Read what the register is reading, and then look at the board itself:
+          rpg_control_system actor=you action=inspect target=level_register
+          mywant thing list
+        The number you typed is standing there as a thing, with a road back to
+        the sluice. Nobody decided to make it. You typed it.
+  - if_missing: reached_tailrace
+    goal:
+      text: "Go through"
+      hint: "rpg_control_system actor=you action=move target=tailrace"
+next_stage: fortress5
+mywant_setup:
+  cleanup_label:
+    game: fortress4
+  wants:
+    - name: sluice_gate
+      type: rpg_fixture
+      labels: { game: fortress4, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "34" }
+      params: { label: "Sluice Gate" }
+narrations:
+  - match: { actor: city, action: answered, target: level_register }
+    on_success: |
+      The sluice takes the setting and the water moves. On the board, a tile you
+      did not ask for: the number you typed, standing with the rest of them, a
+      road running back to the sluice you typed it into.
+    conversations:
+      - speaker: you
+        text: "I didn't name anything. I set a sluice."
+      - speaker: chap
+        text: "You told the city a level. It files what it is told."
+    lore: |
+      Most of the catalog was never curated. It is the record of what has been
+      typed into fields — every value that went into a want and mattered enough
+      to have a kind. The heirloom in your pocket was the exception, not the rule.
+  - match: { action: observe }
+    situation: |
+      A sluice with an empty setting, and a register beside it waiting to read one
+      off the city.
+    conversations:
+      - speaker: you
+        text: "It wants a number."
+      - speaker: chap
+        text: "It wants the city to hold a level. Where the city gets one from is not its business."
+locales:
+  ja:
+    title: "打ち込んだ名前"
+    description: |
+      何も設定されていない水門と、設定すべき水位。ここまで「名付ける」のは
+      形見に対する意図的な儀式だった。それは稀な方だ。ここで欄に数字を打ち込めば、
+      そのつもりがあろうとなかろうと、都市は一つ教えられたことになる。
+    waypoints:
+      sluice_gallery: { label: "水門廊" }
+      tailrace: { label: "放水路" }
+    next_goal_rules:
+      - goal:
+          text: "水門が未設定だ。設定しよう"
+          hint: |
+            水位を手で打ち込む:
+              盤面の sluice_gate のカード → level → 数字を入力 → 保存
+            読み返す: mywant wants get sluice_gate
+            何かを名付けろとは言っていない。設定するだけでいい。
+      - goal:
+          text: "扉に電気が来た。くぐる前に盤面を見よう"
+          hint: |
+            register が読んでいるものを読み、それから盤面そのものを見る:
+              rpg_control_system actor=you action=inspect target=level_register
+              mywant thing list
+            打ち込んだ数字が thing として立っていて、水門へ道が戻っている。
+            誰もそれを作ろうと決めていない。打ち込んだだけだ。
+      - goal:
+          text: "くぐろう"
+          hint: "rpg_control_system actor=you action=move target=tailrace"
+    narrations:
+      - on_success: |
+          水門が設定を受け取り、水が動く。盤面には頼んでいないタイルが一つ——
+          打ち込んだ数字が他の値に並んで立ち、打ち込んだ先の水門へ道が伸びている。
+        conversations:
+          - speaker: you
+            text: "名付けてない。水門を設定しただけだ。"
+          - speaker: chap
+            text: "都市に level を一つ伝えたのです。伝えられたものは記録されます。"
+        lore: |
+          カタログの大半は誰も整理していない。欄に打ち込まれたものの記録——
+          want に入り、種類を持つに値した値のすべてだ。
+          懐の形見の方が例外であって、規則ではない。
+      - situation: |
+          設定の空いた水門と、その脇で都市から水位を読もうと待っている register。
+        conversations:
+          - speaker: you
+            text: "数字が要るのか。"
+          - speaker: chap
+            text: "都市が level を持っていることを求めています。都市がどこから得たかは、これの関知するところではありません。"

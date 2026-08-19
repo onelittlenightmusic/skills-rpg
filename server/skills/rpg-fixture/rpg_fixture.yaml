@@ -1,0 +1,99 @@
+# A piece of the city's machinery — the fortress's scenery, as a want.
+#
+# World 2 is about the board, and a board needs things standing on it that the
+# player did not put there: the gate Lira signed, the pump that is draining the
+# cistern, the eight buildings in the ward. Those are wants, because everything
+# on a mywant canvas is, and this is the one type they are all made of.
+#
+# It does nothing. That is deliberate: a fixture is read, named, grouped,
+# connected and stopped, and every one of those is an operation on the want
+# rather than something the want performs. Giving it an agent would give the
+# player something to wait for, and there is nothing to wait for.
+#
+# What it does have is subtyped parameters, which is the whole point. A value
+# typed into `maker` is remembered as a person and draws a road from that
+# person's tile to this fixture — the roads fortress3 asks the player to count
+# and fortress5 asks them to get right.
+wantType:
+  metadata:
+    name: rpg_fixture
+    title: City Fixture
+    description: |
+      城塞都市に建っている物——門、ポンプ、区画の建物。
+      それ自体は何もしない。読む・名付ける・まとめる・繋ぐ・止めるという
+      board 側の操作の対象になるためのもので、fortress のステージが
+      盤面に置く道具立てはすべてこの型でできている。
+
+      subType 付きのパラメータを持つのが要点で、maker に打ち込んだ値は
+      person として覚えられ、その person のタイルからこの fixture へ
+      道が引かれる。fortress3 が数えさせ、fortress5 が取り違えさせるのは
+      その道のこと。
+    version: '1.0'
+    category: rpg
+    pattern: independent
+    labels:
+      user-control: "true"
+      type-icon: "Cog"
+      type-tone-color: "#4a4438"
+      category-icon: "Swords"
+      category-bg-light: "linear-gradient(160deg, #fca5a5 0%, #fde8d8 100%)"
+      category-bg-dark: "linear-gradient(160deg, #b91c1c 0%, #7f1d1d 100%)"
+
+  finalResultField: label
+
+  parameters:
+    - name: label
+      description: "この設備の呼び名（例: North Gate）"
+      type: string
+      required: false
+      default: ''
+    # The maker's field — the one the Empire's crews go round clearing. A value
+    # here is remembered as a person, which is what draws the road.
+    - name: maker
+      description: "作り手の名前。person として登録され、そのタイルから道が引かれる"
+      type: string
+      subType: person
+      required: false
+      default: ''
+    # What it is set to. A different kind of value, so that putting one in the
+    # other's field is a mistake the board can show.
+    - name: level
+      description: "設定値。level として登録される"
+      type: string
+      subType: level
+      required: false
+      default: ''
+    # Things this fixture is about, as ids ("people::Lira"). A want seeded from
+    # a pinned tile arrives with this already filled in.
+    - name: about
+      description: "この設備が関係する thing の id 一覧"
+      type: array
+      subType: thing_ref
+      required: false
+      default: []
+
+  state:
+    - { name: label, description: display name, type: string, label: current, persistent: true, initialValue: '' }
+    - { name: maker, description: who signed it, type: string, label: current, persistent: true, initialValue: '' }
+    - { name: level, description: what it is set to, type: string, label: current, persistent: true, initialValue: '' }
+
+  examples:
+    - title: A gate with its maker's name on it
+      description: maker に名前を入れると person として登録され、盤面に道が出る
+      want:
+        metadata:
+          name: north-gate
+          type: rpg_fixture
+        spec:
+          params:
+            label: "North Gate"
+            maker: "Lira"
+    - title: A fixture with its maker's field cleared
+      description: 削除班が通ったあとの状態。埋めるのはプレイヤー
+      want:
+        metadata:
+          name: relief-valve
+          type: rpg_fixture
+        spec:
+          params:
+            label: "Relief Valve"

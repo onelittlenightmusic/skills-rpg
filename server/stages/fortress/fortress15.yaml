@@ -1,0 +1,175 @@
+id: fortress15
+title: "Rewiring the District"
+description: |
+  The eight buildings of the ward, all of them fed from one supply, none of them
+  connected to it. Wire the first two by hand and the shape of the afternoon
+  becomes clear: eight roads, drawn one at a time, each identical to the last.
+  The dungeon had an answer to that. It applies here, to what Act 1 built.
+rooms:
+  - { id: district_yard, label: "The District Yard" }
+  - { id: shell_approach, label: "Under the Monolith",
+      door: { id: district_door, device: district_meter } }
+devices:
+  district_meter:
+    label: "District Meter"
+    # Counts roads, not method. Eight by hand and eight fanned out across the
+    # group are the same number here — which is the point: the shortcut is not a
+    # different result, it is the same result said once.
+    reads_connection:
+      from: district_supply
+      min_count: 8
+    need_hint: |
+      Every house needs feeding from district_supply. Two by hand is the lesson;
+      the other six are the reason there is a group called district_a.
+achievement_defs:
+  - id: wired_by_hand
+    when: { actor: you, action: inspect, target: district_meter, result: ok }
+next_goal_rules:
+  - if_missing: wired_by_hand
+    goal:
+      text: "Eight buildings, one supply, no roads. Start wiring"
+      hint: |
+        Two of them, by hand, and read the meter after each:
+          mywant wants connect district_supply district_house_1
+          mywant wants connect district_supply district_house_2
+          rpg_control_system actor=you action=inspect target=district_meter
+  - if_missing: district_meter_running
+    goal:
+      text: "Six more the same. There is a shorter way, and you built it"
+      hint: |
+        You made a district in the ward office. Feed the group rather than the
+        buildings:
+          GUI: district_supply's offering end → drop on the district_a group
+          CLI: mywant wants connect district_supply district_house_3
+               (and the rest — or hand the supply the group in one move)
+        The names stop being labels and become the list the supply fans out
+        across.
+  - if_missing: reached_shell_approach
+    goal:
+      text: "The district is lit. The shell is open"
+      hint: "rpg_control_system actor=you action=move target=shell_approach"
+mywant_setup:
+  cleanup_label:
+    game: fortress15
+  wants:
+    - name: district_supply
+      type: rpg_fixture
+      labels: { game: fortress15, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "143" }
+      params: { label: "District Supply", level: "6" }
+    - name: district_house_1
+      type: rpg_fixture
+      labels: { game: fortress15, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "141" }
+      params: { label: "District House 1" }
+    - name: district_house_2
+      type: rpg_fixture
+      labels: { game: fortress15, "mywant.io/canvas-x": "2", "mywant.io/canvas-y": "141" }
+      params: { label: "District House 2" }
+    - name: district_house_3
+      type: rpg_fixture
+      labels: { game: fortress15, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "141" }
+      params: { label: "District House 3" }
+    - name: district_house_4
+      type: rpg_fixture
+      labels: { game: fortress15, "mywant.io/canvas-x": "4", "mywant.io/canvas-y": "141" }
+      params: { label: "District House 4" }
+    - name: district_house_5
+      type: rpg_fixture
+      labels: { game: fortress15, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "142" }
+      params: { label: "District House 5" }
+    - name: district_house_6
+      type: rpg_fixture
+      labels: { game: fortress15, "mywant.io/canvas-x": "2", "mywant.io/canvas-y": "142" }
+      params: { label: "District House 6" }
+    - name: district_house_7
+      type: rpg_fixture
+      labels: { game: fortress15, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "142" }
+      params: { label: "District House 7" }
+    - name: district_house_8
+      type: rpg_fixture
+      labels: { game: fortress15, "mywant.io/canvas-x": "4", "mywant.io/canvas-y": "142" }
+      params: { label: "District House 8" }
+narrations:
+  - match: { actor: city, action: answered, target: district_meter }
+    on_success: |
+      The district comes up building by building, and the board fills with roads
+      you did not draw one at a time. Above the yard, the Monolith's outer shell
+      parts along a seam nobody knew was there.
+    conversations:
+      - speaker: you
+        text: "I did two of them by hand."
+      - speaker: chap
+        text: "You did. That is why the eighth means something."
+      - speaker: you
+        text: "The group wasn't a filing convenience."
+      - speaker: chap
+        text: "It was never a filing convenience. It was a thing you could hand to something."
+    lore: |
+      Act 1 named values and gathered them. Act 3 joined wants. This is both at
+      once: a set is a value like any other, and a want that takes one fans out
+      across every member — so eight statements become one, and stay one when a
+      ninth building goes up.
+  - match: { action: observe }
+    situation: |
+      Eight dark buildings, one supply humming to itself, and a great deal of
+      empty floor between them.
+    conversations:
+      - speaker: you
+        text: "Eight of these."
+      - speaker: chap
+        text: "Eight identical afternoons, yes. You have been here before."
+locales:
+  ja:
+    title: "区の配線"
+    description: |
+      区の八軒、どれも一つの供給から養われるはずで、どれも繋がっていない。
+      最初の二軒を手で配線すると、この午後の形が見えてくる——同じ道を八本、
+      一本ずつ、どれも前と同じ。ダンジョンにはそれへの答えがあった。
+      それがここで、第一幕の作ったものに効く。
+    waypoints:
+      district_yard: { label: "区の作業場" }
+      shell_approach: { label: "モノリスの下" }
+    next_goal_rules:
+      - goal:
+          text: "八軒、供給一つ、道はゼロ。配線を始めよう"
+          hint: |
+            二軒だけ手で繋ぎ、そのたびにメーターを読む:
+              mywant wants connect district_supply district_house_1
+              mywant wants connect district_supply district_house_2
+              rpg_control_system actor=you action=inspect target=district_meter
+      - goal:
+          text: "同じものがあと六本。もっと短い道があり、それはあなたが作った"
+          hint: |
+            区役場で district を作ったはずだ。建物ではなくグループを養う:
+              GUI: district_supply の差し出す口 → district_a グループへドロップ
+              CLI: mywant wants connect district_supply district_house_3
+                   （以下同様——あるいは供給にグループを一手で渡す）
+            名前はラベルであることをやめ、供給が展開する先の一覧になる。
+      - goal:
+          text: "区に灯が入った。外殻が開いている"
+          hint: "rpg_control_system actor=you action=move target=shell_approach"
+    narrations:
+      - on_success: |
+          区が一軒ずつ立ち上がり、一本ずつ引いたのではない道で盤面が埋まる。
+          作業場の上、モノリスの外殻が、誰も知らなかった継ぎ目に沿って割れる。
+        conversations:
+          - speaker: you
+            text: "二軒は手でやった。"
+          - speaker: chap
+            text: "やりました。だから八軒目に意味があるのです。"
+          - speaker: you
+            text: "グループは整理の都合じゃなかった。"
+          - speaker: chap
+            text: "一度も整理の都合ではありませんでした。何かに渡せるもの、でした。"
+        lore: |
+          第一幕は値を名付け、まとめた。第三幕は want を繋いだ。
+          これはその両方を同時にやる——集合も値の一つであり、それを受け取る want は
+          全メンバーへ展開する。だから八つの主張は一つになり、
+          九軒目が建っても一つのままでいる。
+      - situation: |
+          暗い建物が八軒、独りで唸っている供給が一つ、
+          そしてその間にたっぷりの空いた床。
+        conversations:
+          - speaker: you
+            text: "これが八軒。"
+          - speaker: chap
+            text: "同じ午後が八回、ですね。前にも来た場所です。"

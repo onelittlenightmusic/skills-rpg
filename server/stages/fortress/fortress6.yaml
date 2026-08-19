@@ -1,0 +1,143 @@
+id: fortress6
+title: "The Gate Nobody Built"
+description: |
+  The relay gate has no want behind it. Lira did not live to build this one, and
+  the Keymakers who could have are gone. It has to be built now, and where you
+  start building it decides how hard it is: from an empty form, or from the tile
+  of the value it is about.
+rooms:
+  - { id: relay_yard, label: "The Relay Yard" }
+  - { id: relay_arch, label: "The Relay Arch",
+      door: { id: pin_gate, device: kesh_anchor } }
+  - { id: transformer_walk, label: "The Transformer Walk",
+      door: { id: relay_gate, device: relay_meter } }
+devices:
+  kesh_anchor:
+    label: "Anchor Plate"
+    # Pinned, not merely named: the next thing the player does is start a want
+    # FROM this tile, and a tile you have not put on the board is not a place you
+    # can start from.
+    reads_thing:
+      subtype: person
+      value: "Kesh"
+      pinned: true
+    need_hint: |
+      You named her at the assay bench. Pin her, so her tile stands on the board
+      on its own — that tile is where the next want gets built from.
+  relay_meter:
+    label: "Relay Meter"
+    # Two users: the assay bench from the last stage, and the one built here. The
+    # meter counts roads out of the tile, which is the number the player can see.
+    reads_thing_used_by:
+      subtype: person
+      value: "Kesh"
+      min_users: 2
+    need_hint: |
+      Build the relay's want starting from Kesh's tile, not from an empty form.
+      Started there, the type list is already narrowed to types that accept a
+      person, and the new want is born with her name in the right field.
+next_goal_rules:
+  - if_missing: kesh_anchor_running
+    goal:
+      text: "Pin Kesh. You are about to build from her tile"
+      hint: |
+        Pin the Kesh thing:
+          GUI: Thing → the Kesh card → Pin
+          CLI: mywant thing label people::Kesh mywant.io/canvas true
+  - if_missing: relay_meter_running
+    goal:
+      text: "The relay gate has no want behind it. Build one, from her tile"
+      hint: |
+        Start from the tile, not from the Add Want form:
+          GUI: Kesh's tile on the canvas → Add Want from here → rpg_fixture → deploy
+          CLI: mywant wants create -t rpg_fixture -i   (and answer maker: Kesh)
+        Started from the tile, the type list only offers types that can take a
+        person, and the name is already in the field. Wrong choices are not
+        rejected later — they are absent.
+  - if_missing: reached_transformer_walk
+    goal:
+      text: "The relay has a maker again. Go through"
+      hint: "rpg_control_system actor=you action=move target=transformer_walk"
+next_stage: fortress7
+narrations:
+  - match: { actor: city, action: answered, target: relay_meter }
+    on_success: |
+      The relay closes with a sound like a latch finding its seat. A second road
+      leaves her tile — you drew it by starting there.
+    conversations:
+      - speaker: you
+        text: "The form only offered me four types."
+      - speaker: chap
+        text: "It offered the types that can hold a person. You started from a person."
+      - speaker: you
+        text: "It would have been quicker to be told no."
+      - speaker: chap
+        text: "It would have been slower. You would have had to be told no first."
+    lore: |
+      A want built from a tile arrives knowing what it is about. The narrowing is
+      not a restriction — it is the same rule as fortress5's fittings, applied
+      before the mistake instead of after it.
+  - match: { action: observe }
+    situation: |
+      An arch with a mechanism in it and nothing on the board behind it. Every
+      other gate in this city has a want standing for it. This one has a gap.
+    conversations:
+      - speaker: you
+        text: "There's nothing here to fix."
+      - speaker: chap
+        text: "No. There is nothing here at all. That is the difference."
+locales:
+  ja:
+    title: "誰も建てなかった門"
+    description: |
+      中継門の裏には want が無い。Lira はこれを建てるまで生きなかったし、
+      建てられた Keymakers はもういない。今建てるしかなく、どこから建て始めるかで
+      難易度が決まる——空のフォームからか、その門が関係する値のタイルからか。
+    waypoints:
+      relay_yard: { label: "中継広場" }
+      relay_arch: { label: "中継アーチ" }
+      transformer_walk: { label: "変圧廊" }
+    next_goal_rules:
+      - goal:
+          text: "Kesh を pin しよう。これから彼女のタイルから建てる"
+          hint: |
+            Kesh という thing を pin する:
+              GUI: Thing → Kesh のカード → Pin
+              CLI: mywant thing label people::Kesh mywant.io/canvas true
+      - goal:
+          text: "中継門の裏には want が無い。彼女のタイルから建てよう"
+          hint: |
+            Add Want フォームからではなく、タイルから始める:
+              GUI: canvas 上の Kesh のタイル → ここから want を追加 → rpg_fixture → deploy
+              CLI: mywant wants create -t rpg_fixture -i  （maker に Kesh と答える）
+            タイルから始めると、型の一覧は person を受け取れる型だけに絞られ、
+            名前は既に正しい欄に入っている。誤った選択は後で弾かれるのではなく、
+            最初から無い。
+      - goal:
+          text: "中継に作り手が戻った。くぐろう"
+          hint: "rpg_control_system actor=you action=move target=transformer_walk"
+    narrations:
+      - on_success: |
+          掛け金が座を見つけたような音で中継が閉じる。彼女のタイルから道が
+          二本目——そこから始めたから、あなたが引いた道だ。
+        conversations:
+          - speaker: you
+            text: "フォームが四つしか型を出さなかった。"
+          - speaker: chap
+            text: "person を持てる型を出したのです。person から始められたので。"
+          - speaker: you
+            text: "駄目だと言われた方が早かった。"
+          - speaker: chap
+            text: "遅かったはずです。まず駄目だと言われる必要がありましたから。"
+        lore: |
+          タイルから建てた want は、自分が何についてのものかを知って生まれる。
+          絞り込みは制限ではなく、fortress5 の取り付け口と同じ規則を、
+          間違えた後ではなく間違える前に適用しているだけだ。
+      - situation: |
+          機構の入ったアーチ、その裏の盤面には何も無い。
+          この都市の他の門にはどれも、それを表す want が立っている。ここには穴がある。
+        conversations:
+          - speaker: you
+            text: "直すものが無い。"
+          - speaker: chap
+            text: "はい。そもそも何も無いのです。そこが違います。"

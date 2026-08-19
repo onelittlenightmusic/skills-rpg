@@ -288,7 +288,7 @@ func doPickup(state *GameState, stage *Stage, in ControlInput) (map[string]any, 
 	item.HeldBy = ActorYou
 	state.You.Inventory = append(state.You.Inventory, id)
 	return map[string]any{
-		"you.inventory":      state.You.Inventory,
+		"you.inventory":            state.You.Inventory,
 		"items." + id + ".held_by": ActorYou,
 	}, nil
 }

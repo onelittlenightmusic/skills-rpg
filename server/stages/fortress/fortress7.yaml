@@ -1,0 +1,149 @@
+id: fortress7
+title: "The Ward With No Address"
+description: |
+  Eight of Lira's works stand in the ward, each with its own setting already on
+  the board — visible, because each is in use. The ward ledger will not take them
+  one at a time. It does not file buildings. It files districts, and there is no
+  district here, because nobody has said these eight belong together.
+rooms:
+  - { id: ward_lane, label: "The Ward Lane" }
+  - { id: ledger_office, label: "The Ledger Office",
+      door: { id: ledger_door, device: district_ledger } }
+devices:
+  district_ledger:
+    label: "District Ledger"
+    # One name standing for eight values. The first relationship the player names
+    # rather than a value — and the ledger counts members, so a district of seven
+    # is a district that is not finished, not a district that is wrong.
+    reads_group:
+      name: district_a
+      min_members: 8
+    need_hint: |
+      The eight settings on the ward houses are already on the board. Gather them
+      under one name — that name is the address the ledger will accept.
+next_goal_rules:
+  - if_missing: district_ledger_running
+    goal:
+      text: "The ledger takes districts, not buildings. Make one"
+      hint: |
+        Group the eight ward settings under one name:
+          GUI: select the eight tiles on the canvas → Group → district_a
+          CLI: mywant thing constellations create district_a --kind memo \
+                 --member levels::11 --member levels::12 --member levels::13 \
+                 --member levels::14 --member levels::15 --member levels::16 \
+                 --member levels::17 --member levels::18
+        The lines between them appear as you do it. That is the relationship,
+        drawn.
+  - if_missing: reached_ledger_office
+    goal:
+      text: "The district is filed. Go in"
+      hint: "rpg_control_system actor=you action=move target=ledger_office"
+next_stage: fortress8
+mywant_setup:
+  cleanup_label:
+    game: fortress7
+  wants:
+    - name: ward_house_1
+      type: rpg_fixture
+      labels: { game: fortress7, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "61" }
+      params: { label: "Ward House 1", level: "11" }
+    - name: ward_house_2
+      type: rpg_fixture
+      labels: { game: fortress7, "mywant.io/canvas-x": "2", "mywant.io/canvas-y": "61" }
+      params: { label: "Ward House 2", level: "12" }
+    - name: ward_house_3
+      type: rpg_fixture
+      labels: { game: fortress7, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "61" }
+      params: { label: "Ward House 3", level: "13" }
+    - name: ward_house_4
+      type: rpg_fixture
+      labels: { game: fortress7, "mywant.io/canvas-x": "4", "mywant.io/canvas-y": "61" }
+      params: { label: "Ward House 4", level: "14" }
+    - name: ward_house_5
+      type: rpg_fixture
+      labels: { game: fortress7, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "62" }
+      params: { label: "Ward House 5", level: "15" }
+    - name: ward_house_6
+      type: rpg_fixture
+      labels: { game: fortress7, "mywant.io/canvas-x": "2", "mywant.io/canvas-y": "62" }
+      params: { label: "Ward House 6", level: "16" }
+    - name: ward_house_7
+      type: rpg_fixture
+      labels: { game: fortress7, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "62" }
+      params: { label: "Ward House 7", level: "17" }
+    - name: ward_house_8
+      type: rpg_fixture
+      labels: { game: fortress7, "mywant.io/canvas-x": "4", "mywant.io/canvas-y": "62" }
+      params: { label: "Ward House 8", level: "18" }
+narrations:
+  - match: { actor: city, action: answered, target: district_ledger }
+    on_success: |
+      Lines appear between the eight tiles, and then a name over all of them. The
+      ledger stamps the order without reading a single building.
+    conversations:
+      - speaker: you
+        text: "It wouldn't take them one at a time, and it takes all eight at once."
+      - speaker: chap
+        text: "It takes one address. You made one out of eight values."
+      - speaker: you
+        text: "The name isn't a label on them. It's a thing on its own."
+    lore: |
+      Up to here every name has stood for a value. This one stands for a set —
+      and a set is something you can hand to a want in one piece, which is what
+      the last stage of this world is built on.
+  - match: { action: observe }
+    situation: |
+      Eight houses, eight settings on the board, and a clerk's window that has
+      already refused you eight times without malice.
+    conversations:
+      - speaker: you
+        text: "It won't take a building."
+      - speaker: chap
+        text: "It takes a district. There isn't one — not because they are far apart, but because nobody has said so."
+locales:
+  ja:
+    title: "住所の無い区"
+    description: |
+      Lira の仕事が八つ、区に建っている。それぞれの設定値は既に盤面にある——
+      使われているから見えている。区の台帳はそれを一つずつは受け取らない。
+      建物は扱わないのだ。扱うのは区画で、ここに区画は無い。
+      この八つが一つのものだと、誰も言っていないから。
+    waypoints:
+      ward_lane: { label: "区の通り" }
+      ledger_office: { label: "台帳役場" }
+    next_goal_rules:
+      - goal:
+          text: "台帳は建物ではなく区画を受け取る。作ろう"
+          hint: |
+            区の設定値八つを一つの名前でまとめる:
+              GUI: canvas 上の八つのタイルを選択 → グループ → district_a
+              CLI: mywant thing constellations create district_a --kind memo \
+                     --member levels::11 --member levels::12 --member levels::13 \
+                     --member levels::14 --member levels::15 --member levels::16 \
+                     --member levels::17 --member levels::18
+            やると同時にタイル間に線が現れる。それが「関係」を描いたということ。
+      - goal:
+          text: "区画が登録された。入ろう"
+          hint: "rpg_control_system actor=you action=move target=ledger_office"
+    narrations:
+      - on_success: |
+          八つのタイルの間に線が現れ、その上に一つの名前が乗る。
+          台帳は建物を一つも読まずに受理の印を押す。
+        conversations:
+          - speaker: you
+            text: "一つずつは駄目で、八つまとめてなら通るのか。"
+          - speaker: chap
+            text: "住所を一つ受け取ったのです。八つの値から、一つ作られた。"
+          - speaker: you
+            text: "その名前は貼り紙じゃない。それ自体が一つのものだ。"
+        lore: |
+          ここまで名前は値を表していた。これは集合を表す——
+          そして集合は want に一塊で渡せるものであり、
+          この world の最後のステージはそれの上に建っている。
+      - situation: |
+          八軒の家、盤面の八つの設定値、そして悪意なく既に八回断った窓口。
+        conversations:
+          - speaker: you
+            text: "建物は受け取らないのか。"
+          - speaker: chap
+            text: "区画を受け取ります。それが無いのです——離れているからではなく、誰もそう言っていないから。"

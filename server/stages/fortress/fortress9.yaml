@@ -1,0 +1,140 @@
+id: fortress9
+title: "What It Has Made"
+description: |
+  Three stacks feeding one main, all three running, and the pressure downstream
+  is wrong. Nothing here is stopped and nothing has failed. The last stage taught
+  that a want has a state; this one is about the other half of a card — not
+  whether it is working, but what it has actually been putting out.
+rooms:
+  - { id: stack_floor, label: "The Stack Floor" }
+  - { id: main_valve, label: "The Main Valve",
+      door: { id: assay_hatch, device: pressure_assay } }
+devices:
+  pressure_assay:
+    label: "Pressure Assay"
+    # A want's own output, read off the want. Not "is a 9 somewhere in the city"
+    # — the city has plenty of nines. This one, on this stack, is what the main
+    # is fed by.
+    reads_want_state:
+      name: pressure_stack_b
+      field: level
+      equals: "9"
+    need_hint: |
+      Read all three stacks' output before you change any of them: two of them
+      agree and one does not. The assay wants the odd one brought into line.
+achievement_defs:
+  - id: read_the_outputs
+    when: { actor: you, action: inspect, target: pressure_assay, result: ok }
+next_goal_rules:
+  - if_missing: read_the_outputs
+    goal:
+      text: "Everything is running and the pressure is still wrong"
+      hint: |
+        Read what the assay is measuring, and then what each stack is producing:
+          rpg_control_system actor=you action=inspect target=pressure_assay
+          mywant wants get pressure_stack_a
+          mywant wants get pressure_stack_b
+          mywant wants get pressure_stack_c
+        Running is not the same as right. Green told you nothing.
+  - if_missing: pressure_assay_running
+    goal:
+      text: "One stack is putting out a different level from the other two. Correct it"
+      hint: |
+        Set the odd stack's level to match:
+          the pressure_stack_b card on the board → level → 9
+        Then read it back: mywant wants get pressure_stack_b
+  - if_missing: reached_main_valve
+    goal:
+      text: "The main is at pressure. Go through"
+      hint: "rpg_control_system actor=you action=move target=main_valve"
+next_stage: fortress10
+mywant_setup:
+  cleanup_label:
+    game: fortress9
+  wants:
+    - name: pressure_stack_a
+      type: rpg_fixture
+      labels: { game: fortress9, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "81" }
+      params: { label: "Pressure Stack A", level: "9" }
+    - name: pressure_stack_b
+      type: rpg_fixture
+      labels: { game: fortress9, "mywant.io/canvas-x": "2", "mywant.io/canvas-y": "81" }
+      params: { label: "Pressure Stack B", level: "4" }
+    - name: pressure_stack_c
+      type: rpg_fixture
+      labels: { game: fortress9, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "81" }
+      params: { label: "Pressure Stack C", level: "9" }
+narrations:
+  - match: { actor: city, action: answered, target: pressure_assay }
+    on_success: |
+      The needle on the main comes up and settles. Nothing was started, nothing
+      was stopped; one number on one card is different from what it was.
+    conversations:
+      - speaker: you
+        text: "It was working the whole time."
+      - speaker: chap
+        text: "It was working the whole time. It was working at four."
+    lore: |
+      A card carries two different kinds of fact: what the want is doing, and
+      what it has produced. The first is why a thing is on the board at all. The
+      second is the only one that can be wrong while everything looks right.
+  - match: { action: observe }
+    situation: |
+      Three stacks, three steady green cards, and a main gauge sitting well under
+      where it should be.
+    conversations:
+      - speaker: you
+        text: "None of them is broken."
+      - speaker: chap
+        text: "No. One of them is producing something else."
+locales:
+  ja:
+    title: "それが作ったもの"
+    description: |
+      三本のスタックが一本の本管に繋がっていて、三本とも動いていて、
+      それでいて下流の圧がおかしい。止まっているものも失敗したものも無い。
+      前のステージは want には状態があると教えた。ここはカードのもう半分——
+      動いているかどうかではなく、実際に何を出してきたかの話だ。
+    waypoints:
+      stack_floor: { label: "スタック床" }
+      main_valve: { label: "本管弁" }
+    next_goal_rules:
+      - goal:
+          text: "全部動いていて、それでも圧がおかしい"
+          hint: |
+            assay が測っているものを読み、次に各スタックの出力を読む:
+              rpg_control_system actor=you action=inspect target=pressure_assay
+              mywant wants get pressure_stack_a
+              mywant wants get pressure_stack_b
+              mywant wants get pressure_stack_c
+            動いていることと正しいことは違う。緑は何も言っていなかった。
+      - goal:
+          text: "一本だけ他の二本と違う値を出している。直そう"
+          hint: |
+            外れているスタックの level を合わせる:
+              盤面の pressure_stack_b のカード → level → 9
+            読み返す: mywant wants get pressure_stack_b
+      - goal:
+          text: "本管に圧が来た。進もう"
+          hint: "rpg_control_system actor=you action=move target=main_valve"
+    narrations:
+      - on_success: |
+          本管の針が上がって落ち着く。何も起動していないし、何も止めていない。
+          一枚のカードの数字が一つ、前と違うだけだ。
+        conversations:
+          - speaker: you
+            text: "ずっと動いてたんだ。"
+          - speaker: chap
+            text: "ずっと動いていました。4 で動いていたのです。"
+        lore: |
+          カードは二種類の事実を持つ——その want が何をしているかと、何を作ったか。
+          前者はそれが盤面にいる理由。後者は、全部正常に見えたまま間違いうる、
+          唯一の方だ。
+      - situation: |
+          三本のスタック、三枚の落ち着いた緑のカード、
+          そして本来より明らかに低いところに座っている本管のゲージ。
+        conversations:
+          - speaker: you
+            text: "どれも壊れてない。"
+          - speaker: chap
+            text: "はい。一本が別のものを作っています。"

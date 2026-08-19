@@ -7,9 +7,9 @@ import (
 
 // MywantHookEvent is the payload received from mywant's lifecycle webhook.
 type MywantHookEvent struct {
-	Event string            `json:"event"`
-	Want  MywantWantInfo    `json:"want"`
-	Rule  *MywantRuleRef    `json:"rule,omitempty"` // set by filtered rules (rpg_hook want type)
+	Event string         `json:"event"`
+	Want  MywantWantInfo `json:"want"`
+	Rule  *MywantRuleRef `json:"rule,omitempty"` // set by filtered rules (rpg_hook want type)
 }
 
 // MywantWantInfo holds the metadata of the want in the notification.

@@ -1,0 +1,169 @@
+id: fortress12
+title: "The Wrong Floor"
+description: |
+  A lift, and three winches that could all drive it. Connect the wrong one and
+  nothing goes red: the lift runs, arrives, and opens onto a floor you did not
+  want, with the door behind you locked. Being refused would have been a kindness.
+rooms:
+  - { id: lift_lobby, label: "The Lift Lobby" }
+  - { id: lift_car, label: "Inside the Lift",
+      door: { id: lift_gate, device: winch_reader } }
+  - { id: right_floor, label: "The Floor You Wanted",
+      door: { id: floor_gate, device: crosstalk_check } }
+devices:
+  winch_reader:
+    label: "Winch Reader"
+    reads_connection:
+      from: hoist_winch
+      to: lift_carriage
+    need_hint: |
+      Three winches offer the same kind of value and only one of them is the
+      hoist. Read their cards before you join anything:
+      mywant wants connect hoist_winch lift_carriage
+  crosstalk_check:
+    label: "Crosstalk Check"
+    # A connection can be wrong without being an error, so nothing removes it for
+    # you. The lift will not go to the floor you want while it is also being
+    # driven by the spare.
+    reads_connection:
+      from: spare_winch
+      to: lift_carriage
+      absent: true
+    need_hint: |
+      Take the wrong road out: mywant wants disconnect spare_winch lift_carriage
+      Nothing errored when you drew it. Nothing will error while it stays.
+achievement_defs:
+  - id: read_the_winches
+    when: { actor: you, action: inspect, target: winch_reader, result: ok }
+next_goal_rules:
+  - if_missing: read_the_winches
+    goal:
+      text: "Three winches, one lift. Read them before you join anything"
+      hint: |
+        rpg_control_system actor=you action=inspect target=winch_reader
+          mywant wants get hoist_winch
+          mywant wants get spare_winch
+          mywant wants get vent_winch
+        All three will connect. Only one of them is the hoist.
+  - if_missing: winch_reader_running
+    goal:
+      text: "Drive the lift from the hoist"
+      hint: |
+        mywant wants connect hoist_winch lift_carriage
+        If you have already joined a different one, that road is still there —
+        nothing removed it, because nothing thought it was wrong.
+  - if_missing: crosstalk_check_running
+    goal:
+      text: "The spare is still driving it too. Take that road out"
+      hint: |
+        mywant wants disconnect spare_winch lift_carriage
+        A wrong connection is not an error. It is a statement that happens not to
+        be true, and only you can withdraw it.
+  - if_missing: reached_right_floor
+    goal:
+      text: "The lift goes where you meant. Step out"
+      hint: "rpg_control_system actor=you action=move target=right_floor"
+next_stage: fortress13
+mywant_setup:
+  cleanup_label:
+    game: fortress12
+  wants:
+    - name: hoist_winch
+      type: rpg_fixture
+      labels: { game: fortress12, "mywant.io/canvas-x": "1", "mywant.io/canvas-y": "111" }
+      params: { label: "Hoist Winch", level: "3" }
+    - name: spare_winch
+      type: rpg_fixture
+      labels: { game: fortress12, "mywant.io/canvas-x": "2", "mywant.io/canvas-y": "111" }
+      params: { label: "Spare Winch", level: "8" }
+    - name: vent_winch
+      type: rpg_fixture
+      labels: { game: fortress12, "mywant.io/canvas-x": "3", "mywant.io/canvas-y": "111" }
+      params: { label: "Vent Winch", level: "1" }
+    - name: lift_carriage
+      type: rpg_fixture
+      labels: { game: fortress12, "mywant.io/canvas-x": "4", "mywant.io/canvas-y": "111" }
+      params: { label: "Lift Carriage" }
+  # The spare is already wired, by somebody, some time ago, and it is plausible.
+  # The stage does not tell the player it is wrong; the lift does, by arriving
+  # somewhere else.
+  on_start_run:
+    - "sleep 3 && mywant wants connect spare_winch lift_carriage"
+narrations:
+  - match: { actor: city, action: answered, target: crosstalk_check }
+    on_success: |
+      The spare's road goes out. The carriage settles, and this time the doors
+      open on the floor you asked for.
+    conversations:
+      - speaker: you
+        text: "It worked before. It just worked to the wrong place."
+      - speaker: chap
+        text: "It was a true statement about a spare winch. It was not the statement you needed."
+    lore: |
+      A road is a claim, and a claim can be wrong without being invalid. Nothing
+      in the city will remove one for you, because nothing in the city knows what
+      you meant — which is why disconnecting is an operation and not a repair.
+  - match: { action: observe }
+    situation: |
+      Three winches, all turning, all offering the same kind of value, and a
+      carriage that will accept any of them without comment.
+    conversations:
+      - speaker: you
+        text: "How do I tell which one is right?"
+      - speaker: chap
+        text: "By reading them. Nothing else here is going to object."
+locales:
+  ja:
+    title: "違う階"
+    description: |
+      昇降機が一つ、それを動かせる巻上機が三つ。間違ったものに繋いでも
+      赤くはならない。昇降機は動き、着き、望んでいない階で扉を開き、
+      背後の扉は施錠されている。断られていた方が親切だった。
+    waypoints:
+      lift_lobby: { label: "昇降機ロビー" }
+      lift_car: { label: "昇降機の中" }
+      right_floor: { label: "行きたかった階" }
+    next_goal_rules:
+      - goal:
+          text: "巻上機が三つ、昇降機が一つ。繋ぐ前に読もう"
+          hint: |
+            rpg_control_system actor=you action=inspect target=winch_reader
+              mywant wants get hoist_winch
+              mywant wants get spare_winch
+              mywant wants get vent_winch
+            三つとも繋がる。巻上機なのは一つだけ。
+      - goal:
+          text: "昇降機を hoist から動かそう"
+          hint: |
+            mywant wants connect hoist_winch lift_carriage
+            既に別のものを繋いでいたなら、その道はまだ残っている——
+            誰もそれを間違いだと思わなかったので、誰も外さなかった。
+      - goal:
+          text: "spare もまだ動かしている。その道を外そう"
+          hint: |
+            mywant wants disconnect spare_winch lift_carriage
+            間違った接続はエラーではない。たまたま真ではない主張であり、
+            取り下げられるのはあなただけだ。
+      - goal:
+          text: "昇降機が意図した所へ行く。降りよう"
+          hint: "rpg_control_system actor=you action=move target=right_floor"
+    narrations:
+      - on_success: |
+          spare の道が消える。かごが落ち着き、今度は頼んだ階で扉が開く。
+        conversations:
+          - speaker: you
+            text: "前も動いてた。違う場所に動いてただけだ。"
+          - speaker: chap
+            text: "予備の巻上機についての真の主張でした。あなたが必要としていた主張ではなかった、というだけです。"
+        lore: |
+          道は主張であり、主張は無効でないまま間違っていられる。
+          都市の何もそれを外してはくれない——あなたが何を意図したかを
+          都市の何も知らないからで、だから切断は修理ではなく操作なのだ。
+      - situation: |
+          三つの巻上機がどれも回り、どれも同じ種類の値を差し出していて、
+          かごはそのどれでも黙って受け取る。
+        conversations:
+          - speaker: you
+            text: "どれが正しいか、どう見分ける？"
+          - speaker: chap
+            text: "読むことで、です。ここの他の何も異議は唱えません。"

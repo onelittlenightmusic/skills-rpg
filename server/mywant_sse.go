@@ -50,10 +50,43 @@ const ActionForgot = "forgot"
 // watchMywant subscribes to mywant's event stream for as long as the server
 // runs, reconnecting when it drops. mywant restarting is normal and not worth a
 // stack trace.
+// nudge asks for a reconciliation without waiting for one. Non-blocking: a
+// burst of events is one look at the board, not one per event.
+func (s *Server) nudge() {
+	select {
+	case s.reconcile <- struct{}{}:
+	default:
+	}
+}
+
+// How often the board is looked at when nothing has said anything. A backstop,
+// not the mechanism: mywant does not emit an event for every fact an activator
+// can read — a relation drawn between two wants is the case that proved it — and
+// a door that only ever opens when something happened to be announced is a door
+// that sometimes does not open.
+const boardSweepInterval = 5 * time.Second
+
+// reconcileLoop is the only caller of reconcileBoardDoors. Serialising the
+// passes here means a burst of events cannot have two of them reading the board
+// at once, and the pause afterwards is what makes a burst cheap.
+func (s *Server) reconcileLoop() {
+	tick := time.NewTicker(boardSweepInterval)
+	defer tick.Stop()
+	for {
+		select {
+		case <-s.reconcile:
+		case <-tick.C:
+		}
+		s.reconcileBoardDoors()
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
 func (s *Server) watchMywant() {
 	if s.cfg.MywantURL == "" {
 		return
 	}
+	go s.reconcileLoop()
 	for {
 		if err := s.streamMywantEvents(); err != nil {
 			// Debug rather than error: not being able to reach mywant is the
@@ -76,23 +109,24 @@ func (s *Server) streamMywantEvents() error {
 
 	sc := bufio.NewScanner(resp.Body)
 	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	var eventType string
 	for sc.Scan() {
 		line := sc.Text()
 		switch {
-		case strings.HasPrefix(line, "event:"):
-			eventType = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
 		case strings.HasPrefix(line, "data:"):
-			// The payload is not read. Which thing changed does not matter —
-			// what matters is whether any door in the stage the player is
-			// standing in is now satisfied, and that is a question about the
-			// board as a whole, asked below. Reading the id and trusting it
-			// would also be wrong: a value can be named by something other than
-			// the event that named it.
-			if eventType == "thing_changed" {
-				s.reconcileBoardDoors()
-			}
-			eventType = ""
+			// Neither the payload nor the event type is read. Which thing
+			// changed does not matter — what matters is whether any activator's
+			// answer is now different, and that is a question about the board as
+			// a whole, asked below. Reading the id and trusting it would also be
+			// wrong: a value can be named by something other than the event that
+			// named it.
+			//
+			// And not `thing_changed` alone, which is what this used to wait
+			// for. Act 1's conditions are about named values, so that was the
+			// whole story while Act 1 was the whole world; Acts 2 and 3 read
+			// want state and the roads between wants, and connecting two wants
+			// produced no thing at all — the activator came alive and the door
+			// in front of it sat shut, because nothing had told the game to look.
+			s.nudge()
 		}
 	}
 	return sc.Err()
@@ -121,7 +155,7 @@ func (s *Server) reconcileBoardDoors() {
 	var news []change
 	for _, stage := range s.state.Stages {
 		for id, dev := range stage.Devices {
-			if dev.Reads == nil {
+			if dev.cond() == nil {
 				continue
 			}
 			on := dev.IsOn()
@@ -148,7 +182,7 @@ func (s *Server) reconcileBoardDoors() {
 					d.Locked = !on
 				}
 			}
-			news = append(news, change{device: id, value: dev.Reads.Value, on: on})
+			news = append(news, change{device: id, value: dev.Subject(), on: on})
 		}
 	}
 	if len(news) == 0 {
@@ -192,7 +226,7 @@ func (s *Server) seedDoorSatisfiedLocked() {
 	s.doorSatisfied = map[string]bool{}
 	for _, stage := range s.state.Stages {
 		for id, dev := range stage.Devices {
-			if dev.Reads == nil {
+			if dev.cond() == nil {
 				continue
 			}
 			on := dev.IsOn()
