@@ -100,6 +100,10 @@ def control(action: str, target: str) -> str:
     return data.get("reason") or "rejected"
 
 
+def name_of(view) -> str:
+    return view.get("reads_value") or ""
+
+
 def survey(state, stage_id, device_id):
     """The device, and every door it gates, as the card needs them."""
     stage = state.get("stages", {}).get(stage_id, {})
@@ -140,6 +144,10 @@ def survey(state, stage_id, device_id):
         "reads_subtype": reads.get("subtype") or "",
         "reads_value": reads.get("value") or "",
         "reads_pinned": bool(reads.get("pinned")),
+        # The two halves, so the card can name the job that is actually
+        # outstanding rather than the one the condition happens to mention.
+        "reads_named": bool(device.get("reads_named")),
+        "reads_is_pinned": bool(device.get("reads_is_pinned")),
         "label": device.get("label") or device_id,
         "blocked_by": blocked_by,
         "blocked": blocked,
@@ -195,16 +203,18 @@ def observe(arg: dict) -> dict:
     elif view["blocked"]:
         summary = f'{view["label"]} is held by {view["blocked_by"]}'
     elif view["reads_subtype"] and not view["on"]:
-        # Says the move, not the mechanism. A player who has never pinned
-        # anything cannot act on "runs while the city holds the value", and this
-        # card is the only thing in a position to tell them what is missing.
-        summary = (
-            f'pin the {view["reads_subtype"]} {view["reads_value"]} to power this'
-            if view["reads_pinned"]
-            else f'no {view["reads_subtype"]} called {view["reads_value"]} in the registry'
-        )
+        # Names the job that is actually outstanding. A value the city has never
+        # heard of cannot be pinned, so a reader wanting a pinned name has two
+        # different things to ask for and only one of them is true at a time —
+        # saying "pin it" to somebody who has nothing to pin sends them looking
+        # for a button that is not there.
+        kind, name = view["reads_subtype"], view["reads_value"]
+        if not view["reads_named"]:
+            summary = f'no {kind} called {name} in the registry — add one'
+        else:
+            summary = f'{name} is in the registry but not pinned — pin it'
     elif view["reads_subtype"]:
-        summary = f'reading {view["reads_value"]} — powered'
+        summary = f'reading {name_of(view)} — powered'
     else:
         summary = f'{view["label"]} is {"on" if view["on"] else "off"}'
 

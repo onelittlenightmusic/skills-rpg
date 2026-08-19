@@ -60,6 +60,9 @@ wantType:
     - { name: reads_subtype, description: kind of thing this reads the registry for, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "reads_subtype" }
     - { name: reads_value,   description: the name it reads the registry for, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "reads_value" }
     - { name: reads_pinned,  description: whether that name must be pinned, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "reads_pinned" }
+    # The two halves of the answer, so the card can name the job outstanding.
+    - { name: reads_named,     description: whether the city knows that name at all, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "reads_named" }
+    - { name: reads_is_pinned, description: whether it is pinned to the board, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "reads_is_pinned" }
     - { name: label,       description: device label from the server, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "label" }
     - { name: blocked_by,  description: device holding this one shut, type: string, label: current, persistent: true, initialValue: "", fetchFrom: mrs_raw_output, onFetchData: "blocked_by" }
     - { name: blocked,     description: whether that blocking device is currently on, type: bool, label: current, persistent: true, initialValue: false, fetchFrom: mrs_raw_output, onFetchData: "blocked" }

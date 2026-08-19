@@ -214,12 +214,25 @@ func (d *Device) IsOn() bool {
 
 // MarshalJSON reports the device as it actually stands — clients read `on` out
 // of the state, and a reader's answer has to be what they get.
+//
+// A reader also reports the two halves of its answer separately, because they
+// are two different jobs for the player and "off" does not say which one is
+// outstanding. A name the city has never heard of cannot be pinned; telling
+// somebody to pin it is telling them to do the impossible in the wrong order.
 func (d Device) MarshalJSON() ([]byte, error) {
 	type plain Device
-	return json.Marshal(struct {
+	out := struct {
 		plain
-		On bool `json:"on"`
-	}{plain(d), d.IsOn()})
+		On     bool  `json:"on"`
+		Named  *bool `json:"reads_named,omitempty"`
+		Pinned *bool `json:"reads_is_pinned,omitempty"`
+	}{plain: plain(d), On: d.IsOn()}
+	if c := d.Reads; c != nil {
+		named := currentBoard.Named(c.Subtype, c.Value)
+		pinned := currentBoard.Pinned(c.Subtype, c.Value)
+		out.Named, out.Pinned = &named, &pinned
+	}
+	return json.Marshal(out)
 }
 
 type Item struct {

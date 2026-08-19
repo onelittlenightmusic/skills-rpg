@@ -104,6 +104,20 @@ function DeviceSection({ want, isFocused, isExpanded }) {
 
   const held = blocked && blockedBy;
 
+  // What a registry reader is waiting for, in the two states that are two
+  // different jobs. Every other device is switched by chap and has nothing to
+  // say here; this one cannot be switched at all, so if the card does not say
+  // what the city is missing, nothing does.
+  const readsKind   = state.reads_subtype || '';
+  const readsValue  = state.reads_value || '';
+  const needsPin    = state.reads_pinned === true;
+  const isNamed     = state.reads_named === true;
+  const isPinned    = state.reads_is_pinned === true;
+  const needText = !readsKind ? ''
+    : !isNamed  ? `add a ${readsKind} called ${readsValue} to the registry`
+    : needsPin && !isPinned ? `${readsValue} is in the registry — pin it`
+    : '';
+
   return window.__mywant.createCardLayout({
     className: 'rounded-lg overflow-hidden',
     style: { background: P.bg, border: `1px solid ${P.border}` },
@@ -140,12 +154,27 @@ function DeviceSection({ want, isFocused, isExpanded }) {
       },
         React.createElement(Art, { status: artStatus, label }),
       ),
+      readsKind && React.createElement('div', {
+        style: {
+          display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0,
+          fontFamily: P.mono, fontSize: 8, lineHeight: 1.3,
+        },
+      },
+        React.createElement('div', { style: { color: isNamed ? P.ok : P.bad } },
+          `${isNamed ? '✓' : '✗'} ${readsKind}: ${readsValue}`),
+        needsPin && React.createElement('div', { style: { color: isPinned ? P.ok : P.bad } },
+          `${isPinned ? '✓' : '✗'} pinned`),
+      ),
       doorStrip,
     ),
-    bottom: (held || error) && React.createElement('div', {
+    bottom: (held || error || needText) && React.createElement('div', {
       className: 'px-3 py-1 text-[10px] leading-snug',
-      style: { fontFamily: P.mono, color: error ? P.bad : P.warnDim, borderTop: `1px solid ${P.borderSoft}` },
-    }, error || `held by ${blockedBy} — stop it first`),
+      style: {
+        fontFamily: P.mono,
+        color: error ? P.bad : needText ? P.bad : P.warnDim,
+        borderTop: `1px solid ${P.borderSoft}`,
+      },
+    }, error || needText || `held by ${blockedBy} — stop it first`),
   });
 }
 
