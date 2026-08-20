@@ -62,5 +62,10 @@ brews:
       - name: mywant
     install: |
       bin.install "mywant-rpg"
+    service: |
+      run [opt_bin/"mywant-rpg", "server", "start"]
+      keep_alive true
+      log_path var/"log/mywant-rpg.log"
+      error_log_path var/"log/mywant-rpg.log"
     test: |
       system "#{bin}/mywant-rpg", "--version"
